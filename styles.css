@@ -58,7 +58,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-word { position: relative; display: inline-block; }
 .nav-word::after { content: attr(data-word); position: absolute; top: 100%; left: 0; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
-.portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; transform: translate3d(var(--portrait-x, 0px), 0, 0); transition: transform 1.2s var(--ease); }
+.portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; }
 .portrait { position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 190%; transform: translateX(-50%); object-fit: contain; object-position: center top; }
 .portrait-shade { filter: brightness(.26) saturate(.65); -webkit-mask-image: linear-gradient(transparent 25%, #000 37%); mask-image: linear-gradient(transparent 25%, #000 37%); }
 .hero-content { position: absolute; z-index: 5; bottom: clamp(84px, 9vh, 115px); left: 50%; width: max-content; transform: translateX(-50%); color: var(--white); }
@@ -166,4 +166,35 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   mask-mode: alpha, luminance;
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
+}
+
+/* Name-first entrance. The unmodified wordmark returns at the end of its climb. */
+.hero-heading-line { display: inline-block; }
+.intro-pending .wordmark,
+.intro-pending .portrait-stage,
+.intro-pending .hero-heading-line,
+.intro-pending .hero-content .button,
+.intro-pending .site-header,
+.intro-pending .hero-footer > *,
+.intro-pending main > .section { opacity: 0; }
+.intro-pending .site-header,
+.intro-pending .hero-content .button,
+.intro-pending .hero-footer,
+.intro-pending main > .section { pointer-events: none; }
+.intro-pending .intro-wordmark { opacity: 1; }
+.intro-wordmark {
+  /* Room above and below the short line box keeps the outline intact. */
+  clip-path: inset(-.2em -.05em -.15em);
+  pointer-events: none;
+}
+.intro-letter { display: inline-block; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-pending .wordmark,
+  .intro-pending .portrait-stage,
+  .intro-pending .hero-heading-line,
+  .intro-pending .hero-content .button,
+  .intro-pending .site-header,
+  .intro-pending .hero-footer > *,
+  .intro-pending main > .section { opacity: 1; pointer-events: auto; }
+  .intro-wordmark { display: none; }
 }

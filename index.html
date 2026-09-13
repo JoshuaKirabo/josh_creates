@@ -9,6 +9,17 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/josh_portrait_cartoon_bw.png" as="image" fetchpriority="high">
   <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
+  <script>
+    // Hide only when the browser can run the intro; otherwise show the page normally.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !location.hash &&
+        typeof Element.prototype.animate === 'function' && CSS.supports('translate', '0 0')) {
+      document.documentElement.classList.add('intro-pending');
+      window.introFallback = setTimeout(() => {
+        document.documentElement.classList.remove('intro-pending');
+      }, 8000);
+    }
+  </script>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
@@ -38,7 +49,7 @@
       </div>
 
       <div class="hero-content" id="intro">
-        <h1>Ideas,<br>Made<br><span>Different.</span></h1>
+        <h1><span class="hero-heading-line">Ideas,</span><br><span class="hero-heading-line">Made</span><br><span class="hero-heading-line">Different.</span></h1>
         <a class="button button-primary" href="#about"><span>Meet Josh</span><span class="button-arrow" aria-hidden="true">↗</span></a>
       </div>
 
