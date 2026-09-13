@@ -10,7 +10,7 @@ const hero = document.querySelector('.hero');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-// Each grain has its own anchor, range, phase, and speed. Nothing pans as a layer.
+// Full-frame noise evolves in place; the larger grains keep independent anchors and speeds.
 function createGrainParticles(canvas) {
   const context = canvas?.getContext('2d');
   if (!context) return { setPlaying() {} };
@@ -21,13 +21,52 @@ function createGrainParticles(canvas) {
   let frame = null;
   let previousTime = 0;
   let playing = false;
+  let textureFrom;
+  let textureTo;
+  let textureCycle = 0;
+  const texturePeriod = 2;
+
+  function makeTexture() {
+    const texture = document.createElement('canvas');
+    // One unique field covers the view. Cap its size on very large displays.
+    const scale = Math.min(1, Math.sqrt(1400000 / Math.max(1, width * height)));
+    texture.width = Math.max(1, Math.round(width * scale));
+    texture.height = Math.max(1, Math.round(height * scale));
+    const textureContext = texture.getContext('2d');
+    const pixels = textureContext.createImageData(texture.width, texture.height);
+    let seed = (Math.random() * 0xffffffff) >>> 0 || 1;
+    for (let i = 0; i < pixels.data.length; i += 4) {
+      seed ^= seed << 13;
+      seed ^= seed >>> 17;
+      seed ^= seed << 5;
+      const shade = seed & 1 ? 255 : 0;
+      const strength = (seed >>> 24) / 255;
+      pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = shade;
+      pixels.data[i + 3] = Math.round(strength * strength * 48);
+    }
+    textureContext.putImageData(pixels, 0, 0);
+    return texture;
+  }
 
   function draw() {
     context.clearRect(0, 0, width, height);
+    const nextCycle = Math.floor(elapsed / texturePeriod);
+    if (nextCycle !== textureCycle) {
+      textureFrom = textureTo;
+      textureTo = makeTexture();
+      textureCycle = nextCycle;
+    }
+    // Crossfade different random values at each point, without translating the surface.
+    const blend = (elapsed % texturePeriod) / texturePeriod;
+    context.globalAlpha = 1 - blend;
+    context.drawImage(textureFrom, 0, 0, width, height);
+    context.globalAlpha = blend;
+    context.drawImage(textureTo, 0, 0, width, height);
     context.fillStyle = '#fff';
+    const particleTime = elapsed * .5;
     for (const grain of particles) {
-      const x = grain.x * width + Math.sin(elapsed * grain.speedX + grain.phaseX) * grain.rangeX;
-      const y = grain.y * height + Math.sin(elapsed * grain.speedY + grain.phaseY) * grain.rangeY;
+      const x = grain.x * width + Math.sin(particleTime * grain.speedX + grain.phaseX) * grain.rangeX;
+      const y = grain.y * height + Math.sin(particleTime * grain.speedY + grain.phaseY) * grain.rangeY;
       context.globalAlpha = grain.alpha;
       context.fillRect(x, y, grain.size, grain.size);
     }
@@ -41,6 +80,9 @@ function createGrainParticles(canvas) {
     canvas.width = Math.round(width * ratio);
     canvas.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    textureFrom = makeTexture();
+    textureTo = makeTexture();
+    textureCycle = Math.floor(elapsed / texturePeriod);
     const count = Math.min(3600, Math.round(width * height / 320));
     particles.length = Math.min(particles.length, count);
     while (particles.length < count) {
