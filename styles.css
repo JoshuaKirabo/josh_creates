@@ -47,7 +47,6 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-word { position: relative; display: inline-block; }
 .nav-word::after { content: attr(data-word); position: absolute; top: 100%; left: 0; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
-.external-arrow { font-size: 1em; }
 .portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; transform: translate3d(var(--portrait-x, 0px), 0, 0); transition: transform 1.2s var(--ease); }
 .portrait { position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 190%; transform: translateX(-50%); object-fit: contain; object-position: center top; }
 .portrait-shade { filter: brightness(.26) saturate(.65); -webkit-mask-image: linear-gradient(transparent 25%, #000 37%); mask-image: linear-gradient(transparent 25%, #000 37%); }
@@ -104,7 +103,6 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .nav-group { gap: 10px; }
   .nav-link { font-size: .9375rem; }
   .nav-group-right .nav-link { font-size: .9375rem; }
-  .external-arrow { display: none; }
   .portrait-stage { top: 160px; }
   .hero-content { top: auto; bottom: 60px; left: 50%; }
   .eyebrow { margin-bottom: 13px; font-size: .75rem; }
