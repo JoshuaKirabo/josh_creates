@@ -8,8 +8,6 @@ let frame = 0;
 
 function resetMotion() {
   hero.style.removeProperty('--portrait-x');
-  hero.style.removeProperty('--card-x');
-  hero.style.removeProperty('--card-y');
 }
 
 hero.addEventListener('pointermove', (event) => {
@@ -18,10 +16,7 @@ hero.addEventListener('pointermove', (event) => {
   frame = requestAnimationFrame(() => {
     const bounds = hero.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const y = (event.clientY - bounds.top) / bounds.height - 0.5;
     hero.style.setProperty('--portrait-x', `${x * 8}px`);
-    hero.style.setProperty('--card-x', `${x * -15}px`);
-    hero.style.setProperty('--card-y', `${y * -10}px`);
   });
 });
 hero.addEventListener('pointerleave', () => {
