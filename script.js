@@ -124,9 +124,6 @@ async function playIntro() {
         { opacity: 1, translate: '0 0%', filter: 'blur(0px)' }
       ], 3050 + index * 100, 700);
     });
-    document.querySelectorAll('main > .section').forEach((section) => {
-      reveal(section, 3050, 700);
-    });
     await Promise.all(animations.map((animation) => animation.finished));
     finish();
   } catch {
