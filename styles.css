@@ -101,9 +101,13 @@ h1 span { white-space: nowrap; }
   .button:hover .button-arrow::after { transform: translate(0, 0); }
 }
 .hero-footer { position: absolute; bottom: var(--footer-bottom); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); z-index: 7; display: flex; align-items: end; justify-content: space-between; font-size: .75rem; line-height: 1.45; }
-.signature, .edition { max-width: 45%; }
-.signature span, .edition span { opacity: .7; }
-.edition { text-align: right; }
+.signature { max-width: 45%; }
+.signature span { opacity: .7; }
+.social-links { display: flex; align-items: center; gap: 8px; }
+.social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: inherit; opacity: .7; transition: opacity 180ms ease, background-color 180ms ease; }
+.social-link svg { width: 20px; height: 20px; }
+.social-link:hover, .social-link:focus-visible { opacity: 1; background: rgba(255, 255, 255, .1); }
+.social-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .section { padding: 50px var(--edge) 90px; }
 .about { position: relative; background: var(--surface); color: var(--white); }
 .section-topline { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-bottom: 30px; border-bottom: 1px solid var(--border); }
