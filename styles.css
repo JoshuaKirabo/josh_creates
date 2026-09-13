@@ -43,8 +43,9 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-group { display: flex; align-items: center; gap: 15px; }
 .nav-link, .small-label { font-size: .8125rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
 .nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Bounded', Arial, sans-serif; font-size: 1.125rem; font-weight: 300; letter-spacing: -.01em; white-space: nowrap; }
-.nav-link::after { content: ''; position: absolute; bottom: 2px; left: 0; width: 100%; height: 2px; background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform .25s ease; }
-.nav-link:hover::after { transform: scaleX(1); }
+.nav-label { display: inline-block; overflow: hidden; vertical-align: top; }
+.nav-word { position: relative; display: inline-block; }
+.nav-word::after { content: attr(data-word); position: absolute; top: 100%; left: 0; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
 .external-arrow { font-size: 1em; }
 .portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; transform: translate3d(var(--portrait-x, 0px), 0, 0); transition: transform 1.2s var(--ease); }
