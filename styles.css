@@ -136,3 +136,23 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* Separate cartoon mask preserves the lettering behind the portrait. */
+.portrait-cartoon {
+  -webkit-mask-image: url('assets/josh_portrait_cartoon_mask.png');
+  mask-image: url('assets/josh_portrait_cartoon_mask.png');
+  mask-mode: luminance;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  filter: grayscale(1);
+}
+.portrait-cartoon.portrait-shade {
+  filter: grayscale(1) brightness(.26);
+  -webkit-mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
+  mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
+  mask-mode: alpha, luminance;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
