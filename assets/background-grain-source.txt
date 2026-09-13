@@ -1,4 +1,4 @@
 Fine monochrome grain tile from the user-selected Armory reference.
 Reference: https://armory.framer.ai/
 Asset: https://framerusercontent.com/images/6mcf62RlDfRfU61Yg5vb2pefpi4.png
-Used as a still, repeating decorative background at 28% opacity and a 120px tile size. The original reference used 13% opacity.
+Used as a repeating decorative background at 28% opacity and a 120px tile size. The hero moves one tile diagonally every four seconds, creating a seamless loop; reduced motion keeps it still. The original reference used 13% opacity.
