@@ -130,11 +130,13 @@ h1 span { white-space: nowrap; }
 .signature > span:not(.scramble-text):not(.scramble-layer) { opacity: .7; }
 .social-links { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
 .social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: inherit; opacity: .7; transition: opacity 180ms ease; }
-.social-link svg { width: 20px; height: 20px; transition: filter 180ms ease; }
-.social-link:hover, .social-link:focus-visible { opacity: 1; }
-.social-link:hover svg, .social-link:focus-visible svg { filter: drop-shadow(0 0 3px rgba(255, 255, 255, .95)) drop-shadow(0 0 8px rgba(255, 255, 255, .65)); }
-@media (prefers-reduced-motion: reduce) {
-  .social-link, .social-link svg { transition: none; }
+.social-link svg { width: 20px; height: 20px; transition: transform 160ms ease; }
+.social-link:focus-visible { opacity: 1; }
+@media (hover: hover) and (pointer: fine) {
+  .social-link:hover { opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .social-link:hover svg { transform: translateY(-10%) scale(1.05); }
 }
 .social-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .section { padding: 50px var(--edge) 90px; }
@@ -189,6 +191,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
+  .social-link { transition: opacity 180ms ease !important; }
 }
 
 /* Separate cartoon mask preserves the lettering behind the portrait. */
