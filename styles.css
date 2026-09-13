@@ -67,17 +67,18 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
   --masthead-size: min(28vw, 40dvh);
 }
 
-/* Keep the lighting anchored so only individual grains appear to move. */
+/* A soft spotlight follows a fine pointer; touch and reduced motion keep it centered. */
 .hero-atmosphere { position: absolute; inset: 0; z-index: -2; overflow: hidden; pointer-events: none; }
 .ambient-light {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: clamp(320px, 68vw, 1000px);
   height: clamp(360px, 88dvh, 960px);
   border-radius: 50%;
   background: radial-gradient(ellipse, rgba(255, 255, 255, .22), rgba(255, 255, 255, .08) 35%, transparent 70%);
 }
-.ambient-light-left { left: -28%; top: 9%; transform: translate(10%, -2%); }
-.ambient-light-right { right: -30%; bottom: -12%; opacity: .7; transform: translate(-8%, 0); }
 @media (prefers-contrast: more) {
   .hero-atmosphere, .grain-particles { display: none; }
 }

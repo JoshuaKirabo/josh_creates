@@ -122,13 +122,84 @@ function createGrainParticles(canvas) {
   };
 }
 
+// Independent, critically damped X/Y springs preserve velocity when the cursor reverses.
+function createCursorGlow(glow) {
+  if (!glow) return { setActive() {} };
+  const position = { x: 0, y: 0 };
+  const target = { x: 0, y: 0 };
+  const velocity = { x: 0, y: 0 };
+  const omega = 2 * Math.PI / .4; // Apple-style response 0.4 s, damping ratio 1.
+  let active = false;
+  let frame = null;
+  let previousTime = 0;
+
+  function paint() {
+    glow.style.transform = `translate3d(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px), 0)`;
+  }
+  function tick(now) {
+    frame = null;
+    if (!active) return;
+    const dt = previousTime ? Math.min((now - previousTime) / 1000, .064) : 0;
+    previousTime = now;
+    const decay = Math.exp(-omega * dt);
+    let settled = true;
+    for (const axis of ['x', 'y']) {
+      const delta = position[axis] - target[axis];
+      const change = (velocity[axis] + omega * delta) * dt;
+      position[axis] = target[axis] + (delta + change) * decay;
+      velocity[axis] = (velocity[axis] - omega * change) * decay;
+      if (Math.abs(position[axis] - target[axis]) > .1 || Math.abs(velocity[axis]) > .1) settled = false;
+    }
+    if (settled) {
+      position.x = target.x;
+      position.y = target.y;
+      velocity.x = velocity.y = 0;
+    }
+    paint();
+    if (!settled) frame = requestAnimationFrame(tick);
+  }
+  function wake() {
+    if (!active || frame !== null) return;
+    previousTime = 0;
+    frame = requestAnimationFrame(tick);
+  }
+  function recenter() {
+    target.x = target.y = 0;
+    wake();
+  }
+  hero.addEventListener('pointermove', (event) => {
+    if (!active || event.pointerType === 'touch') return;
+    const bounds = hero.getBoundingClientRect();
+    target.x = event.clientX - bounds.left - bounds.width / 2;
+    target.y = event.clientY - bounds.top - bounds.height / 2;
+    wake();
+  }, { passive: true });
+  hero.addEventListener('pointerleave', recenter, { passive: true });
+  window.addEventListener('blur', recenter);
+  window.addEventListener('resize', recenter, { passive: true });
+  return {
+    setActive(value) {
+      if (active === value) return;
+      active = value;
+      if (!active) {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
+        position.x = position.y = target.x = target.y = velocity.x = velocity.y = 0;
+        paint();
+      }
+    }
+  };
+}
+
 const grainParticles = createGrainParticles(hero.querySelector('.grain-particles'));
+const cursorGlow = createCursorGlow(hero.querySelector('.ambient-light'));
 const increasedContrast = window.matchMedia('(prefers-contrast: more)');
 let heroIsVisible = true;
 function syncAmbientMotion() {
   const playing = heroIsVisible && !document.hidden && !reducedMotion.matches && !increasedContrast.matches;
   hero.dataset.ambientMotion = playing ? 'playing' : 'paused';
   grainParticles.setPlaying(playing);
+  cursorGlow.setActive(playing && finePointer.matches);
 }
 if ('IntersectionObserver' in window) {
   const ambientVisibility = new IntersectionObserver(([entry]) => {
@@ -140,11 +211,13 @@ if ('IntersectionObserver' in window) {
 document.addEventListener('visibilitychange', syncAmbientMotion);
 window.addEventListener('pagehide', () => {
   grainParticles.setPlaying(false);
+  cursorGlow.setActive(false);
   hero.dataset.ambientMotion = 'paused';
 });
 window.addEventListener('pageshow', syncAmbientMotion);
 reducedMotion.addEventListener('change', syncAmbientMotion);
 increasedContrast.addEventListener('change', syncAmbientMotion);
+finePointer.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
 
 // Text scrambles into its final position on the shared entrance clock.
