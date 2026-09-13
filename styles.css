@@ -31,7 +31,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
 .external-arrow { font-size: .875rem; }
 .portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; transform: translate3d(var(--portrait-x, 0px), 0, 0); transition: transform 1.2s var(--ease); }
-.portrait { position: absolute; bottom: 0; left: 50%; width: min(76vw, 1030px); height: 100%; transform: translateX(-50%); object-fit: contain; object-position: center bottom; }
+.portrait { position: absolute; bottom: 0; left: 50%; width: min(76vw, 1030px); height: 100%; transform: translateX(-50%) scale(1.28); transform-origin: center top; object-fit: contain; object-position: center top; }
 .portrait-shade { filter: brightness(.26) saturate(.65); -webkit-mask-image: linear-gradient(transparent 35%, #000 73%); mask-image: linear-gradient(transparent 35%, #000 73%); }
 .hero-content { position: absolute; z-index: 5; bottom: clamp(84px, 9vh, 115px); left: 50%; width: max-content; transform: translateX(-50%); color: var(--white); }
 .eyebrow { margin: 0 0 16px; font-size: .75rem; line-height: 1.4; }
@@ -103,7 +103,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .nav-group-right .nav-link { font-size: .75rem; }
   .external-arrow { display: none; }
   .portrait-stage { top: 160px; }
-  .portrait { width: 132%; max-width: none; height: 100%; object-fit: contain; }
+  .portrait { width: 132%; max-width: none; height: 100%; object-fit: contain; transform: translateX(-50%) scale(1.18); }
   .portrait-shade { -webkit-mask-image: linear-gradient(transparent 22%, #000 67%); mask-image: linear-gradient(transparent 22%, #000 67%); }
   .hero-content { top: auto; bottom: 83px; left: 50%; }
   .eyebrow { margin-bottom: 13px; font-size: .75rem; }
