@@ -60,8 +60,9 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
   --masthead-size: min(28vw, 40dvh);
 }
 .wordmark { position: absolute; top: max(8px, env(safe-area-inset-top)); left: 1.3%; width: 97.4%; text-align: center; color: transparent; -webkit-text-stroke: clamp(1px, .12vw, 2px) var(--accent); font-family: 'Unbounded Outline', Arial, sans-serif; font-size: var(--masthead-size); line-height: .88; font-weight: 700; letter-spacing: -.055em; white-space: nowrap; user-select: none; transform: scaleY(1.25); transform-origin: center top; }
-.site-header { position: absolute; top: calc(max(8px, env(safe-area-inset-top)) + var(--masthead-size) * 1.06); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); display: flex; justify-content: space-between; align-items: center; z-index: 4; gap: 24px; }
+.site-header { position: absolute; top: calc(max(8px, env(safe-area-inset-top)) + var(--masthead-size) * 1.06); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); display: flex; justify-content: space-between; align-items: center; z-index: 4; gap: 24px; flex-wrap: wrap; }
 .nav-group { display: flex; align-items: center; gap: 15px; }
+.nav-group-right { margin-left: auto; }
 .nav-link, .small-label { font-size: .8125rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
 .nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Bounded', Arial, sans-serif; font-size: 1.125rem; font-weight: 300; letter-spacing: -.01em; white-space: nowrap; }
 .nav-label { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
@@ -117,13 +118,11 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .text-link:hover { color: var(--accent); }
 @media (max-width: 1100px) {
   .nav-group { gap: 11px; }
-  .nav-group-right .small-label, .nav-group-right .nav-divider { display: none; }
 }
 @media (max-width: 700px) {
   :root { --edge: 20px; }
   .hero { --masthead-size: min(28vw, 24dvh); }
   .site-header { gap: 4px 12px; flex-wrap: wrap; }
-  .nav-group-right { margin-left: auto; }
   .nav-group { gap: 10px; }
   .nav-link { font-size: .9375rem; }
   .portrait-stage { top: calc(var(--masthead-size) * 1.06 + 56px); }

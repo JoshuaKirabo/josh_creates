@@ -144,13 +144,16 @@ document.querySelectorAll('.nav-link').forEach((link) => {
   const label = link.querySelector('.nav-label');
   if (!label) return;
   const text = label.textContent;
-  link.setAttribute('aria-label', text.trim());
-  label.setAttribute('aria-hidden', 'true');
+  if (link.matches('a, button')) {
+    link.setAttribute('aria-label', text.trim());
+    label.setAttribute('aria-hidden', 'true');
+  }
   const copy = document.createElement('span');
   copy.className = 'scramble-text';
   copy.textContent = text;
   const layer = document.createElement('span');
   layer.className = 'scramble-layer';
+  layer.setAttribute('aria-hidden', 'true');
   label.replaceChildren(copy, layer);
   let frame;
 
