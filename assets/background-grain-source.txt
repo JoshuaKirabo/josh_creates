@@ -1,4 +1,4 @@
-Fine monochrome grain tile from the user-selected Armory reference.
+Original monochrome grain tile from the user-selected Armory reference.
 Reference: https://armory.framer.ai/
 Asset: https://framerusercontent.com/images/6mcf62RlDfRfU61Yg5vb2pefpi4.png
-Used as a repeating decorative background at 28% opacity and a 120px tile size. The tile remains fixed. A separate canvas animates independent grains around individual anchors; reduced motion keeps those grains still. The original reference used 13% opacity.
+Retained as a source asset only. The repeating texture is no longer rendered. The background now uses brighter, independently moving canvas particles with larger travel; reduced motion keeps them still.

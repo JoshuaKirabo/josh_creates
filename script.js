@@ -41,15 +41,15 @@ function createGrainParticles(canvas) {
     canvas.width = Math.round(width * ratio);
     canvas.height = Math.round(height * ratio);
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    const count = Math.min(4800, Math.round(width * height / 230));
+    const count = Math.min(3600, Math.round(width * height / 320));
     particles.length = Math.min(particles.length, count);
     while (particles.length < count) {
       particles.push({
         x: Math.random(), y: Math.random(),
         phaseX: Math.random() * Math.PI * 2, phaseY: Math.random() * Math.PI * 2,
-        speedX: .5 + Math.random(), speedY: .4 + Math.random(),
-        rangeX: 4 + Math.random() * 10, rangeY: 3 + Math.random() * 8,
-        size: .6 + Math.random() * .65, alpha: .14 + Math.random() * .24
+        speedX: .7 + Math.random() * 1.2, speedY: .65 + Math.random() * 1.1,
+        rangeX: 14 + Math.random() * 26, rangeY: 12 + Math.random() * 22,
+        size: 1 + Math.random() * .8, alpha: .26 + Math.random() * .28
       });
     }
     draw();
@@ -59,13 +59,10 @@ function createGrainParticles(canvas) {
     frame = null;
     if (!playing) return;
     if (!previousTime) previousTime = now;
-    const delta = now - previousTime;
-    // Fine grain needs only 30 updates per second; cap elapsed time after interruptions.
-    if (delta >= 1000 / 30) {
-      elapsed += Math.min(delta, 64) / 1000;
-      previousTime = now;
-      draw();
-    }
+    // Draw at the display cadence so the wider particle travel stays smooth.
+    elapsed += Math.min(now - previousTime, 64) / 1000;
+    previousTime = now;
+    draw();
     frame = requestAnimationFrame(tick);
   }
 
