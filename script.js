@@ -137,45 +137,117 @@ document.querySelectorAll('[data-year]').forEach((element) => {
   element.textContent = String(new Date().getFullYear());
 });
 
-// Roll each word upward once per entry, keeping a stable accessible link name.
-const navAnimations = new Map();
+// Kisaka's service headings: a short scramble radiates from the entry point.
+// The original text keeps its exact typography and accessible name throughout.
+const resetHoverEffects = [];
 document.querySelectorAll('.nav-link').forEach((link) => {
   const label = link.querySelector('.nav-label');
-  if (!label || typeof label.animate !== 'function') return;
-
+  if (!label) return;
   const text = label.textContent;
   link.setAttribute('aria-label', text.trim());
   label.setAttribute('aria-hidden', 'true');
-  const words = [];
-  label.replaceChildren(...text.split(/(\s+)/).map((part) => {
-    if (/^\s+$/.test(part)) return document.createTextNode(part);
-    const word = document.createElement('span');
-    word.className = 'nav-word';
-    word.textContent = part;
-    word.dataset.word = part;
-    words.push(word);
-    return word;
-  }));
+  const copy = document.createElement('span');
+  copy.className = 'scramble-text';
+  copy.textContent = text;
+  const layer = document.createElement('span');
+  layer.className = 'scramble-layer';
+  label.replaceChildren(copy, layer);
+  let frame;
 
-  function rollWords() {
-    if (reducedMotion.matches) return;
-    // Let quick re-entry finish the current roll without snapping the text.
-    if (navAnimations.get(link)?.some((animation) => animation.playState === 'running')) return;
-    navAnimations.set(link, words.map((word, index) => word.animate(
-      [{ transform: 'translateY(0)' }, { transform: 'translateY(-100%)' }],
-      { duration: 500, delay: index * 50, easing: 'cubic-bezier(.215, .61, .355, 1)' }
-    )));
+  function reset() {
+    cancelAnimationFrame(frame);
+    frame = null;
+    label.classList.remove('is-scrambling');
+    layer.replaceChildren();
   }
+  resetHoverEffects.push(reset);
 
+  function scramble(event) {
+    if (reducedMotion.matches) return;
+    reset();
+    const bounds = label.getBoundingClientRect();
+    const range = document.createRange();
+    let offset = 0;
+    let origin = 0;
+    let nearest = Infinity;
+    // Measure the unchanged text each time so font loading and resizing stay safe.
+    const characters = Array.from(text, (real, index) => {
+      range.setStart(copy.firstChild, offset);
+      offset += real.length;
+      range.setEnd(copy.firstChild, offset);
+      const rect = range.getBoundingClientRect();
+      const glyph = document.createElement('span');
+      glyph.className = 'scramble-char';
+      glyph.textContent = real;
+      glyph.style.left = `${rect.left - bounds.left}px`;
+      glyph.style.width = `${rect.width}px`;
+      if (event && /[a-z]/i.test(real)) {
+        const distance = Math.hypot(rect.left + rect.width / 2 - event.clientX,
+          rect.top + rect.height / 2 - event.clientY);
+        if (distance < nearest) { nearest = distance; origin = index; }
+      }
+      return { glyph, real, animated: /[a-z]/i.test(real), lastSwap: -Infinity };
+    });
+    layer.replaceChildren(...characters.map(({ glyph }) => glyph));
+    label.classList.add('is-scrambling');
+    const started = performance.now();
+    function tick(now) {
+      let complete = true;
+      characters.forEach((character, index) => {
+        if (!character.animated) return;
+        const elapsed = now - started - 28 * Math.abs(index - origin);
+        if (elapsed < 0) { complete = false; return; }
+        if (elapsed < 260) {
+          if (now - character.lastSwap > 45) {
+            character.glyph.textContent = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)];
+            character.lastSwap = now;
+          }
+          complete = false;
+        } else {
+          character.glyph.textContent = character.real;
+        }
+      });
+      if (complete) reset();
+      else frame = requestAnimationFrame(tick);
+    }
+    frame = requestAnimationFrame(tick);
+  }
   link.addEventListener('pointerenter', (event) => {
-    if (event.pointerType !== 'touch' && finePointer.matches) rollWords();
+    if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
   });
   link.addEventListener('focus', () => {
-    if (link.matches(':focus-visible')) rollWords();
+    if (link.matches(':focus-visible')) scramble();
   });
 });
-reducedMotion.addEventListener('change', () => {
-  if (!reducedMotion.matches) return;
-  navAnimations.forEach((animations) => animations.forEach((animation) => animation.cancel()));
-  navAnimations.clear();
+
+// Kisaka's descriptions roll word by word behind a mask, including on focus.
+document.querySelectorAll('.button-label').forEach((label) => {
+  const text = label.textContent;
+  label.closest('a').setAttribute('aria-label', text.trim());
+  label.setAttribute('aria-hidden', 'true');
+  let wordIndex = 0;
+  label.replaceChildren(...text.split(/(\s+)/).map((part) => {
+    if (/^\s+$/.test(part)) return document.createTextNode(part);
+    const clip = document.createElement('span');
+    clip.className = 'button-roll-word';
+    clip.style.setProperty('--roll-delay', `${Math.min(wordIndex++ * 22, 176)}ms`);
+    const track = document.createElement('span');
+    track.className = 'button-roll-track';
+    for (let index = 0; index < 2; index++) {
+      const copy = document.createElement('span');
+      copy.textContent = part;
+      track.appendChild(copy);
+    }
+    clip.appendChild(track);
+    return clip;
+  }));
 });
+
+function resetHoverMotion() {
+  resetHoverEffects.forEach((reset) => reset());
+}
+window.addEventListener('resize', resetHoverMotion, { passive: true });
+window.addEventListener('pagehide', resetHoverMotion);
+reducedMotion.addEventListener('change', resetHoverMotion);
+finePointer.addEventListener('change', resetHoverMotion);
+document.fonts?.ready.then(resetHoverMotion);
