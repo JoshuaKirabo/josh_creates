@@ -1,11 +1,37 @@
 'use strict';
 
+// Placeholder links remain focusable and interactive without navigating.
+document.querySelectorAll('[data-placeholder-link]').forEach((link) => {
+  link.addEventListener('click', (event) => event.preventDefault());
+});
+
 // Content and navigation work without JavaScript. Motion is a small enhancement.
 const hero = document.querySelector('.hero');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-// Same entrance choreography as the reference, using the browser animation API.
+// Ambient motion pauses in hidden tabs and when the hero leaves the viewport.
+// CSS retains the current frame on pause, so resuming never restarts the drift.
+let heroIsVisible = true;
+function syncAmbientMotion() {
+  hero.dataset.ambientMotion = heroIsVisible && !document.hidden && !reducedMotion.matches
+    ? 'playing' : 'paused';
+}
+if ('IntersectionObserver' in window) {
+  const ambientVisibility = new IntersectionObserver(([entry]) => {
+    heroIsVisible = entry.isIntersecting;
+    syncAmbientMotion();
+  });
+  ambientVisibility.observe(hero);
+}
+document.addEventListener('visibilitychange', syncAmbientMotion);
+window.addEventListener('pagehide', () => { hero.dataset.ambientMotion = 'paused'; });
+window.addEventListener('pageshow', syncAmbientMotion);
+reducedMotion.addEventListener('change', syncAmbientMotion);
+syncAmbientMotion();
+
+
+// Text scrambles into its final position on the shared entrance clock.
 async function playIntro() {
   const root = document.documentElement;
   if (!root.classList.contains('intro-pending')) return;
@@ -15,11 +41,14 @@ async function playIntro() {
   let clone;
   let finished = false;
   let readyTimeout;
+  const scrambleTimers = [];
   const finish = () => {
     if (finished) return;
     finished = true;
     clearTimeout(window.introFallback);
     clearTimeout(readyTimeout);
+    scrambleTimers.forEach(clearTimeout);
+    introScrambles.forEach((effect) => effect.reset());
     root.classList.remove('intro-pending');
     animations.forEach((animation) => animation.cancel());
     clone?.remove();
@@ -50,7 +79,7 @@ async function playIntro() {
     if (finished) return;
     if (reducedMotion.matches || window.scrollY > 24 || location.hash) return finish();
 
-    // A temporary copy lets the letters rise without changing the final typography.
+    // Preserve the original JOSH entrance with rising letters and a moving wordmark.
     clone = wordmark.cloneNode(false);
     clone.classList.add('intro-wordmark');
     clone.replaceChildren(...Array.from(wordmark.textContent, (letter) => {
@@ -90,7 +119,16 @@ async function playIntro() {
       { opacity: 1, scale: '1', filter: 'blur(0px)' }
     ], delay, duration);
 
-    // Move the full-size name in, then lift it into its existing position.
+    const scrambleIn = (label, delay, fadeDuration = 0) => {
+      const effect = introScrambles.get(label);
+      const duration = Math.max(effect.duration + 60, fadeDuration);
+      const fadeOffset = fadeDuration ? fadeDuration / duration : .001;
+      animate(label, [{ opacity: 0 }, { opacity: 1, offset: fadeOffset }, { opacity: 1 }],
+        delay, duration, 'linear');
+      scrambleTimers.push(setTimeout(() => {
+        if (!finished) effect.scramble();
+      }, Math.max(0, startTime + delay - document.timeline.currentTime)));
+    };
     animate(clone, [
       { translate: `${window.innerWidth}px ${centerY}px`, offset: 0, easing: powerEase(4, true) },
       { translate: `${centerX}px ${centerY}px`, offset: .5, easing: powerEase(3, true) },
@@ -101,28 +139,16 @@ async function playIntro() {
     });
     animate(wordmark, [{ opacity: 0 }, { opacity: 1 }], 2000, 1);
     animate(clone, [{ opacity: 1 }, { opacity: 0 }], 2000, 1);
-
-    const stage = hero.querySelector('.portrait-stage');
-    // Fade the portrait in at its final size and position.
-    animate(stage, [{ opacity: 0 }, { opacity: 1 }], 1400, 1100);
+    reveal(hero.querySelector('.portrait-stage'), 1400, 1100);
     hero.querySelectorAll('.hero-heading-line').forEach((line, index) => {
       reveal(line, 1700 + index * 100, 1000, .9, 10);
     });
-    reveal(hero.querySelector('.site-header'), 2000, 400);
-    hero.querySelectorAll('.nav-label').forEach((label) => {
-      // translate is separate from the word transforms used by the hover animation.
-      animate(label, [{ clipPath: 'inset(100% 0 0)', translate: '0 100%' },
-        { clipPath: 'inset(0% 0 0)', translate: '0 0%' }], 2000, 400);
-    });
-    hero.querySelectorAll('.nav-divider').forEach((divider) => {
-      animate(divider, [{ scale: '1 0' }, { scale: '1 1' }], 2000, 200);
-    });
+    reveal(hero.querySelector('.site-header'), 2000, 700);
+    hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
     reveal(hero.querySelector('.hero-content .button'), 2650, 800, .94, 10);
-    hero.querySelectorAll('.hero-footer > *').forEach((element, index) => {
-      animate(element, [
-        { opacity: 0, translate: '0 100%', filter: 'blur(6px)' },
-        { opacity: 1, translate: '0 0%', filter: 'blur(0px)' }
-      ], 3050 + index * 100, 700);
+    scrambleIn(hero.querySelector('.signature'), 3050, 700);
+    hero.querySelectorAll('.hero-footer > :not(.signature)').forEach((element, index) => {
+      reveal(element, 3150 + index * 100, 400);
     });
     await Promise.all(animations.map((animation) => animation.finished));
     finish();
@@ -131,7 +157,6 @@ async function playIntro() {
     finish();
   }
 }
-playIntro();
 
 document.querySelectorAll('[data-year]').forEach((element) => {
   element.textContent = String(new Date().getFullYear());
@@ -140,14 +165,8 @@ document.querySelectorAll('[data-year]').forEach((element) => {
 // Kisaka's service headings: a short scramble radiates from the entry point.
 // The original text keeps its exact typography and accessible name throughout.
 const resetHoverEffects = [];
-document.querySelectorAll('.nav-link').forEach((link) => {
-  const label = link.querySelector('.nav-label');
-  if (!label) return;
+function createScramble(label) {
   const text = label.textContent;
-  if (link.matches('a, button')) {
-    link.setAttribute('aria-label', text.trim());
-    label.setAttribute('aria-hidden', 'true');
-  }
   const copy = document.createElement('span');
   copy.className = 'scramble-text';
   copy.textContent = text;
@@ -156,18 +175,25 @@ document.querySelectorAll('.nav-link').forEach((link) => {
   layer.setAttribute('aria-hidden', 'true');
   label.replaceChildren(copy, layer);
   let frame;
+  let restingNodes;
 
   function reset() {
     cancelAnimationFrame(frame);
     frame = null;
     label.classList.remove('is-scrambling');
     layer.replaceChildren();
+    if (restingNodes) {
+      copy.replaceChildren(...restingNodes);
+      restingNodes = null;
+    }
   }
   resetHoverEffects.push(reset);
 
   function scramble(event) {
     if (reducedMotion.matches) return;
     reset();
+    restingNodes = Array.from(copy.childNodes);
+    copy.textContent = text;
     const bounds = label.getBoundingClientRect();
     const range = document.createRange();
     let offset = 0;
@@ -215,35 +241,28 @@ document.querySelectorAll('.nav-link').forEach((link) => {
     }
     frame = requestAnimationFrame(tick);
   }
+  return { scramble, reset, duration: text.length * 28 + 260 };
+}
+
+const introScrambles = new Map();
+hero.querySelectorAll('.hero-heading-line, .nav-label, .signature').forEach((label) => {
+  label.classList.add('scramble-label');
+  introScrambles.set(label, createScramble(label));
+});
+document.querySelectorAll('.nav-link').forEach((link) => {
+  const label = link.querySelector('.nav-label');
+  if (!label) return;
+  if (link.matches('a, button')) {
+    link.setAttribute('aria-label', label.textContent.trim());
+    label.setAttribute('aria-hidden', 'true');
+  }
+  const { scramble } = introScrambles.get(label);
   link.addEventListener('pointerenter', (event) => {
     if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
   });
   link.addEventListener('focus', () => {
     if (link.matches(':focus-visible')) scramble();
   });
-});
-
-// Kisaka's descriptions roll word by word behind a mask, including on focus.
-document.querySelectorAll('.button-label').forEach((label) => {
-  const text = label.textContent;
-  label.closest('a').setAttribute('aria-label', text.trim());
-  label.setAttribute('aria-hidden', 'true');
-  let wordIndex = 0;
-  label.replaceChildren(...text.split(/(\s+)/).map((part) => {
-    if (/^\s+$/.test(part)) return document.createTextNode(part);
-    const clip = document.createElement('span');
-    clip.className = 'button-roll-word';
-    clip.style.setProperty('--roll-delay', `${Math.min(wordIndex++ * 22, 176)}ms`);
-    const track = document.createElement('span');
-    track.className = 'button-roll-track';
-    for (let index = 0; index < 2; index++) {
-      const copy = document.createElement('span');
-      copy.textContent = part;
-      track.appendChild(copy);
-    }
-    clip.appendChild(track);
-    return clip;
-  }));
 });
 
 function resetHoverMotion() {
@@ -254,3 +273,5 @@ window.addEventListener('pagehide', resetHoverMotion);
 reducedMotion.addEventListener('change', resetHoverMotion);
 finePointer.addEventListener('change', resetHoverMotion);
 document.fonts?.ready.then(resetHoverMotion);
+
+playIntro();
