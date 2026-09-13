@@ -10,12 +10,86 @@ const hero = document.querySelector('.hero');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-// Ambient motion pauses in hidden tabs and when the hero leaves the viewport.
-// CSS retains the current frame on pause, so resuming never restarts the drift.
+// Each grain has its own anchor, range, phase, and speed. Nothing pans as a layer.
+function createGrainParticles(canvas) {
+  const context = canvas?.getContext('2d');
+  if (!context) return { setPlaying() {} };
+  let particles = [];
+  let width = 0;
+  let height = 0;
+  let elapsed = 0;
+  let frame = null;
+  let previousTime = 0;
+  let playing = false;
+
+  function draw() {
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = '#fff';
+    for (const grain of particles) {
+      const x = grain.x * width + Math.sin(elapsed * grain.speedX + grain.phaseX) * grain.rangeX;
+      const y = grain.y * height + Math.sin(elapsed * grain.speedY + grain.phaseY) * grain.rangeY;
+      context.globalAlpha = grain.alpha;
+      context.fillRect(x, y, grain.size, grain.size);
+    }
+    context.globalAlpha = 1;
+  }
+
+  function resize() {
+    width = hero.clientWidth;
+    height = hero.clientHeight;
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    const count = Math.min(4800, Math.round(width * height / 230));
+    particles.length = Math.min(particles.length, count);
+    while (particles.length < count) {
+      particles.push({
+        x: Math.random(), y: Math.random(),
+        phaseX: Math.random() * Math.PI * 2, phaseY: Math.random() * Math.PI * 2,
+        speedX: .5 + Math.random(), speedY: .4 + Math.random(),
+        rangeX: 4 + Math.random() * 10, rangeY: 3 + Math.random() * 8,
+        size: .6 + Math.random() * .65, alpha: .14 + Math.random() * .24
+      });
+    }
+    draw();
+  }
+
+  function tick(now) {
+    frame = null;
+    if (!playing) return;
+    if (!previousTime) previousTime = now;
+    const delta = now - previousTime;
+    // Fine grain needs only 30 updates per second; cap elapsed time after interruptions.
+    if (delta >= 1000 / 30) {
+      elapsed += Math.min(delta, 64) / 1000;
+      previousTime = now;
+      draw();
+    }
+    frame = requestAnimationFrame(tick);
+  }
+
+  resize();
+  if ('ResizeObserver' in window) new ResizeObserver(resize).observe(hero);
+  else window.addEventListener('resize', resize, { passive: true });
+  return {
+    setPlaying(value) {
+      if (playing === value) return;
+      playing = value;
+      previousTime = 0;
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = playing ? requestAnimationFrame(tick) : null;
+    }
+  };
+}
+
+const grainParticles = createGrainParticles(hero.querySelector('.grain-particles'));
+const increasedContrast = window.matchMedia('(prefers-contrast: more)');
 let heroIsVisible = true;
 function syncAmbientMotion() {
-  hero.dataset.ambientMotion = heroIsVisible && !document.hidden && !reducedMotion.matches
-    ? 'playing' : 'paused';
+  const playing = heroIsVisible && !document.hidden && !reducedMotion.matches && !increasedContrast.matches;
+  hero.dataset.ambientMotion = playing ? 'playing' : 'paused';
+  grainParticles.setPlaying(playing);
 }
 if ('IntersectionObserver' in window) {
   const ambientVisibility = new IntersectionObserver(([entry]) => {
@@ -25,11 +99,14 @@ if ('IntersectionObserver' in window) {
   ambientVisibility.observe(hero);
 }
 document.addEventListener('visibilitychange', syncAmbientMotion);
-window.addEventListener('pagehide', () => { hero.dataset.ambientMotion = 'paused'; });
+window.addEventListener('pagehide', () => {
+  grainParticles.setPlaying(false);
+  hero.dataset.ambientMotion = 'paused';
+});
 window.addEventListener('pageshow', syncAmbientMotion);
 reducedMotion.addEventListener('change', syncAmbientMotion);
+increasedContrast.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
-
 
 // Text scrambles into its final position on the shared entrance clock.
 async function playIntro() {
