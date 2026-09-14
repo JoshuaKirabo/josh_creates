@@ -9,6 +9,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Joshua Kirabo — a creative mind bringing ideas to life through design and development.">
   <title>JOSH — Joshua Kirabo</title>
+  <style>
+    /* Paint the screen before fonts, the stylesheet, or the intro are ready. */
+    html { min-height: 100%; background: #060606; color-scheme: dark; }
+    body { margin: 0; isolation: isolate; }
+    .site-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #060606; }
+    .grain-particles { position: absolute; inset: 0; background: url('assets/background-grain.png') center top / 480px auto repeat; }
+    main { position: relative; z-index: 1; }
+    @media (max-width: 700px) {
+      /* Match Safari's solid status tint at the edge, then bring in the grain. */
+      .site-backdrop { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 64px); mask-image: linear-gradient(to bottom, transparent, #000 64px); }
+    }
+  </style>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/josh_portrait_cartoon_bw.png" as="image" fetchpriority="high">
   <link rel="preload" href="assets/fonts/Haval-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -28,14 +40,16 @@
   <script src="script.js" defer></script>
 </head>
 <body>
+  <div class="site-backdrop" aria-hidden="true">
+    <div class="hero-atmosphere"><span class="ambient-light"></span></div>
+    <div class="grain-particles"></div>
+  </div>
   <a class="skip-link" href="#intro">Skip to content</a>
   <main>
     <section class="hero" id="home" aria-label="Joshua Kirabo, creative developer">
-      <div class="hero-atmosphere" aria-hidden="true">
-        <span class="ambient-light"></span>
+      <div class="wordmark-stage" aria-hidden="true">
+        <div class="wordmark">JOSH</div>
       </div>
-      <div class="grain-particles" aria-hidden="true"></div>
-      <div class="wordmark" aria-hidden="true">JOSH</div>
       <header class="site-header">
         <button class="menu-toggle" type="button" aria-controls="mobile-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation">
           <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
@@ -59,6 +73,7 @@
         </div>
       </header>
 
+      <div class="portrait-scroll">
       <div class="portrait-stage">
         <svg class="portrait portrait-cartoon" viewBox="0 0 1015 1549" width="1015" height="1549" role="img" aria-labelledby="portrait-title">
           <title id="portrait-title">Black-and-white cartoon portrait of Joshua Kirabo wearing glasses and a white textured shirt</title>
@@ -83,6 +98,8 @@
             <image filter="url(#portrait-darken)" href="assets/josh_portrait_cartoon_bw.png" width="1015" height="1549" mask="url(#portrait-shading)" />
           </g>
         </svg>
+      </div>
+
       </div>
 
       <div class="hero-content" id="intro" tabindex="-1">

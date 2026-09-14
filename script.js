@@ -7,6 +7,7 @@ document.querySelectorAll('[data-placeholder-link]').forEach((link) => {
 
 // Content and navigation work without JavaScript. Motion is a small enhancement.
 const hero = document.querySelector('.hero');
+const backdrop = document.querySelector('.site-backdrop');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
@@ -106,6 +107,25 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
   let revision = 0;
   document.documentElement.classList.add('menu-ready');
 
+  function positionMenuReveal(event) {
+    if (!mobileMenu.open) return;
+    const bounds = mobileMenu.getBoundingClientRect();
+    const button = menuClose.getBoundingClientRect();
+    const x = button.left + button.width / 2 - bounds.left;
+    const y = button.top + button.height / 2 - bounds.top;
+    // Reach the farthest corner from the actual trigger, including safe areas.
+    const radius = Math.hypot(Math.max(x, bounds.width - x), Math.max(y, bounds.height - y));
+    mobileMenu.style.setProperty('--menu-reveal-x', `${x}px`);
+    mobileMenu.style.setProperty('--menu-reveal-y', `${y}px`);
+    mobileMenu.style.setProperty('--menu-reveal-radius', `${Math.ceil(radius) + 1}px`);
+    if (event?.type === 'resize') {
+      // Browser chrome/rotation must never expose a newly enlarged corner while
+      // the circle catches up. Settle only the reveal, leaving icon motion alone.
+      mobileMenu.getAnimations().filter(animation => animation.transitionProperty === 'clip-path')
+        .forEach(animation => animation.finish());
+    }
+  }
+
   function restoreNavigation() {
     homePosition.after(navigationPanel);
     mobileMenu.close();
@@ -123,14 +143,14 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
       dialogHeader.append(navigationPanel);
       document.documentElement.classList.add('menu-open');
       mobileMenu.showModal();
+      positionMenuReveal();
       menuClose.focus({ preventScroll: true });
-      // Flush the actual animated properties after showModal. A layout read on
-      // the dialog alone does not reliably establish descendant styles in Safari.
-      mobileMenu.querySelectorAll('.mobile-menu-surface, .menu-icon > span, .nav-link').forEach((element) => {
-        const style = getComputedStyle(element);
-        void style.opacity;
-        void style.transform;
-      });
+      if (!instant && !document.documentElement.classList.contains('menu-keyboard')) {
+        // Paint the closed pose in the top layer before changing it. Reading
+        // styles in the same task as showModal can still skip the first transition.
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        if (currentRevision !== revision) return;
+      }
     }
     mobileMenu.classList.toggle('is-open', open);
     if (open || !mobileMenu.open) return;
@@ -141,8 +161,9 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
     if (currentRevision === revision && !menuOpen) restoreNavigation();
   }
 
-  function toggleMenu(event) {
-    document.documentElement.classList.toggle('menu-keyboard', event.detail === 0);
+  function toggleMenu() {
+    // A touch-generated click can have detail=0. Only real keyboard input should
+    // disable motion; pointerdown/keydown below track that independently.
     setMenuOpen(!menuOpen);
   }
   menuToggle.addEventListener('click', toggleMenu);
@@ -156,9 +177,11 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
   });
   document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
   document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
+  document.addEventListener('touchstart', () => document.documentElement.classList.remove('menu-keyboard'), { capture: true, passive: true });
   mobileNavigation.addEventListener('change', () => {
     if (!mobileNavigation.matches) setMenuOpen(false, true);
   });
+  window.addEventListener('resize', positionMenuReveal, { passive: true });
 }
 
 // Paint the grain once. Only sparse particle layers move; the fine texture stays anchored.
@@ -231,11 +254,11 @@ function createGrainParticles(container) {
 
   function resize() {
     const nextHighDetail = finePointer.matches;
-    const nextWidth = hero.clientWidth;
+    const nextWidth = container.clientWidth;
     // Reserve the touch screen's full height so Safari's toolbar does not rebuild
     // the grain as it expands and collapses. The container clips the spare area.
-    const nextHeight = nextHighDetail ? hero.clientHeight :
-      Math.max(hero.clientHeight, window.screen?.height || 0);
+    const nextHeight = nextHighDetail ? container.clientHeight :
+      Math.max(container.clientHeight, window.screen?.height || 0);
     if (width === nextWidth && height === nextHeight && highDetail === nextHighDetail) return;
     width = nextWidth;
     height = nextHeight;
@@ -248,6 +271,8 @@ function createGrainParticles(container) {
   }
 
   resize();
+  // Keep the static texture until the canvas has actually been painted.
+  container.classList.add('is-painted');
   layers.forEach(({ canvas, drift }) => {
     if (!drift) return;
     // Equal-and-opposite rotations describe a continuous orbit without rotating
@@ -278,7 +303,7 @@ function createGrainParticles(container) {
     if (!settled) rampFrame = requestAnimationFrame(ramp);
   }
 
-  if ('ResizeObserver' in window) new ResizeObserver(resize).observe(hero);
+  if ('ResizeObserver' in window) new ResizeObserver(resize).observe(container);
   else window.addEventListener('resize', resize, { passive: true });
   finePointer.addEventListener('change', resize);
   return {
@@ -369,8 +394,8 @@ function createCursorGlow(glow) {
   };
 }
 
-const grainParticles = createGrainParticles(hero.querySelector('.grain-particles'));
-const cursorGlow = createCursorGlow(hero.querySelector('.ambient-light'));
+const grainParticles = createGrainParticles(backdrop.querySelector('.grain-particles'));
+const cursorGlow = createCursorGlow(backdrop.querySelector('.ambient-light'));
 const increasedContrast = window.matchMedia('(prefers-contrast: more)');
 let heroIsVisible = true;
 let pageIsActive = true;
@@ -378,7 +403,7 @@ function syncAmbientMotion() {
   // Prepainted layers can drift during the entrance without a canvas render loop.
   const playing = heroIsVisible && pageIsActive && !document.hidden && !reducedMotion.matches &&
     !increasedContrast.matches;
-  hero.dataset.ambientMotion = playing ? 'playing' : 'paused';
+  backdrop.dataset.ambientMotion = playing ? 'playing' : 'paused';
   grainParticles.setPlaying(playing);
   cursorGlow.setActive(playing && finePointer.matches && !document.documentElement.classList.contains('intro-pending'));
 }
@@ -403,6 +428,41 @@ increasedContrast.addEventListener('change', syncAmbientMotion);
 finePointer.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
 
+// Native scroll timelines own the effect when available. Older browsers use a
+// single passive, frame-coalesced update, with no easing loop or scroll hijacking.
+function enableHeroScroll() {
+  if (CSS.supports('animation-timeline: view()')) return;
+  const wordmark = hero.querySelector('.wordmark-stage');
+  const portrait = hero.querySelector('.portrait-scroll');
+  let height = 1;
+  let top = 0;
+  let frame = null;
+  function paint() {
+    frame = null;
+    const progress = Math.min(1, Math.max(0, (window.scrollY - top) / height));
+    const nameProgress = Math.min(1, progress / .45);
+    const portraitProgress = Math.max(0, (progress - .25) / .75);
+    wordmark.style.opacity = String(1 - nameProgress);
+    portrait.style.opacity = String(1 - portraitProgress);
+    wordmark.style.transform = reducedMotion.matches ? 'none' : `translateY(${nameProgress * 14}%)`;
+    portrait.style.transform = reducedMotion.matches ? 'none' : `translateY(${portraitProgress * 12}%)`;
+  }
+  function schedule() {
+    if (frame === null) frame = requestAnimationFrame(paint);
+  }
+  function measure() {
+    height = Math.max(1, hero.clientHeight);
+    top = hero.getBoundingClientRect().top + window.scrollY;
+    schedule();
+  }
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', measure, { passive: true });
+  window.addEventListener('pageshow', measure);
+  reducedMotion.addEventListener('change', schedule);
+  measure();
+}
+enableHeroScroll();
+
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
   const root = document.documentElement;
@@ -412,11 +472,12 @@ async function playIntro() {
   const animations = [];
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = window.innerHeight;
-  const skipEvents = ['orientationchange', 'pagehide', 'wheel', 'touchstart', 'keydown', 'focusin'];
+  const skipEvents = ['orientationchange', 'pagehide', 'wheel', 'touchstart', 'scroll', 'keydown', 'focusin'];
   let clone;
   let finished = false;
   let readyTimeout;
   let socialTimer;
+  let endSettlement;
   const scrambleTimers = [];
   const revealSocials = (instant = false) => {
     if (!root.classList.contains('socials-pending')) return;
@@ -426,8 +487,20 @@ async function playIntro() {
     setTimeout(() => root.classList.remove('socials-revealing'), 300);
   };
   const finish = (event) => {
-    if (finished) return;
+    if (finished) {
+      if (event && !['wheel', 'touchstart', 'scroll'].includes(event.type)) endSettlement?.();
+      return;
+    }
     finished = true;
+    const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
+    const elements = [...hero.querySelectorAll('.wordmark:not(.intro-wordmark), .portrait-stage, .hero-heading-line, .hero-content .button, .site-header, .signature')];
+    // Read the currently painted poses before cancelling the shared intro clock.
+    const poses = settle ? elements.map(element => ({ element, opacity: getComputedStyle(element).opacity })) : [];
+    const clonePose = settle && clone ? {
+      opacity: getComputedStyle(clone).opacity,
+      transform: getComputedStyle(clone).transform,
+      letters: [...clone.children].map(element => ({ element, transform: getComputedStyle(element).transform }))
+    } : null;
     clearTimeout(window.introFallback);
     clearTimeout(readyTimeout);
     clearTimeout(socialTimer);
@@ -436,13 +509,49 @@ async function playIntro() {
     root.classList.remove('intro-pending');
     revealSocials(event?.type === 'keydown' || event?.type === 'focusin' || event?.type === 'pagehide');
     animations.forEach((animation) => animation.cancel());
-    clone?.remove();
     skipEvents.forEach((event) => {
       window.removeEventListener(event, finish);
     });
     window.removeEventListener('resize', onResize);
     reducedMotion.removeEventListener('change', finish);
     syncAmbientMotion();
+    if (!settle) {
+      clone?.remove();
+      return;
+    }
+    // A scroll finishes the name's travel from its current pose. It never swaps
+    // mid-flight for a static logo; the scroll wrapper remains independently live.
+    const settling = [];
+    const easing = getComputedStyle(root).getPropertyValue('--ease-out').trim();
+    const bridge = (element, keyframes) => {
+      const animation = element.animate(keyframes, { duration: 250, easing, fill: 'both' });
+      settling.push(animation);
+    };
+    const movingName = clonePose && Number(clonePose.opacity) > .01;
+    poses.forEach(({ element, opacity }) => {
+      bridge(element, [{ opacity }, { opacity: movingName && element === wordmark ? 0 : 1 }]);
+    });
+    if (movingName) {
+      bridge(clone, [
+        { opacity: clonePose.opacity, transform: clonePose.transform },
+        { opacity: 1, transform: getComputedStyle(wordmark).transform }
+      ]);
+      clonePose.letters.forEach(({ element, transform }) => {
+        bridge(element, [{ transform }, { transform: 'translateY(0)' }]);
+      });
+    } else clone?.remove();
+    endSettlement = () => {
+      settling.forEach(animation => animation.cancel());
+      clone?.remove();
+      window.removeEventListener('keydown', finish);
+      window.removeEventListener('pagehide', finish);
+      reducedMotion.removeEventListener('change', finish);
+      endSettlement = null;
+    };
+    window.addEventListener('keydown', finish, { once: true });
+    window.addEventListener('pagehide', finish, { once: true });
+    reducedMotion.addEventListener('change', finish, { once: true });
+    Promise.allSettled(settling.map(animation => animation.finished)).then(() => endSettlement?.());
   };
   const onResize = () => {
     // Mobile refresh and browser chrome can emit resize without changing the layout width.
@@ -502,11 +611,8 @@ async function playIntro() {
       animations.push(animation);
       return animation;
     };
-    const reveal = (element, delay, duration, scale = 1) => animate(element,
-      scale === 1 ? [{ opacity: 0 }, { opacity: 1 }] : [
-        { opacity: 0, transform: `scale(${scale})` },
-        { opacity: 1, transform: 'scale(1)' }
-      ], delay, duration);
+    const reveal = (element, delay, duration) => animate(element,
+      [{ opacity: 0 }, { opacity: 1 }], delay, duration);
 
     const scrambleIn = (label, delay, fadeDuration = 0) => {
       // Closed mobile-menu links have no visible glyphs to scramble. On touch,
@@ -536,11 +642,11 @@ async function playIntro() {
     animate(clone, [{ opacity: 1 }, { opacity: 0 }], 2000, 1);
     reveal(hero.querySelector('.portrait-stage'), 1400, 1100);
     hero.querySelectorAll('.hero-heading-line').forEach((line, index) => {
-      reveal(line, 1700 + index * 100, 1000, .9);
+      reveal(line, 1700 + index * 100, 1000);
     });
     reveal(hero.querySelector('.site-header'), 2000, 700);
     hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
-    reveal(hero.querySelector('.hero-content .button'), 2650, 800, .94);
+    reveal(hero.querySelector('.hero-content .button'), 2650, 800);
     scrambleIn(hero.querySelector('.signature'), 3050, 700);
     // Independent CSS transitions also reveal smoothly when touch skips the intro.
     socialTimer = setTimeout(() => revealSocials(),

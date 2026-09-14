@@ -9,9 +9,11 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
 
-The homepage follows the available viewport height, including mobile browser controls and safe areas. The navigation, heading, button, and hero footer fit within the first screen. The large portrait is intentionally cropped within the composition. Short landscape screens use a side-by-side layout.
+The homepage uses the stable small viewport height and safe areas, so browser toolbar movement cannot resize its contents. The navigation, heading, button, and hero footer fit within the first screen. The large portrait is intentionally cropped within the composition. Short landscape screens use a side-by-side layout.
 
-The About me link remains between Home and Projects and opens the original About section below the hero. Meet Josh opens the same section. Ask Josh remains on the right as a label for the planned chatbot. Projects and Let’s connect use the existing GitHub destination.
+The decorative background is fixed to the screen outside the hero's clipping. Its static grain and base styles are in the document head so it appears before the animated canvas is ready; the static texture is replaced only after the canvas is painted. On phones, the first 64px blend gently into the same dark color used by Safari's status area, avoiding an abrupt texture boundary. Safari controls the pixels behind its own status icons, so that region still needs checking on an actual iPhone.
+
+Navigation and CTA destinations are currently placeholders. On mobile, the page ends at the copyright line: the retained About section is hidden so a small swipe cannot expose another section below the footer. The About section remains in the desktop layout.
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
@@ -25,7 +27,7 @@ The fine background grain stays anchored. Four sparse particle layers are painte
 
 Touch devices cap each of the five surfaces at 350,000 pixels and the moving particles at 900 total. The canvas reserves the full screen height so mobile browser toolbar changes do not regenerate the texture. Duplicate size notifications do no work. Pausing preserves the current positions, and resuming smoothly accelerates from them. Ambient motion pauses when the hero is offscreen, the page is hidden or navigating away, or reduced motion or increased contrast is enabled.
 
-The static wordmark is restored after the animation. Reduced motion, fragment links and restored scroll positions skip the intro; keyboard, scrolling and resizing finish it immediately. Without JavaScript the page remains visible, and an eight-second fallback prevents loading failures from hiding content.
+The static wordmark is restored after the animation. Reduced motion, fragment links and restored scroll positions skip the intro; keyboard and composition changes finish it immediately; touch or scrolling settles the current wordmark pose and fades in content over 250ms. Without JavaScript the page remains visible, and an eight-second fallback prevents loading failures from hiding content.
 
 ## Hover animation
 
@@ -43,10 +45,20 @@ Reduced motion retains opacity feedback without compression. Increased contrast 
 
 ## Mobile navigation
 
-At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The opening and closing controls occupy the same fixed 48px hit area. The dialog's icon morphs from three lines into a cross over 200ms, without moving the live trigger between containers. Only the hidden navigation links move into the dialog. Their initial styles are resolved before opening so the animation starts reliably across browser engines. Six equally spaced links enter with a subtle 30ms stagger, finishing within 300ms. The black surface fades over 250ms, and every transition can reverse immediately on another tap.
+At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The opening and closing controls occupy the same fixed 48px hit area. The icon morphs into a cross over 250ms while a circular clip-path expands from the center of the hamburger over 280ms with the shared ease-out curve. Its radius is measured to cover the farthest screen corner, including safe areas. The black surface and links share the same circular reveal so text cannot appear outside it. Six equally spaced links rise 24px with a 30ms stagger, finishing within 300ms. Closing reverses the same paths, including during repeated taps.
+
+The dialog paints its closed pose before opening transitions start; computed-style reads in the same task as showModal are not used as a substitute for a painted frame. An interrupted opening is discarded when a newer tap changes the target state. Input modality comes from actual keyboard or pointer events, so touch clicks with a zero click count still animate.
 
 The native dialog contains keyboard focus and makes the page behind it inert; page scrolling is locked until closing finishes. Escape, link selection, and returning to desktop dismiss it. Keyboard actions are immediate, and reduced motion uses a gentle fade. Without dialog support or JavaScript, the inline links remain available.
 
 The social icons enter individually with a 160ms opacity/8px rise transition and 40ms stagger (280ms for the group), using the existing `--ease-out` curve. Their transitions also run when touch skips the main intro, so they no longer appear abruptly. Hit areas remain available during the entrance. Keyboard skips show them immediately; reduced motion removes the rise. Stagger delays apply only during the entrance, preserving immediate touch and hover feedback afterward.
 
 Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s connect. It follows Projects in the mobile menu, using the same placeholder behavior as the existing navigation until its destination is provided.
+
+## Scroll motion
+
+The hero, portrait, heading, and wordmark keep constant dimensions during scrolling. Stable `svh` units prevent mobile browser controls from resizing the composition. The intro heading and button fade in at full size.
+
+Separate wordmark and portrait layers follow native scroll timelines: JOSH gently moves and fades over the first 45% of the hero exit, then the portrait fades between 25% and 100%. Scrolling upward reverses the same progress immediately, without restarting an entrance or waiting on a smoothing loop. The typography’s fixed vertical proportion and portrait centering stay on their inner elements. Older browsers use a passive, frame-coalesced transform/opacity fallback. Reduced motion keeps only the fades.
+
+Scrolling during the opening sequence settles JOSH from its current position to its resting position over 250ms with the shared `--ease-out` curve, then removes the duplicate only after the handoff. It never changes the letter size. Keyboard input remains immediate.
