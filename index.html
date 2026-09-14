@@ -18,9 +18,9 @@
     // Hide only when the browser can run the intro; otherwise show the page normally.
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !location.hash &&
         typeof Element.prototype.animate === 'function') {
-      document.documentElement.classList.add('intro-pending');
+      document.documentElement.classList.add('intro-pending', 'socials-pending');
       window.introFallback = setTimeout(() => {
-        document.documentElement.classList.remove('intro-pending');
+        document.documentElement.classList.remove('intro-pending', 'socials-pending');
       }, 8000);
     }
   </script>
@@ -50,6 +50,8 @@
         </nav>
         <span class="nav-divider nav-divider-mobile" aria-hidden="true"></span>
         <div class="nav-group nav-group-right">
+          <a class="nav-link" href="#" data-placeholder-link><span class="nav-label">Blog</span></a>
+          <span class="nav-divider" aria-hidden="true"></span>
           <a class="nav-link" href="#" data-placeholder-link><span class="nav-label">Ask Josh</span></a>
           <span class="nav-divider" aria-hidden="true"></span>
           <a class="nav-link" href="#" data-placeholder-link><span class="nav-label">Let’s connect</span></a>
@@ -112,6 +114,13 @@
       </div>
     </section>
   </main>
-  <dialog class="mobile-menu" id="mobile-menu" aria-label="Navigation"></dialog>
+  <dialog class="mobile-menu" id="mobile-menu" aria-label="Navigation">
+    <div class="mobile-menu-surface" aria-hidden="true"></div>
+    <div class="site-header">
+      <button class="menu-toggle menu-close" type="button" aria-label="Close navigation">
+        <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+    </div>
+  </dialog>
 </body>
 </html>

@@ -91,22 +91,24 @@ function enableTouchFeedback() {
 }
 enableTouchFeedback();
 
-// The same header moves into a native modal: one toggle, one set of links.
-const menuToggle = document.querySelector('.menu-toggle');
+// Keep both controls anchored. Only the hidden links move into the native dialog;
+// reparenting the live hamburger used to interrupt its press/morph on mobile.
+const menuToggle = document.querySelector('.hero .menu-toggle');
+const menuClose = document.querySelector('.menu-close');
 const navigationPanel = document.querySelector('.navigation-panel');
 const mobileMenu = document.querySelector('.mobile-menu');
 const mobileNavigation = window.matchMedia('(max-width: 700px)');
-if (menuToggle && navigationPanel && typeof mobileMenu?.showModal === 'function') {
-  const header = menuToggle.closest('.site-header');
+if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal === 'function') {
+  const dialogHeader = mobileMenu.querySelector('.site-header');
   const homePosition = document.createComment('Navigation returns here on close.');
-  header.before(homePosition);
+  navigationPanel.before(homePosition);
   let menuOpen = false;
   let revision = 0;
   document.documentElement.classList.add('menu-ready');
 
-  function restoreHeader() {
+  function restoreNavigation() {
+    homePosition.after(navigationPanel);
     mobileMenu.close();
-    homePosition.after(header);
     document.documentElement.classList.remove('menu-open');
     if (mobileNavigation.matches) menuToggle.focus({ preventScroll: true });
   }
@@ -116,15 +118,19 @@ if (menuToggle && navigationPanel && typeof mobileMenu?.showModal === 'function'
     const currentRevision = ++revision;
     menuOpen = open;
     menuToggle.setAttribute('aria-expanded', String(open));
-    menuToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
 
     if (open && !mobileMenu.open) {
-      mobileMenu.append(header);
+      dialogHeader.append(navigationPanel);
       document.documentElement.classList.add('menu-open');
       mobileMenu.showModal();
-      menuToggle.focus({ preventScroll: true });
-      // Establish the closed presentation once. Further taps retarget live transitions.
-      mobileMenu.getBoundingClientRect();
+      menuClose.focus({ preventScroll: true });
+      // Flush the actual animated properties after showModal. A layout read on
+      // the dialog alone does not reliably establish descendant styles in Safari.
+      mobileMenu.querySelectorAll('.mobile-menu-surface, .menu-icon > span, .nav-link').forEach((element) => {
+        const style = getComputedStyle(element);
+        void style.opacity;
+        void style.transform;
+      });
     }
     mobileMenu.classList.toggle('is-open', open);
     if (open || !mobileMenu.open) return;
@@ -132,13 +138,15 @@ if (menuToggle && navigationPanel && typeof mobileMenu?.showModal === 'function'
       // Keep the toggle available throughout exit; reopening cancels this completion.
       await Promise.allSettled(mobileMenu.getAnimations({ subtree: true }).map(animation => animation.finished));
     }
-    if (currentRevision === revision && !menuOpen) restoreHeader();
+    if (currentRevision === revision && !menuOpen) restoreNavigation();
   }
 
-  menuToggle.addEventListener('click', (event) => {
+  function toggleMenu(event) {
     document.documentElement.classList.toggle('menu-keyboard', event.detail === 0);
     setMenuOpen(!menuOpen);
-  });
+  }
+  menuToggle.addEventListener('click', toggleMenu);
+  menuClose.addEventListener('click', toggleMenu);
   mobileMenu.addEventListener('cancel', (event) => {
     event.preventDefault();
     setMenuOpen(false);
@@ -408,15 +416,25 @@ async function playIntro() {
   let clone;
   let finished = false;
   let readyTimeout;
+  let socialTimer;
   const scrambleTimers = [];
-  const finish = () => {
+  const revealSocials = (instant = false) => {
+    if (!root.classList.contains('socials-pending')) return;
+    root.classList.toggle('socials-instant', instant);
+    root.classList.add('socials-revealing');
+    root.classList.remove('socials-pending');
+    setTimeout(() => root.classList.remove('socials-revealing'), 300);
+  };
+  const finish = (event) => {
     if (finished) return;
     finished = true;
     clearTimeout(window.introFallback);
     clearTimeout(readyTimeout);
+    clearTimeout(socialTimer);
     scrambleTimers.forEach(clearTimeout);
     introScrambles.forEach((effect) => effect.reset());
     root.classList.remove('intro-pending');
+    revealSocials(event?.type === 'keydown' || event?.type === 'focusin' || event?.type === 'pagehide');
     animations.forEach((animation) => animation.cancel());
     clone?.remove();
     skipEvents.forEach((event) => {
@@ -524,9 +542,9 @@ async function playIntro() {
     hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
     reveal(hero.querySelector('.hero-content .button'), 2650, 800, .94);
     scrambleIn(hero.querySelector('.signature'), 3050, 700);
-    hero.querySelectorAll('.hero-footer > :not(.signature)').forEach((element, index) => {
-      reveal(element, 3150 + index * 100, 400);
-    });
+    // Independent CSS transitions also reveal smoothly when touch skips the intro.
+    socialTimer = setTimeout(() => revealSocials(),
+      Math.max(0, startTime + 3150 - document.timeline.currentTime));
     await Promise.all(animations.map((animation) => animation.finished));
     finish();
   } catch {

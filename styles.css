@@ -130,7 +130,7 @@ h1 span { white-space: nowrap; }
 .signature { max-width: 100%; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
 .signature > span:not(.scramble-text):not(.scramble-layer) { opacity: .7; }
 .social-links { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-.social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: inherit; opacity: .7; transition: opacity 180ms ease; }
+.social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: inherit; opacity: .7; transform: translateY(0); transition: opacity var(--press-out) var(--ease-out), transform var(--press-out) var(--ease-out); }
 .social-link svg { width: 20px; height: 20px; transition: transform 160ms ease; }
 .social-link:focus-visible { opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
@@ -156,6 +156,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 }
 @media (max-width: 1100px) {
   .nav-group { gap: 11px; }
+  .nav-link { font-size: clamp(.875rem, 1.7vw, 1.125rem); }
 }
 @media (max-width: 700px) {
   /* Hide the scrollbar using the reference's rules while keeping touch scrolling. */
@@ -216,10 +217,9 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .hero-heading-line,
 .intro-pending .hero-content .button,
 .intro-pending .site-header,
-.intro-pending .hero-footer > * { opacity: 0; }
+.intro-pending .signature { opacity: 0; }
 .intro-pending .site-header,
-.intro-pending .hero-content .button,
-.intro-pending .hero-footer { pointer-events: none; }
+.intro-pending .hero-content .button { pointer-events: none; }
 .intro-pending .intro-wordmark { opacity: 1; }
 .intro-wordmark {
   /* Room above and below the short line box keeps the outline intact. */
@@ -234,8 +234,24 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .intro-pending .hero-heading-line,
   .intro-pending .hero-content .button,
   .intro-pending .site-header,
-  .intro-pending .hero-footer > * { opacity: 1; pointer-events: auto; }
+  .intro-pending .signature { opacity: 1; pointer-events: auto; }
   .intro-wordmark { display: none; }
+}
+
+/* Stagger the icons themselves, including when touch skips the main intro.
+   Keep their full hit areas active; only their presentation is delayed. */
+.socials-pending .social-link { opacity: 0; transform: translateY(8px); }
+.socials-revealing .social-link:nth-child(2) { transition-delay: 40ms; }
+.socials-revealing .social-link:nth-child(3) { transition-delay: 80ms; }
+.socials-revealing .social-link:nth-child(4) { transition-delay: 120ms; }
+.socials-instant .social-link, .social-link:focus-visible { transition: none; }
+:root .social-link:is(:focus-visible, .is-touch-pressed) { transition-delay: 0ms; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .social-link:hover { transition-delay: 0ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .social-link, .socials-pending .social-link { transform: none; transition: opacity var(--press-out) var(--ease-out) !important; }
+  .socials-instant .social-link, .social-link:focus-visible { transition: none !important; }
 }
 
 /* Scramble overlays stay anchored to each text label. */
@@ -247,6 +263,7 @@ span.nav-link { cursor: default; }
 .navigation-panel { display: contents; }
 .menu-toggle, .mobile-menu { display: none; }
 html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: none; }
+.menu-open .hero .menu-toggle { visibility: hidden; }
 @media (max-width: 700px) {
   .site-header { z-index: 10; }
   .menu-ready .site-header { top: max(8px, env(safe-area-inset-top)); justify-content: flex-start; }
@@ -275,7 +292,8 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
     height: 2px;
     background: currentColor;
     transform: translateY(-7px) rotate(0deg);
-    transition: transform 250ms var(--ease-in-out), opacity 160ms var(--ease-out);
+    transform-origin: center;
+    transition: transform 200ms var(--ease-in-out), opacity 160ms var(--ease-out);
   }
   .menu-icon > span:nth-child(2) { transform: translateY(0) rotate(0deg); }
   .menu-icon > span:nth-child(3) { transform: translateY(7px) rotate(0deg); }
@@ -300,15 +318,15 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   }
   .mobile-menu[open] { display: block; }
   .mobile-menu::backdrop { background: transparent; }
-  .mobile-menu::before {
-    content: '';
+  .mobile-menu-surface {
     position: absolute;
     inset: 0;
     background: #000;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 250ms var(--ease-out);
   }
-  .mobile-menu.is-open::before { opacity: 1; }
+  .mobile-menu.is-open .mobile-menu-surface { opacity: 1; }
   .mobile-menu .site-header {
     bottom: max(24px, env(safe-area-inset-bottom));
     display: flex;
@@ -321,7 +339,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .mobile-menu .menu-toggle { align-self: flex-start; }
   .menu-ready .mobile-menu .navigation-panel {
     display: grid;
-    grid-template-rows: repeat(5, minmax(3.5rem, 1fr));
+    grid-template-rows: repeat(6, minmax(3.5rem, 1fr));
     flex-shrink: 1;
     min-height: 0;
     width: 100%;
@@ -345,20 +363,23 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
     white-space: normal;
     opacity: 0;
     transform: translateY(-12px);
-    transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+    transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
   }
   .mobile-menu.is-open .nav-link { opacity: 1; transform: translateY(0); }
   .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(2) { transition-delay: 30ms; }
   .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(3) { transition-delay: 60ms; }
   .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(1) { transition-delay: 90ms; }
   .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(2) { transition-delay: 120ms; }
-  .menu-keyboard .mobile-menu::before,
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(3) { transition-delay: 150ms; }
+  .menu-keyboard .mobile-menu-surface,
   .menu-keyboard .menu-icon > span,
   .menu-keyboard .mobile-menu .nav-link { transition: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .mobile-menu::before { transition: opacity 180ms ease !important; }
+  .mobile-menu-surface { transition: opacity 180ms ease !important; }
   .mobile-menu .nav-link { transform: none !important; transition: opacity 180ms ease !important; }
+  .menu-keyboard .mobile-menu-surface,
+  .menu-keyboard .mobile-menu .nav-link { transition: none !important; }
 }
 
 /* Contact feedback: quiet compression, then a quick, interruptible release.
@@ -374,7 +395,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 }
 .text-link { transform-origin: left center; }
 .menu-toggle, .social-link { position: relative; isolation: isolate; }
-.menu-toggle::before, .social-link::before, .nav-link::before {
+.nav-link::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -385,13 +406,12 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   pointer-events: none;
   transition: opacity var(--press-out) var(--ease-out);
 }
-.menu-toggle::before { border-radius: 50%; }
 .nav-link { isolation: isolate; }
 .nav-link::before { inset: 0 -8px; border-radius: 4px; }
 .menu-icon, .social-link svg, .nav-label {
   transition: transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out);
 }
-.is-touch-pressed:is(.menu-toggle, .social-link, .nav-link)::before {
+.nav-link.is-touch-pressed::before {
   opacity: 1;
   transition-duration: var(--press-in);
 }
@@ -414,7 +434,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .button:focus-visible .button-arrow { transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .button, .text-link, .menu-icon, .social-link svg, .nav-label,
-  .menu-toggle::before, .social-link::before, .nav-link::before {
+  .nav-link::before {
     transition: opacity var(--press-out) var(--ease-out) !important;
   }
   .button.is-touch-pressed, .text-link.is-touch-pressed,
@@ -425,7 +445,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .social-link.is-touch-pressed svg { opacity: .72; }
 }
 @media (prefers-contrast: more) {
-  .menu-toggle::before, .social-link::before, .nav-link::before {
+  .nav-link::before {
     background: transparent;
     border: 2px solid currentColor;
   }

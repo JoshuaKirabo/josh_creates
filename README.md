@@ -35,7 +35,7 @@ Keyboard focus is immediate, with a visible outline and no scramble. Hover effec
 
 ## Touch feedback
 
-Buttons and text links compress to 97% on contact. Menu and social icons compress within their unchanged hit areas, with a soft circular highlight; navigation rows highlight with a subtle label compression. The existing monochrome composition stays still between interactions. Feedback starts on pointer-down, using 100ms in and 160ms out with the shared `--ease-out` curve. CSS transitions retarget immediately on repeated taps.
+Buttons and text links compress to 97% on contact. Menu and social icons compress within their unchanged hit areas, without circular backgrounds or tap rings; navigation rows highlight with a subtle label compression. Keyboard focus keeps its visible outline. The existing monochrome composition stays still between interactions. Feedback starts on pointer-down, using 100ms in and 160ms out with the shared `--ease-out` curve. CSS transitions retarget immediately on repeated taps.
 
 The touch handler allows 10px of finger jitter, then cancels the press and any accidental click when movement indicates a drag. Scrolling, a second finger, pointer cancellation, leaving the page, or losing focus clears the pressed appearance. It never captures the pointer, blocks native scrolling or pinch zoom, delays a click, or simulates hover. Touch and pen receive the feedback; mouse hover and keyboard focus keep their own behavior.
 
@@ -43,6 +43,10 @@ Reduced motion retains opacity feedback without compression. Increased contrast 
 
 ## Mobile navigation
 
-At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The same button stays at the top left and morphs into a cross over 250ms. Five equally spaced links enter with a subtle 30ms stagger, finishing within 280ms. The black surface fades over 250ms, and every transition can reverse immediately on another tap.
+At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The opening and closing controls occupy the same fixed 48px hit area. The dialog's icon morphs from three lines into a cross over 200ms, without moving the live trigger between containers. Only the hidden navigation links move into the dialog. Their initial styles are resolved before opening so the animation starts reliably across browser engines. Six equally spaced links enter with a subtle 30ms stagger, finishing within 300ms. The black surface fades over 250ms, and every transition can reverse immediately on another tap.
 
 The native dialog contains keyboard focus and makes the page behind it inert; page scrolling is locked until closing finishes. Escape, link selection, and returning to desktop dismiss it. Keyboard actions are immediate, and reduced motion uses a gentle fade. Without dialog support or JavaScript, the inline links remain available.
+
+The social icons enter individually with a 160ms opacity/8px rise transition and 40ms stagger (280ms for the group), using the existing `--ease-out` curve. Their transitions also run when touch skips the main intro, so they no longer appear abruptly. Hit areas remain available during the entrance. Keyboard skips show them immediately; reduced motion removes the rise. Stagger delays apply only during the entrance, preserving immediate touch and hover feedback afterward.
+
+Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s connect. It follows Projects in the mobile menu, using the same placeholder behavior as the existing navigation until its destination is provided.
