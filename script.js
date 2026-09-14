@@ -199,7 +199,7 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
 }
 
 // Critically damped 2D spring. Response is Apple's settle window in seconds, not a duration.
-function createSpring2D(response, paint) {
+function createSpring2D(response, paint, { restDistance = .1, restSpeed = .1 } = {}) {
   const omega = 2 * Math.PI / response;
   const position = { x: 0, y: 0 };
   const target = { x: 0, y: 0 };
@@ -220,7 +220,7 @@ function createSpring2D(response, paint) {
       const change = (velocity[axis] + omega * delta) * dt;
       position[axis] = target[axis] + (delta + change) * decay;
       velocity[axis] = (velocity[axis] - omega * change) * decay;
-      if (Math.abs(position[axis] - target[axis]) > .1 || Math.abs(velocity[axis]) > .1) {
+      if (Math.abs(position[axis] - target[axis]) > restDistance || Math.abs(velocity[axis]) > restSpeed) {
         settled = false;
       }
     }
@@ -235,7 +235,7 @@ function createSpring2D(response, paint) {
 
   function wake() {
     if (!active || frame !== null) return;
-    previousTime = 0;
+    previousTime = performance.now();
     frame = requestAnimationFrame(tick);
   }
 
@@ -448,16 +448,14 @@ function createGrainParticles(container) {
 
 const grainParticles = createGrainParticles(backdrop.querySelector('.grain-particles'));
 const increasedContrast = window.matchMedia('(prefers-contrast: more)');
-let heroIsVisible = true;
 let pageIsActive = true;
 // Keep the field still until the entrance starts. Skipping or omitting the intro
 // releases it immediately; otherwise it wakes with the shared intro clock.
 let starsReady = !document.documentElement.classList.contains('intro-pending');
 function pointerFromEvent(event) {
-  const bounds = hero.getBoundingClientRect();
   return {
-    x: event.clientX - bounds.left - bounds.width / 2,
-    y: event.clientY - bounds.top - bounds.height / 2
+    x: event.clientX - window.innerWidth / 2,
+    y: event.clientY - window.innerHeight / 2
   };
 }
 function setAmbientPointer(x, y) {
@@ -466,30 +464,23 @@ function setAmbientPointer(x, y) {
 function recenterAmbientPointer() {
   setAmbientPointer(0, 0);
 }
-hero.addEventListener('pointermove', (event) => {
+window.addEventListener('pointermove', (event) => {
   if (event.pointerType === 'touch') return;
   const { x, y } = pointerFromEvent(event);
   setAmbientPointer(x, y);
 }, { passive: true });
-hero.addEventListener('pointerleave', recenterAmbientPointer, { passive: true });
+document.documentElement.addEventListener('pointerleave', recenterAmbientPointer, { passive: true });
 window.addEventListener('blur', recenterAmbientPointer);
 window.addEventListener('resize', recenterAmbientPointer, { passive: true });
 function syncAmbientMotion() {
-  // Prepainted layers can drift during the entrance without a canvas render loop.
-  const playing = heroIsVisible && pageIsActive && !document.hidden && !reducedMotion.matches &&
+  // The star field is fixed behind both sections, so it keeps drifting on About.
+  const playing = pageIsActive && !document.hidden && !reducedMotion.matches &&
     !increasedContrast.matches && starsReady;
   const pointerActive = playing && finePointer.matches &&
     !document.documentElement.classList.contains('intro-pending');
   backdrop.dataset.ambientMotion = playing ? 'playing' : 'paused';
   grainParticles.setPlaying(playing);
   grainParticles.setPointerActive(pointerActive);
-}
-if ('IntersectionObserver' in window) {
-  const ambientVisibility = new IntersectionObserver(([entry]) => {
-    heroIsVisible = entry.isIntersecting;
-    syncAmbientMotion();
-  });
-  ambientVisibility.observe(hero);
 }
 document.addEventListener('visibilitychange', syncAmbientMotion);
 window.addEventListener('pagehide', () => {
@@ -506,7 +497,9 @@ finePointer.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
 
 // Occasional section navigation: spatial consistency. Reuse the existing
-// critically damped spring (Apple response .4 s) and retain native touch scrolling.
+// critically damped spring for one-gesture section changes. The large spatial
+// fold uses a 1.1 s response: roughly 600–800 ms of visible word travel, with
+// a gentle settle after it. The same spring carries momentum through reversals.
 // Only the two section boundaries matter; the About layout is independent.
 function enableSectionScroll() {
   const root = document.documentElement;
@@ -519,17 +512,22 @@ function enableSectionScroll() {
   const sidebar = about.querySelector('.about-sidebar');
   const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
+  const currentLinks = links.filter(link => link.matches('.nav-link, .section-nav-link'));
   const dividers = [...(hero.querySelectorAll?.('.nav-divider') || [])];
   const runway = about.previousElementSibling?.classList?.contains('hero-runway')
     ? about.previousElementSibling : null;
-  // Hero + runway is the fold length. About's offsetTop moves when its
-  // compensating transform is cleared, which used to feed ResizeObserver.
+  // Hero + runway is the fold length. CSS overlaps the two sticky surfaces;
+  // About's own layout offset is no longer the distance through the fold.
   const foldDistance = () => runway ? hero.offsetHeight + runway.offsetHeight : about.offsetTop;
   let boundary = 1;
   let running = false;
   let destination = 0;
   let paintFrame = null;
   let focusDestination = false;
+  let presentedPosition = window.scrollY;
+  let handoverState = null;
+  let currentSection = null;
+  let foldingState = null;
 
   const clamp = value => Math.min(1, Math.max(0, value));
   // Where one element sits inside its own slice of the shared cascade.
@@ -569,9 +567,8 @@ function enableSectionScroll() {
     const source = inkBox(from);
     const target = inkBox(to);
     if (!source.width || !target.width) return null;
-    // The sidebar is still below the fold while it is measured. Its sticky pose
-    // at the boundary is the one the travelling word has to land on.
-    const lift = Math.min(window.scrollY, boundary) - boundary;
+    // About already occupies its arrival pose through native sticky layout.
+    // No scroll compensation belongs in these viewport-space coordinates.
     const origin = mover.getBoundingClientRect();
     return {
       mover, reveal, start, end,
@@ -580,12 +577,15 @@ function enableSectionScroll() {
       fromX: source.left + source.width / 2,
       fromY: source.top + source.height / 2,
       toX: target.left + target.width / 2,
-      toY: target.top + target.height / 2 + lift
+      toY: target.top + target.height / 2
     };
   }
 
   function applyFold(plan, progress) {
-    const travel = slice(progress, plan.start, plan.end);
+    // Each stagger needs its own soft departure and arrival. Clamping a linear
+    // path stopped words at full speed while the section spring kept moving.
+    // The same curve retraces exactly when the gesture reverses.
+    const travel = smooth(slice(progress, plan.start, plan.end));
     const scale = 1 + (plan.scale - 1) * travel;
     const x = plan.fromX + (plan.toX - plan.fromX) * travel;
     const y = plan.fromY + (plan.toY - plan.fromY) * travel;
@@ -679,17 +679,21 @@ function enableSectionScroll() {
     hero.style.visibility = '';
   }
 
-  function paint() {
-    paintFrame = null;
+  function paint(scrollPosition = window.scrollY) {
+    presentedPosition = scrollPosition;
     if (foldStale) {
       foldStale = false;
       measureFolds();
     }
-    const progress = clamp(window.scrollY / boundary);
+    const progress = clamp(scrollPosition / boundary);
     // Reduced motion leaves the hero in flow, so the two sections simply scroll
     // past each other. Nothing is pinned, and nothing has to move out of the way.
     const still = reducedMotion.matches;
-    root.classList.toggle('section-folding', !still && progress > 0 && progress < .999);
+    const folding = !still && progress > 0 && progress < .999;
+    if (folding !== foldingState) {
+      foldingState = folding;
+      root.classList.toggle('section-folding', folding);
+    }
     if (still) releaseTransition();
     else {
       const leaving = smooth(slice(progress, 0, .42));
@@ -714,44 +718,73 @@ function enableSectionScroll() {
       const clearing = 1 - smooth(slice(progress, 0, .3));
       headerRest.forEach(control => fade(control, clearing));
 
-      // About holds its arrival pose from the start and fades up into it, so no
-      // edge ever sweeps the screen. Only the last 48px are left to the scroll,
-      // and the offset is exactly zero on arrival, where normal scrolling resumes.
-      const remaining = 1 - slice(progress, 0, .92);
-      about.style.transform = `translateY(${48 * remaining * remaining - boundary * (1 - progress)}px)`;
+      // Native sticky layout holds About still, including during asynchronous
+      // scrolling. Only this small arrival offset changes with the visual fold.
+      const remaining = 1 - smooth(slice(progress, 0, .92));
+      about.style.transform = `translateY(${48 * remaining * remaining}px)`;
       fade(about, smooth(slice(progress, .28, .72)));
       if (sidebar) {
         sidebar.style.transform = `translateX(${-24 * remaining}px)`;
         fade(sidebar, smooth(slice(progress, .32, .78)));
       }
-      hero.style.visibility = progress >= .999 ? 'hidden' : '';
+      // Its children already fade to zero. Keep the transparent hero composed:
+      // revealing a hidden, raster-heavy surface on reversal caused a hitch.
+      hero.style.visibility = '';
     }
     // The hero paints above About and covers the viewport, so it would swallow
     // clicks meant for the surface behind it. It hands both the pointer and the
     // accessibility tree over once its own content has gone and only the
     // travelling words are left, which the sidebar is about to own anyway.
     const handedOver = !still && progress > .45;
-    hero.style.pointerEvents = handedOver ? 'none' : '';
-    hero.inert = handedOver;
-    about.inert = !still && !handedOver;
-    about.style.pointerEvents = about.inert ? 'none' : '';
+    const handover = still ? 'native' : handedOver ? 'about' : 'home';
+    if (handover !== handoverState) {
+      handoverState = handover;
+      hero.style.pointerEvents = handedOver ? 'none' : '';
+      hero.inert = handedOver;
+      about.inert = !still && !handedOver;
+      about.style.pointerEvents = about.inert ? 'none' : '';
+    }
     const current = progress >= .5 ? '#about' : '#home';
-    links.filter(link => link.matches('.nav-link, .section-nav-link')).forEach(link => {
-      if (link.hash === current) link.setAttribute('aria-current', 'location');
-      else link.removeAttribute('aria-current');
-    });
-    const visible = progress < .999;
-    if (heroIsVisible !== visible) {
-      heroIsVisible = visible;
-      syncAmbientMotion();
+    if (current !== currentSection) {
+      currentSection = current;
+      currentLinks.forEach(link => {
+        if (link.hash === current) link.setAttribute('aria-current', 'location');
+        else link.removeAttribute('aria-current');
+      });
     }
   }
 
+  // Wheel events can arrive in discrete steps. Smooth only the presentation,
+  // using one reversible spring; native document scrolling stays untouched.
+  // Touch, keyboard and reduced motion keep their direct response.
+  const presentation = createSpring2D(.3, ({ y }) => paint(y));
+  presentation.setActive(true);
+
+  function paintImmediately() {
+    if (paintFrame !== null) cancelAnimationFrame(paintFrame);
+    paintFrame = null;
+    presentation.jumpTo(0, window.scrollY);
+    paint();
+  }
+
   function schedulePaint() {
-    if (paintFrame === null) paintFrame = requestAnimationFrame(paint);
+    // Navigation already paints its exact spring position in this frame.
+    // Repainting from scroll events quantizes it to the browser's scroll pixels.
+    if (running || paintFrame !== null) return;
+    paintFrame = requestAnimationFrame(() => {
+      paintFrame = null;
+      const direct = running || reducedMotion.matches || !finePointer.matches ||
+        root.classList.contains('touch-input') || root.classList.contains('section-scroll-keyboard') ||
+        window.scrollY > boundary + 2;
+      if (direct) paintImmediately();
+      else presentation.setTarget(0, Math.min(boundary, Math.max(0, window.scrollY)));
+    });
   }
 
   function complete() {
+    // Native scroll/resize events can follow the final navigation frame. Resume
+    // their presentation spring from this landing, never its old departure.
+    presentation.jumpTo(0, presentedPosition);
     running = false;
     if (focusDestination) {
       focusDestination = false;
@@ -760,38 +793,134 @@ function enableSectionScroll() {
     }
   }
 
-  const spring = createSpring2D(.4, ({ y }, settled) => {
+  // At less than one scroll pixel from rest, the eased glyphs already occupy
+  // their landing. Finish the invisible tail so native input and focus resume.
+  const spring = createSpring2D(1.1, ({ y }, settled) => {
     if (!running) return;
     window.scrollTo({ top: y, behavior: 'instant' });
-    // Paint with this scroll write, not one animation frame behind it.
-    if (paintFrame !== null) cancelAnimationFrame(paintFrame);
-    paint();
+    // Keep subpixel precision even when the browser rounds its scroll offset.
+    paint(y);
     if (settled) complete();
-  });
+  }, { restDistance: 1, restSpeed: 8 });
   spring.setActive(true);
 
   function stop() {
     spring.stop();
+    if (running) presentation.jumpTo(0, presentedPosition);
     running = false;
     focusDestination = false;
   }
 
-  // Only ever driven by an explicit destination: a nav link, or a restored
-  // hash. Plain scrolling is the browser's, and scrubs the fold directly.
+  // Links and deliberate vertical gestures share the same complete journey.
   function navigate(to, instant = false, focus = false) {
     destination = to;
     focusDestination = focus;
     if (instant || reducedMotion.matches) {
       spring.stop();
       window.scrollTo({ top: to, behavior: 'instant' });
-      paint();
+      paintImmediately();
       complete();
       return;
     }
-    if (!running) spring.jumpTo(0, window.scrollY);
+    if (!running) {
+      if (paintFrame !== null) cancelAnimationFrame(paintFrame);
+      paintFrame = null;
+      presentation.stop();
+      spring.jumpTo(0, presentedPosition);
+    }
     running = true;
     spring.setTarget(0, to); // Reversals preserve the current position AND velocity.
   }
+
+  // Only own gestures across the fold. Content below it, nested scrollers,
+  // horizontal gestures, zoom and reduced motion remain native.
+  function canOwnGesture(event, direction) {
+    if (reducedMotion.matches || mobileMenu?.open || event.defaultPrevented ||
+      event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
+      event.cancelable === false) return false;
+    for (let node = event.target; node && node !== document.body && node !== root; node = node.parentElement) {
+      if (!(node instanceof Element)) continue;
+      if (/auto|scroll/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1 &&
+        (direction < 0 ? node.scrollTop > 0 : node.scrollTop + node.clientHeight < node.scrollHeight - 1)) return false;
+    }
+    return true;
+  }
+
+  function canTurn(event, direction) {
+    const y = window.scrollY;
+    return canOwnGesture(event, direction) && y <= boundary + 2 &&
+      (running || (direction > 0 ? y < boundary - 2 : y > 2));
+  }
+
+  let wheelTime = -Infinity;
+  let wheelDirection = 0;
+  let wheelDistance = 0;
+  let wheelOwned = false;
+  let wheelTargetDirection = 0;
+  window.addEventListener('wheel', event => {
+    if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    const direction = Math.sign(event.deltaY);
+    const now = performance.now();
+    if (now - wheelTime > 180) {
+      wheelOwned = false;
+      wheelDirection = 0;
+      wheelDistance = 0;
+    }
+    wheelTime = now;
+    // Keep consuming the tail of an accepted flick after landing. Otherwise
+    // trackpad momentum would scroll straight past the newly arrived section.
+    const tail = wheelOwned && window.scrollY <= boundary + 2 && canOwnGesture(event, direction);
+    if (!tail && !canTurn(event, direction)) return;
+    event.preventDefault();
+    root.classList.remove('section-scroll-keyboard');
+    if (direction !== wheelDirection) {
+      wheelDirection = direction;
+      wheelDistance = 0;
+    }
+    wheelDistance += Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+    if ((!wheelOwned || direction !== wheelTargetDirection) && wheelDistance >= 12) {
+      wheelOwned = true;
+      wheelTargetDirection = direction;
+      navigate(direction > 0 ? boundary : 0);
+    }
+  }, { passive: false });
+
+  let touch = null;
+  window.addEventListener('touchstart', event => {
+    touch = null;
+    if (event.touches.length !== 1) { stop(); return; }
+    const point = event.touches[0];
+    touch = { id: point.identifier, x: point.clientX, y: point.clientY, direction: 0, targetDirection: 0, distance: 0, owned: false };
+  }, { passive: true });
+  window.addEventListener('touchmove', event => {
+    if (!touch || event.touches.length !== 1) { touch = null; return; }
+    const point = event.touches[0];
+    if (point.identifier !== touch.id) return;
+    const dx = point.clientX - touch.x;
+    const dy = touch.y - point.clientY;
+    touch.x = point.clientX;
+    touch.y = point.clientY;
+    if (!dy) return;
+    if (Math.abs(dx) > Math.abs(dy)) { touch = null; return; }
+    const direction = Math.sign(dy);
+    if (!canTurn(event, direction) && !(touch.owned && window.scrollY <= boundary + 2 && canOwnGesture(event, direction))) return;
+    // Cancel the first vertical move so Safari never starts native momentum
+    // alongside the section spring. A tap or pinch is never captured.
+    event.preventDefault();
+    root.classList.remove('section-scroll-keyboard');
+    if (direction !== touch.direction) {
+      touch.direction = direction;
+      touch.distance = 0;
+    }
+    touch.distance += Math.abs(dy);
+    if ((!touch.owned || direction !== touch.targetDirection) && touch.distance >= 12) {
+      touch.owned = true;
+      touch.targetDirection = direction;
+      navigate(direction > 0 ? boundary : 0);
+    }
+  }, { passive: false });
+  window.addEventListener('touchend', () => { touch = null; }, { passive: true });
+  window.addEventListener('touchcancel', () => { touch = null; }, { passive: true });
 
   function measure() {
     const previousBoundary = boundary;
@@ -800,6 +929,7 @@ function enableSectionScroll() {
     const wasRunning = running;
     const wasForward = destination > 0;
     boundary = nextBoundary;
+    root.style.setProperty('--fold-distance', `${boundary}px`);
     // Both ends of the fold move with the layout. Remeasuring inside the next
     // paint keeps the clearing, reading, and reapplying in a single frame.
     foldStale = true;
@@ -848,14 +978,12 @@ function enableSectionScroll() {
   document.addEventListener('pointerdown', event => {
     // A new destination keeps the spring's velocity through the following click.
     // Other pointer contact immediately returns the page to native scrolling.
-    if (!event.target.closest('[data-section-link]')) stop();
+    if (event.pointerType !== 'touch' && !event.target.closest('[data-section-link]')) stop();
     root.classList.remove('section-scroll-keyboard');
   }, { capture: true, passive: true });
-  window.addEventListener('wheel', stop, { passive: true });
-  window.addEventListener('touchmove', stop, { passive: true });
   window.addEventListener('scroll', schedulePaint, { passive: true });
   window.addEventListener('resize', measure, { passive: true });
-  window.addEventListener('pagehide', stop);
+  window.addEventListener('pagehide', () => { stop(); presentation.stop(); });
   window.addEventListener('pageshow', measure);
   window.addEventListener('popstate', () => {
     // Back/Forward restores the reader's exact position, including mid-fold or
@@ -863,7 +991,7 @@ function enableSectionScroll() {
     traversedHash = location.hash;
     stop();
     document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
-    schedulePaint();
+    paintImmediately();
   });
   window.addEventListener('hashchange', () => {
     const restored = traversedHash === location.hash;
@@ -881,12 +1009,13 @@ function enableSectionScroll() {
   document.fonts?.ready.then(() => { foldStale = true; schedulePaint(); });
   root.classList.add('section-scroll-ready');
   boundary = Math.max(1, foldDistance());
+  root.style.setProperty('--fold-distance', `${boundary}px`);
   // A direct About visit gets the same complete scroll surface, already landed.
   if (sectionHash() === '#about' && window.scrollY < boundary) {
     window.scrollTo({ top: boundary, behavior: 'instant' });
   }
   document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
-  paint();
+  paintImmediately();
 }
 if (window.sitePagesReady) window.sitePagesReady.then(enableSectionScroll);
 else enableSectionScroll();
@@ -1029,16 +1158,11 @@ async function playIntro() {
     if (finished) return;
     if (reducedMotion.matches || window.scrollY > 24 || location.hash) return finish();
 
-    // The outlined letters are the wordmark. They rise into a clip, then the
-    // same glyphs glide to rest — never swapped for a second copy.
-    wordmark.replaceChildren(...Array.from(wordmark.textContent, (letter) => {
-      const span = document.createElement('span');
-      span.className = 'intro-letter';
-      span.textContent = letter;
-      return span;
-    }));
+    // Letter markup is present from first layout, so the entrance and the fold
+    // always measure the same glyph boxes. Only their presentation changes.
     wordmark.classList.add('intro-wordmark', 'is-entering');
     const bounds = wordmark.getBoundingClientRect();
+    const centerX = window.innerWidth / 2 - (bounds.left + bounds.width / 2);
     const centerY = window.innerHeight / 2 - (bounds.top + bounds.height / 2);
 
     // Sampled linear() eases fall back to main-thread animation on older Safari.
@@ -1047,7 +1171,8 @@ async function playIntro() {
     const easeOut = rootStyle.getPropertyValue('--ease-out').trim();
     const easeOutCubic = rootStyle.getPropertyValue('--ease-out-cubic').trim();
     const easeOutQuart = rootStyle.getPropertyValue('--ease-out-quart').trim();
-    const easeInOut = rootStyle.getPropertyValue('--ease-in-out').trim();
+    const easeInOutCubic = rootStyle.getPropertyValue('--ease-in-out-cubic').trim();
+    const easeInOutQuart = rootStyle.getPropertyValue('--ease-in-out-quart').trim();
     const wordmarkTransform = getComputedStyle(wordmark).transform;
     // All animations share one clock, including the reference's 200 ms lead-in.
     const startTime = document.timeline.currentTime + 200;
@@ -1079,11 +1204,12 @@ async function playIntro() {
       }, Math.max(0, startTime + delay - document.timeline.currentTime)));
     };
     animate(wordmark, [
-      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}` },
-      { transform: `translate3d(0, 0, 0) ${wordmarkTransform}` }
-    ], 0, 2000, easeInOut);
+      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: 0, easing: easeInOutQuart },
+      { transform: `translate3d(${centerX}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: .5, easing: easeInOutCubic },
+      { transform: `translate3d(0, 0, 0) ${wordmarkTransform}`, offset: 1 }
+    ], 0, 2000, 'linear');
     wordmark.querySelectorAll('.intro-letter').forEach((letter, index) => {
-      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 80, 1000, easeOutQuart);
+      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000, easeOutQuart);
     });
     animate(portraitStage, [
       { opacity: 0, transform: 'scale(.88)', filter: 'blur(20px)' },

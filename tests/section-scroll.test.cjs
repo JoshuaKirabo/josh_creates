@@ -6,17 +6,17 @@ const source = readFileSync(new URL('../script.js', `file://${__filename}`), 'ut
 const springSource = source.slice(source.indexOf('function createSpring2D('), source.indexOf('// Paint the grain once.'));
 const sectionSource = source.slice(source.indexOf('function enableSectionScroll()'), source.indexOf('// Transform and opacity reveals'));
 
-// The hero is pinned for its own height plus the runway, so the fold scrubs
-// across 1000px of scroll before About's layout position reaches the top.
+// The two sections share a sticky viewport; one hero height separates their
+// scroll destinations. Gesture navigation completes that distance automatically.
 const BOUNDARY = 1000;
 const rect = (left, top, width, height) => ({ left, top, width, height });
 
-function setup(reduce = false, initialHash = '', entryPage = 'home') {
+function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScroll = false) {
   let now = 1, frameId = 0;
   const frames = new Map(), events = { window: {}, document: {} };
   class Element {
     constructor() {
-      this.style = {}; this.attrs = {}; this.parentElement = null;
+      this.style = { setProperty(k, v) { this[k] = v; } }; this.attrs = {}; this.parentElement = null;
       this.scrollHeight = this.clientHeight = 0; this.scrollTop = 0;
       this.children = {}; this.box = rect(0, 0, 0, 0);
       const classes = new Set();
@@ -27,8 +27,8 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
     matches() { return false; }
     querySelector(selector) { return this.children[selector] || null; }
     querySelectorAll(selector) { return this.children[selector] || []; }
-    // The hero is pinned, so its boxes are already in viewport space. About is
-    // in flow, so its boxes follow the scroll the way the real ones do.
+    // Both surfaces are natively pinned through the fold. These boxes are
+    // viewport-space rest geometry, independent of the current scroll position.
     getBoundingClientRect() {
       return this.inFlow ? { ...this.box, top: this.box.top - window.scrollY } : this.box;
     }
@@ -43,7 +43,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
     const element = new Element();
     if (box) element.box = box;
     if (ink) element.ink = ink;
-    if (inFlow) element.inFlow = true;
+    if (inFlow) element.inFlow = false;
     return element;
   };
 
@@ -51,7 +51,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
   const intro = new Element(), portrait = new Element();
 
   // A 1440x900 hero, pinned, with its name and two links travelling into the
-  // sidebar boxes that sit BOUNDARY further down the document.
+  // sidebar boxes that share the same sticky viewport.
   const stage = make(rect(0, 0, 1440, 900));
   const heroName = make(rect(19, 8, 1403, 396), rect(120, -73, 1200, 557));
   const heroLinks = [
@@ -63,17 +63,20 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
     link.children['.nav-label'] = label;
     return label;
   });
-  const sidebarName = make(rect(6, 1034, 66, 35), rect(15, 1043, 47, 18), true);
-  const sidebarLinks = [rect(38, 1230, 42, 18), rect(38, 1280, 113, 18)].map((ink) => {
-    const link = make(rect(4, ink.top - 13, 85, 44), null, true);
-    link.children.span = make(null, ink, true);
-    link.children.span.inFlow = true;
-    link.children.svg = make(rect(12, ink.top, 16, 16), null, true);
-    link.children.svg.inFlow = true;
+  const sidebarName = make(rect(6, 34, 66, 35), rect(15, 43, 47, 18));
+  const sidebarLinks = [rect(38, 230, 42, 18), rect(38, 280, 113, 18)].map((ink) => {
+    const link = make(rect(4, ink.top - 13, 85, 44), null, false);
+    link.children.span = make(null, ink, false);
+    link.children.span.inFlow = false;
+    link.children.svg = make(rect(12, ink.top, 16, 16), null, false);
+    link.children.svg.inFlow = false;
     return link;
   });
 
   about.offsetTop = BOUNDARY;
+  const runway = new Element();
+  runway.classList.add('hero-runway'); runway.offsetHeight = 0; hero.offsetHeight = BOUNDARY;
+  about.previousElementSibling = runway;
   about.children['.sidebar-wordmark'] = sidebarName;
   about.children['.section-nav-link'] = sidebarLinks;
   hero.children['.wordmark-stage'] = stage;
@@ -91,6 +94,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
       return { selectNodeContents(element) { node = element; }, getBoundingClientRect: () => node.inkRect() };
     } };
   const context = { window, document, hero, Element, mobileMenu: null,
+    finePointer: { matches: smoothScroll },
     reducedMotion: { matches: reduce, addEventListener: (name, fn) => on('window', 'motionchange', fn) }, heroIsVisible: true,
     syncAmbientMotion() {}, getComputedStyle: node => ({ overflowY: node.overflowY || 'visible' }),
     URL, location: { hash: initialHash, href: 'https://example.test/index.html' + initialHash },
@@ -99,7 +103,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
     cancelAnimationFrame: id => frames.delete(id) };
   vm.runInNewContext(springSource + sectionSource, context);
 
-  function advance(ms = 1500) {
+  function advance(ms = 2000) {
     const end = now + ms;
     while (now < end) {
       now += 16;
@@ -136,7 +140,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
   };
 
   return { window, root, hero, about, stage, heroName, heroLinks, heroLabels, sidebarName, sidebarLinks,
-    Element, advance, dispatch, scrollTo, inkCentreOf, targetCentre, context,
+    Element, advance, dispatch, scrollTo, inkCentreOf, targetCentre, context, runway,
     click: (hash, values = {}) => {
       const link = new Element();
       link.hash = hash;
@@ -152,14 +156,102 @@ function setup(reduce = false, initialHash = '', entryPage = 'home') {
 const near = (actual, expected, what) =>
   assert.ok(Math.abs(actual - expected) < 0.5, `${what}: expected ~${expected}, got ${actual}`);
 
-test('scrolling is never intercepted, in either direction or at either end', () => {
+test('one wheel flick completes the whole fold with no further input', () => {
   const s = setup();
-  for (const y of [0, 120, BOUNDARY / 2, BOUNDARY, BOUNDARY + 400]) {
-    s.window.scrollY = y;
-    assert.equal(s.dispatch('window', 'wheel', { deltaY: 100 }).defaultPrevented, false,
-      `a wheel at ${y} must reach the browser`);
-    assert.equal(s.dispatch('document', 'keydown', { key: 'PageDown' }).defaultPrevented, false);
-    assert.equal(s.window.scrollY, y, 'nothing may move the page on its own');
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: 40 }).defaultPrevented, true);
+  assert.equal(s.window.scrollY, 0, 'the transition starts from its current pose');
+  s.advance();
+  assert.equal(s.window.scrollY, BOUNDARY);
+  assert.equal(s.stage.style.opacity, '0');
+  assert.equal(s.sidebarName.style.opacity, '');
+  assert.equal(s.about.inert, false);
+  assert.equal(s.about.focused, undefined, 'scrolling never steals focus');
+  s.dispatch('window', 'wheel', { deltaY: -40 });
+  s.advance();
+  assert.equal(s.window.scrollY, 0);
+});
+
+test('trackpad momentum is absorbed through arrival, then ordinary About scrolling resumes', () => {
+  const s = setup();
+  s.dispatch('window', 'wheel', { deltaY: 40 });
+  for (let i = 0; i < 30; i++) {
+    s.advance(64);
+    assert.equal(s.dispatch('window', 'wheel', { deltaY: 3 }).defaultPrevented, true);
+  }
+  assert.equal(s.window.scrollY, BOUNDARY);
+  s.advance(200);
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: 40 }).defaultPrevented, false);
+});
+
+test('small deltas accumulate; line and page wheel units also trigger a single journey', () => {
+  const s = setup();
+  for (let i = 0; i < 6; i++) s.dispatch('window', 'wheel', { deltaY: 2 });
+  s.advance();
+  assert.equal(s.window.scrollY, BOUNDARY);
+  for (const deltaMode of [1, 2]) {
+    const r = setup();
+    r.dispatch('window', 'wheel', { deltaY: 1, deltaMode });
+    r.advance();
+    assert.equal(r.window.scrollY, BOUNDARY);
+  }
+});
+
+test('native scrolling, zoom, horizontal input, menus and nested content remain available', () => {
+  const s = setup();
+  for (const values of [{ deltaY: -40 }, { deltaY: 40, ctrlKey: true },
+    { deltaY: 4, deltaX: 40 }, { deltaY: 40, cancelable: false }]) {
+    assert.equal(s.dispatch('window', 'wheel', values).defaultPrevented, false);
+  }
+  s.context.mobileMenu = { open: true };
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: 40 }).defaultPrevented, false);
+  s.context.mobileMenu = null;
+  const nested = new s.Element();
+  nested.overflowY = 'auto'; nested.clientHeight = 100; nested.scrollHeight = 500;
+  assert.equal(s.dispatch('window', 'wheel', { target: nested, deltaY: 40 }).defaultPrevented, false);
+  s.scrollTo(BOUNDARY + 300);
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: -40 }).defaultPrevented, false);
+  const r = setup(true);
+  assert.equal(r.dispatch('window', 'wheel', { deltaY: 40 }).defaultPrevented, false);
+});
+
+test('one touch swipe completes after release, and a new swipe can reverse it', () => {
+  const s = setup();
+  const point = y => [{ identifier: 1, clientX: 100, clientY: y }];
+  s.dispatch('window', 'touchstart', { touches: point(400) });
+  assert.equal(s.dispatch('window', 'touchmove', { touches: point(380) }).defaultPrevented, true);
+  s.dispatch('window', 'touchend');
+  s.advance(96);
+  const before = s.window.scrollY;
+  s.dispatch('document', 'pointerdown', { pointerType: 'touch' });
+  s.dispatch('window', 'touchstart', { touches: point(380) });
+  s.dispatch('window', 'touchmove', { touches: point(410) });
+  s.dispatch('window', 'touchend');
+  assert.equal(s.window.scrollY, before, 'reversal retains the current pose');
+  s.advance();
+  assert.equal(s.window.scrollY, 0);
+  s.dispatch('window', 'touchstart', { touches: point(400) });
+  s.dispatch('window', 'touchmove', { touches: point(375) });
+  s.dispatch('window', 'touchend');
+  s.advance();
+  assert.equal(s.window.scrollY, BOUNDARY);
+});
+
+test('taps, horizontal swipes, multiple fingers and reduced-motion touch stay native', () => {
+  for (const reduce of [false, true]) {
+    const s = setup(reduce);
+    const point = { identifier: 1, clientX: 100, clientY: 400 };
+    s.dispatch('window', 'touchstart', { touches: [point] });
+    s.dispatch('window', 'touchend');
+    s.advance();
+    assert.equal(s.window.scrollY, 0);
+    s.dispatch('window', 'touchstart', { touches: [point] });
+    assert.equal(s.dispatch('window', 'touchmove', { touches: [{ ...point, clientX: 140, clientY: 398 }] }).defaultPrevented, false);
+    s.dispatch('window', 'touchstart', { touches: [point, { ...point, identifier: 2 }] });
+    assert.equal(s.dispatch('window', 'touchmove', { touches: [{ ...point, clientY: 360 }] }).defaultPrevented, false);
+    if (reduce) {
+      s.dispatch('window', 'touchstart', { touches: [point] });
+      assert.equal(s.dispatch('window', 'touchmove', { touches: [{ ...point, clientY: 360 }] }).defaultPrevented, false);
+    }
   }
 });
 
@@ -193,7 +285,8 @@ test('the fold is scrubbed by scroll position, and scrubs back', () => {
   assert.ok(laterY < quarterY, 'the name keeps climbing towards the corner');
 
   s.scrollTo(BOUNDARY);
-  assert.equal(s.hero.style.visibility, 'hidden');
+  assert.equal(s.hero.style.visibility, '', 'the transparent hero remains composed for reversal');
+  assert.equal(s.stage.style.opacity, '0');
   assert.equal(s.hero.inert, true);
 
   s.scrollTo(BOUNDARY * .25);
@@ -271,14 +364,14 @@ test('reversing a link animation retargets it without jumping to an endpoint', (
   assert.equal(s.window.scrollY, 0);
 });
 
-test('touch contact and reduced motion both take the animation out of the way', () => {
+test('mouse contact stops navigation and reduced motion lands immediately', () => {
   const s = setup();
   s.click('#about');
   s.advance(80);
   s.dispatch('document', 'pointerdown');
   const atContact = s.window.scrollY;
   s.advance();
-  assert.equal(s.window.scrollY, atContact, 'a finger on the glass owns the page');
+  assert.equal(s.window.scrollY, atContact, 'mouse contact stops the page');
 
   const r = setup(true);
   r.click('#about');
@@ -302,13 +395,13 @@ test('reduced motion leaves the hero untouched at every scroll position', () => 
 test('resizing re-solves the fold against the new layout', () => {
   const s = setup();
   s.scrollTo(BOUNDARY);
-  // A shorter runway, with the sidebar boxes that moved with it.
-  s.about.offsetTop = 880;
-  s.sidebarName.ink = rect(15, 923, 47, 18);
-  s.sidebarLinks[0].children.span.ink = rect(38, 1110, 42, 18);
-  s.sidebarLinks[1].children.span.ink = rect(38, 1160, 113, 18);
+  // A shorter viewport and a reflowed sidebar.
+  s.hero.offsetHeight = 880;
+  s.sidebarName.ink = rect(15, 53, 47, 18);
+  s.sidebarLinks[0].children.span.ink = rect(38, 240, 42, 18);
+  s.sidebarLinks[1].children.span.ink = rect(38, 290, 113, 18);
   s.dispatch('window', 'resize');
-  assert.equal(s.window.scrollY, 880, 'a shorter runway still ends at About');
+  assert.equal(s.window.scrollY, 880, 'a shorter viewport still ends at About');
   s.advance(16);
   const [x, y] = s.inkCentreOf(s.stage, s.heroName.ink);
   const [tx, ty] = s.targetCentre(s.sidebarName);
@@ -328,15 +421,15 @@ test('width-only resize remeasures every landing without changing scroll positio
   near(s.inkCentreOf(s.heroLinks[1], s.heroLabels[1].ink)[0], s.targetCentre(s.sidebarLinks[1].children.span)[0], 'resized link');
 });
 
-test('wheel input interrupts a link spring and never steals focus afterward', () => {
+test('a reverse wheel flick redirects a link spring and never steals focus afterward', () => {
   const s = setup();
   s.click('#about');
   s.advance(96);
-  assert.equal(s.dispatch('window', 'wheel', { deltaY: -50 }).defaultPrevented, false);
-  s.scrollTo(s.window.scrollY - 50);
-  const interrupted = s.window.scrollY;
+  const before = s.window.scrollY;
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: -50 }).defaultPrevented, true);
+  assert.equal(s.window.scrollY, before);
   s.advance();
-  assert.equal(s.window.scrollY, interrupted);
+  assert.equal(s.window.scrollY, 0);
   assert.equal(s.about.focused, undefined);
 });
 
@@ -374,10 +467,70 @@ test('outline handoff blends only after the travelling glyphs have landed', () =
   near(sourceOpacity + targetOpacity, 1, 'handoff opacity');
 });
 
+test('travelling glyphs slow into both ends rather than hitting a clamp at speed', () => {
+  const s = setup();
+  const position = p => {
+    s.scrollTo(BOUNDARY * p);
+    return s.inkCentreOf(s.stage, s.heroName.ink);
+  };
+  const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const middleStep = distance(position(.46), position(.465));
+  const arrival = [.9, .905, .91, .915, .92].map(position);
+  const steps = arrival.slice(1).map((p, i) => distance(arrival[i], p));
+  assert.ok(steps.every((step, i) => i === 0 || step < steps[i - 1]),
+    'each step approaching the landing must get smaller');
+  assert.ok(steps.at(-1) < middleStep * .05, 'the last step gently approaches rest');
+  assert.ok(distance(position(.005), position(0)) < middleStep * .05,
+    'the reverse path also slows into Home');
+});
+
+test('rounded browser scroll offsets do not quantize or repaint the spring pose', () => {
+  const precise = setup();
+  const rounded = setup();
+  let observedRounding = false;
+  rounded.window.scrollTo = ({ top }) => {
+    rounded.window.scrollY = Math.round(top);
+    observedRounding ||= rounded.window.scrollY !== top;
+    rounded.dispatch('window', 'scroll');
+  };
+  for (const destination of ['#about', '#home']) {
+    precise.click(destination);
+    rounded.click(destination);
+    for (let frame = 0; frame < 95; frame++) {
+      precise.advance(16);
+      rounded.advance(16);
+      assert.equal(rounded.stage.style.transform, precise.stage.style.transform,
+        'the drawn word keeps the spring precision in both directions');
+    }
+  }
+  assert.equal(observedRounding, true, 'the browser simulation actually rounded');
+});
+
+test('a navigation spring responds on its first display frame', () => {
+  const s = setup();
+  s.click('#about');
+  s.advance(16);
+  assert.ok(s.window.scrollY > 0, 'there is no idle frame before movement begins');
+});
+
+test('native presentation resumes at the landing after navigation completes', () => {
+  const s = setup(false, '', 'home', true);
+  s.click('#about');
+  s.advance();
+  const landing = s.stage.style.transform;
+  s.dispatch('window', 'scroll');
+  s.dispatch('window', 'resize');
+  for (let frame = 0; frame < 95; frame++) {
+    s.advance(16);
+    assert.equal(s.stage.style.transform, landing, 'a late native event cannot replay the fold');
+    assert.equal(s.stage.style.opacity, '0');
+  }
+});
+
 test('a motion preference change recalculates the shorter native section boundary', () => {
   const s = setup();
   s.scrollTo(BOUNDARY);
-  s.about.offsetTop = 720;
+  s.hero.offsetHeight = 720;
   s.context.reducedMotion.matches = true;
   s.dispatch('window', 'motionchange');
   s.advance(16);
@@ -419,4 +572,105 @@ test('new tabs, downloads and unrelated URLs retain native navigation', () => {
   assert.equal(s.click('#about', { attrs: { download: '' } }).defaultPrevented, false);
   assert.equal(s.click('#about', { href: 'https://elsewhere.test/about_me.html#about' }).defaultPrevented, false);
   assert.equal(s.click('#about', { href: 'projects.html#about' }).defaultPrevented, false);
+});
+
+test('wheel steps smooth the presentation without moving the document', () => {
+  const s = setup(false, '', 'home', true);
+  const direct = setup();
+  const atHome = s.stage.style.transform;
+  s.scrollTo(800);
+  assert.equal(s.window.scrollY, 800, 'native scroll reaches its own position immediately');
+  assert.equal(s.stage.style.transform, atHome, 'the visual does not jump by a whole wheel step');
+  s.advance(96);
+  const intermediate = s.stage.style.transform;
+  direct.scrollTo(800);
+  assert.notEqual(intermediate, atHome);
+  assert.notEqual(intermediate, direct.stage.style.transform);
+  s.advance();
+  assert.equal(s.window.scrollY, 800, 'visual smoothing never writes scrollTo');
+  assert.equal(s.stage.style.transform, direct.stage.style.transform);
+});
+
+test('reversing a wheel step continues from the presented pose', () => {
+  const s = setup(false, '', 'home', true);
+  s.scrollTo(900);
+  s.advance(96);
+  const before = s.stage.style.transform;
+  s.window.scrollY = 200;
+  s.dispatch('window', 'scroll');
+  assert.equal(s.stage.style.transform, before, 'retargeting cannot teleport the current pose');
+  s.advance();
+  const direct = setup();
+  direct.scrollTo(200);
+  assert.equal(s.stage.style.transform, direct.stage.style.transform);
+  assert.equal(s.window.scrollY, 200);
+});
+
+test('hybrid touch and keyboard bypass wheel smoothing', () => {
+  for (const input of ['touch-input', 'section-scroll-keyboard']) {
+    const s = setup(false, '', 'home', true);
+    const direct = setup();
+    s.root.classList.add(input);
+    s.scrollTo(600);
+    direct.scrollTo(600);
+    assert.equal(s.stage.style.transform, direct.stage.style.transform, input);
+  }
+});
+
+test('explicit link navigation has only its navigation spring', () => {
+  const s = setup(false, '', 'home', true);
+  s.click('#about');
+  s.advance(96);
+  const direct = setup();
+  direct.scrollTo(s.window.scrollY);
+  assert.equal(s.stage.style.transform, direct.stage.style.transform, 'no second easing trails the link motion');
+});
+
+test('About has only a small arrival offset, with no inverse-scroll correction', () => {
+  const s = setup();
+  for (const y of [0, 200, 500, 850, 1000, 1400]) {
+    s.scrollTo(y);
+    const offset = Number(/translateY\(([-\d.]+)px\)/.exec(s.about.style.transform)[1]);
+    assert.ok(offset >= 0 && offset <= 48, `at ${y}, offset was ${offset}`);
+    if (y >= BOUNDARY) assert.equal(offset, 0, 'long About content can scroll normally');
+  }
+});
+
+test('the JOSH entrance retains its center waypoint and 200ms letter stagger', () => {
+  const calls = [];
+  const letters = Array.from({ length: 4 }, (_, id) => ({ id }));
+  const wordmark = { querySelectorAll: () => letters };
+  const start = source.indexOf('    animate(wordmark, [', source.indexOf('async function playIntro()'));
+  const end = source.indexOf('    animate(portraitStage, [', start);
+  assert.ok(start > 0 && end > start);
+  vm.runInNewContext(source.slice(start, end), {
+    wordmark, window: { innerWidth: 1440 }, centerX: 0, centerY: 350,
+    wordmarkTransform: 'scaleY(1.25)', easeInOutQuart: 'quart', easeInOutCubic: 'cubic', easeOutQuart: 'out',
+    animate: (...args) => calls.push(args)
+  });
+  const [, frames, delay, duration, easing] = calls[0];
+  assert.deepEqual(Array.from(frames, frame => frame.transform), [
+    'translate3d(1440px, 350px, 0) scaleY(1.25)',
+    'translate3d(0px, 350px, 0) scaleY(1.25)',
+    'translate3d(0, 0, 0) scaleY(1.25)'
+  ]);
+  assert.equal(frames[1].offset, .5);
+  assert.equal(delay, 0);
+  assert.equal(duration, 2000);
+  assert.equal(easing, 'linear');
+  assert.deepEqual(calls.slice(1).map(call => call[2]), [0, 200, 400, 600]);
+});
+
+test('tiny reverse wheel jitter does not release a gesture or undo its landing', () => {
+  const s = setup();
+  s.dispatch('window', 'wheel', { deltaY: 40 });
+  for (let i = 0; i < 30; i++) {
+    s.advance(64);
+    s.dispatch('window', 'wheel', { deltaY: 3 });
+  }
+  assert.equal(s.window.scrollY, BOUNDARY);
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: -2 }).defaultPrevented, true);
+  assert.equal(s.dispatch('window', 'wheel', { deltaY: 2 }).defaultPrevented, true);
+  s.advance();
+  assert.equal(s.window.scrollY, BOUNDARY);
 });
