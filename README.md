@@ -28,3 +28,7 @@ The static wordmark is restored after the animation. Reduced motion, fragment li
 Navigation uses the letter scramble from Kisaka’s Services section. It spreads from the character nearest the pointer, with a 28 ms stagger, 260 ms scramble, and 45 ms glyph changes. An overlay preserves the original font spacing and link dimensions. “Meet Josh” uses the same 680 ms masked word roll and 420 ms diagonal arrow swap, with an inverted monochrome button on hover.
 
 Keyboard focus runs the same effects. Touch links activate directly, and reduced motion keeps the text and arrow static. Resizing, font readiness, and motion/pointer preference changes restore any active scramble immediately.
+
+## Mobile navigation
+
+At 700px and below, the same navigation links open in a native popover from a 48px hamburger button. The two lines morph into a cross over 250ms; the panel uses a 200ms transform/opacity transition. Escape, outside clicks, link selection, scrolling, and resizing back to desktop dismiss it. Keyboard interactions are immediate; reduced motion keeps a gentle panel fade. Browsers without popover support retain the inline links.

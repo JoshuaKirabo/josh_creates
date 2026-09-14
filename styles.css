@@ -37,6 +37,8 @@
   color-scheme: dark;
   --edge: clamp(20px, 2.8vw, 56px);
   --ease: cubic-bezier(.2, .75, .25, 1);
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
   font-family: Arial, Helvetica, sans-serif;
   color: var(--white);
   background: var(--background);
@@ -52,7 +54,7 @@ body { margin: 0; }
 
 a { color: inherit; text-decoration: none; }
 button, a { -webkit-tap-highlight-color: transparent; }
-a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
+button:focus-visible, a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 ::selection { color: var(--ink); background: var(--accent); }
 .skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; padding: 14px; background: var(--accent); color: var(--ink); transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }
@@ -232,3 +234,69 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .hero-heading-line, .signature, .button-label { position: relative; display: inline-block; }
 a[href], button, [role="button"], [role="link"] { cursor: pointer; }
 span.nav-link { cursor: default; }
+
+/* Native popover handles light dismissal, Escape, and sequential keyboard focus. */
+.navigation-panel { display: contents; }
+.menu-toggle { display: none; }
+@media (max-width: 700px) {
+  .site-header { z-index: 10; }
+  .site-header:has(.menu-toggle[aria-expanded="true"]) { opacity: 1; }
+  .menu-ready .site-header { justify-content: flex-end; }
+  .menu-ready .menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--white);
+    touch-action: manipulation;
+  }
+  .menu-icon { position: relative; display: block; width: 26px; height: 20px; }
+  .menu-icon > span {
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 26px;
+    height: 2px;
+    background: currentColor;
+    transform: translateY(-4px) rotate(0deg);
+    transition: transform 250ms var(--ease-in-out);
+  }
+  .menu-icon > span + span { transform: translateY(4px) rotate(0deg); }
+  .menu-toggle[aria-expanded="true"] .menu-icon > span { transform: translateY(0) rotate(45deg); }
+  .menu-toggle[aria-expanded="true"] .menu-icon > span + span { transform: translateY(0) rotate(-45deg); }
+  .navigation-panel[popover] {
+    display: none;
+    position: fixed;
+    inset: auto max(var(--edge), env(safe-area-inset-right)) auto auto;
+    width: min(360px, calc(100vw - 2 * var(--edge)));
+    margin: 0;
+    padding: 20px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    color: var(--white);
+    background: linear-gradient(#060606ed, #060606ed), url('assets/background-grain.png') center / 480px auto;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px #0008;
+    opacity: 0;
+    transform: translateY(-8px) scale(.97);
+    transform-origin: top right;
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), display 200ms allow-discrete, overlay 200ms allow-discrete;
+  }
+  .navigation-panel[popover]:popover-open { display: block; opacity: 1; transform: translateY(0) scale(1); }
+  @starting-style {
+    .navigation-panel[popover]:popover-open { opacity: 0; transform: translateY(-8px) scale(.97); }
+  }
+  .navigation-panel[popover] .nav-group { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .navigation-panel[popover] .nav-group-right { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .navigation-panel[popover] .nav-divider { display: none; }
+  .navigation-panel[popover] .nav-link { min-height: 52px; font-family: 'Bounded', Arial, sans-serif; font-size: 1rem; letter-spacing: -.01em; white-space: normal; }
+  .menu-keyboard .menu-icon > span, .menu-keyboard .navigation-panel[popover] { transition: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navigation-panel[popover], .navigation-panel[popover]:popover-open { transform: none; transition: opacity 180ms ease, display 180ms allow-discrete, overlay 180ms allow-discrete !important; }
+  @starting-style { .navigation-panel[popover]:popover-open { opacity: 0; } }
+  .menu-keyboard .navigation-panel[popover] { transition: none !important; }
+}

@@ -10,6 +10,57 @@ const hero = document.querySelector('.hero');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
+// Keep the desktop links in place; enhance the same links as a mobile popover.
+const menuToggle = document.querySelector('.menu-toggle');
+const navigationPanel = document.querySelector('.navigation-panel');
+const mobileNavigation = window.matchMedia('(max-width: 700px)');
+if (menuToggle && navigationPanel && 'showPopover' in HTMLElement.prototype) {
+  document.documentElement.classList.add('menu-ready');
+  const setMenuState = (open) => {
+    menuToggle.setAttribute('aria-expanded', String(open));
+    menuToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+  };
+  const positionMenu = () => {
+    const top = menuToggle.getBoundingClientRect().bottom + 8;
+    navigationPanel.style.top = `${top}px`;
+    navigationPanel.style.maxHeight = `max(0px, calc(100dvh - ${top + 20}px - env(safe-area-inset-bottom)))`;
+  };
+  const syncMenu = () => {
+    if (navigationPanel.matches(':popover-open')) navigationPanel.hidePopover();
+    if (mobileNavigation.matches) navigationPanel.setAttribute('popover', 'auto');
+    else {
+      navigationPanel.removeAttribute('popover');
+      navigationPanel.style.removeProperty('top');
+      navigationPanel.style.removeProperty('max-height');
+    }
+    setMenuState(false);
+  };
+  menuToggle.addEventListener('click', (event) => {
+    document.documentElement.classList.toggle('menu-keyboard', event.detail === 0);
+  });
+  navigationPanel.addEventListener('beforetoggle', (event) => {
+    const open = event.newState === 'open';
+    if (open) positionMenu();
+    setMenuState(open);
+  });
+  navigationPanel.addEventListener('click', (event) => {
+    if (event.target.closest('a') && navigationPanel.matches(':popover-open')) {
+      navigationPanel.hidePopover();
+      menuToggle.focus({ preventScroll: true });
+    }
+  });
+  document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
+  document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
+  mobileNavigation.addEventListener('change', syncMenu);
+  window.addEventListener('resize', () => {
+    if (navigationPanel.matches(':popover-open')) positionMenu();
+  });
+  window.addEventListener('scroll', () => {
+    if (navigationPanel.matches(':popover-open')) navigationPanel.hidePopover();
+  }, { passive: true });
+  syncMenu();
+}
+
 // Full-frame noise evolves in place; the larger grains keep independent anchors and speeds.
 function createGrainParticles(canvas) {
   const context = canvas?.getContext('2d');
