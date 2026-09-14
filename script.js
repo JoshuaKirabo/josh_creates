@@ -256,7 +256,8 @@ async function playIntro() {
   window.introFallback = setTimeout(finish, 8000);
 
   try {
-    const portrait = hero.querySelector('.portrait');
+    const portrait = new Image();
+    portrait.src = 'assets/josh_portrait_cartoon_bw.png';
     const mask = new Image();
     mask.src = 'assets/josh_portrait_cartoon_mask.png';
     await Promise.race([

@@ -58,6 +58,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 /* The screen sets the composition's height; content has no fixed height floor. */
 .hero {
   position: relative;
+  height: 100vh;
   height: 100svh;
   height: 100dvh;
   overflow: clip;
@@ -97,7 +98,6 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
 .portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; }
 .portrait { position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 190%; transform: translateX(-50%); object-fit: contain; object-position: center top; }
-.portrait-shade { filter: brightness(.26) saturate(.65); -webkit-mask-image: linear-gradient(transparent 25%, #000 37%); mask-image: linear-gradient(transparent 25%, #000 37%); }
 .hero-content { position: absolute; z-index: 5; bottom: var(--content-bottom); left: 50%; width: max-content; max-width: calc(100% - 2 * var(--edge)); transform: translateX(-50%); color: var(--white); text-align: center; }
 h1 { font-family: 'Geist Mono', monospace; text-transform: none; font-size: min(clamp(2.25rem, 5.2vw, 6.25rem), 8dvh); font-weight: 300; line-height: 1.05; letter-spacing: .02em; margin: 0 0 clamp(12px, 2.5dvh, 25px); }
 h1 span { white-space: nowrap; }
@@ -148,13 +148,15 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 @media (max-width: 700px) {
   :root { --edge: 20px; }
   .hero { --masthead-size: min(28vw, 24dvh); --content-bottom: calc(var(--footer-bottom) + 88px); }
-  .site-header { gap: 4px 12px; flex-wrap: wrap; }
-  .nav-group { gap: 10px; }
-  .nav-link { font-size: .9375rem; }
+  .site-header { gap: 4px; flex-wrap: nowrap; }
+  .nav-group { gap: clamp(3px, .8vw, 6px); }
+  .nav-link { font-family: Arial, Helvetica, sans-serif; font-size: clamp(.75rem, 2.8vw, 1rem); letter-spacing: -.025em; }
   .portrait-stage { top: calc(var(--masthead-size) * 1.06 + 56px); }
   h1 { font-size: min(9vw, 9dvh, 5.2rem); }
   .button { min-height: 44px; }
-  .hero-footer { align-items: center; }
+  .hero-footer { flex-direction: column; flex-wrap: nowrap; align-items: center; gap: 6px; text-align: center; }
+  .social-links { order: -1; margin-left: 0; justify-content: center; }
+  .signature { font-size: .75rem; }
   .section { padding-top: 35px; padding-bottom: 55px; }
   .small-label { font-size: .75rem; }
   .section-topline { align-items: start; gap: 30px; padding-bottom: 22px; }
@@ -175,9 +177,10 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 }
 @media (max-width: 370px) {
   :root { --edge: 14px; }
-  .nav-group { gap: 7px; }
-  .nav-link { font-size: .8125rem; }
   .hero-footer { font-size: .6875rem; }
+}
+@media (max-width: 700px) and (max-height: 550px) and (min-aspect-ratio: 6/5) {
+  .hero { --content-bottom: calc(var(--footer-bottom) + 82px); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -185,25 +188,8 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .social-link { transition: opacity 180ms ease !important; }
 }
 
-/* Separate cartoon mask preserves the lettering behind the portrait. */
-.portrait-cartoon {
-  -webkit-mask-image: url('assets/josh_portrait_cartoon_mask.png');
-  mask-image: url('assets/josh_portrait_cartoon_mask.png');
-  mask-mode: luminance;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  filter: grayscale(1);
-}
-.portrait-cartoon.portrait-shade {
-  filter: grayscale(1) brightness(.26);
-  -webkit-mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
-  mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
-  mask-mode: alpha, luminance;
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-}
+/* The SVG owns the cutout and shading masks for consistent Safari rendering. */
+.portrait-cartoon { filter: grayscale(1); }
 
 /* Name-first entrance. The unmodified wordmark returns at the end of its climb. */
 .hero-heading-line { display: inline-block; }
