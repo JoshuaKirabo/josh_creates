@@ -17,7 +17,7 @@
   <script>
     // Hide only when the browser can run the intro; otherwise show the page normally.
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !location.hash &&
-        typeof Element.prototype.animate === 'function' && CSS.supports('translate', '0 0')) {
+        typeof Element.prototype.animate === 'function') {
       document.documentElement.classList.add('intro-pending');
       window.introFallback = setTimeout(() => {
         document.documentElement.classList.remove('intro-pending');
@@ -34,11 +34,11 @@
       <div class="hero-atmosphere" aria-hidden="true">
         <span class="ambient-light"></span>
       </div>
-      <canvas class="grain-particles" aria-hidden="true"></canvas>
+      <div class="grain-particles" aria-hidden="true"></div>
       <div class="wordmark" aria-hidden="true">JOSH</div>
       <header class="site-header">
-        <button class="menu-toggle" type="button" popovertarget="mobile-navigation" aria-controls="mobile-navigation" aria-expanded="false" aria-label="Open navigation">
-          <span class="menu-icon" aria-hidden="true"><span></span><span></span></span>
+        <button class="menu-toggle" type="button" aria-controls="mobile-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation">
+          <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
         <div class="navigation-panel" id="mobile-navigation">
         <nav class="nav-group" aria-label="Main navigation">
@@ -112,5 +112,6 @@
       </div>
     </section>
   </main>
+  <dialog class="mobile-menu" id="mobile-menu" aria-label="Navigation"></dialog>
 </body>
 </html>
