@@ -368,9 +368,9 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .mobile-menu.is-open .nav-link { opacity: 1; transform: translateY(0); }
   .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(2) { transition-delay: 30ms; }
   .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(3) { transition-delay: 60ms; }
-  .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(4) { transition-delay: 90ms; }
-  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(1) { transition-delay: 120ms; }
-  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(2) { transition-delay: 150ms; }
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(1) { transition-delay: 90ms; }
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(2) { transition-delay: 120ms; }
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(3) { transition-delay: 150ms; }
   .menu-keyboard .mobile-menu-surface,
   .menu-keyboard .menu-icon > span,
   .menu-keyboard .mobile-menu .nav-link { transition: none !important; }

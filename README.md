@@ -49,4 +49,4 @@ The native dialog contains keyboard focus and makes the page behind it inert; pa
 
 The social icons enter individually with a 160ms opacity/8px rise transition and 40ms stagger (280ms for the group), using the existing `--ease-out` curve. Their transitions also run when touch skips the main intro, so they no longer appear abruptly. Hit areas remain available during the entrance. Keyboard skips show them immediately; reduced motion removes the rise. Stagger delays apply only during the entrance, preserving immediate touch and hover feedback afterward.
 
-Blog follows Projects in both desktop and mobile navigation, using the same placeholder behavior as the existing navigation until its destination is provided.
+Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s connect. It follows Projects in the mobile menu, using the same placeholder behavior as the existing navigation until its destination is provided.
