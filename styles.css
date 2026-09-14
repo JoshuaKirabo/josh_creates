@@ -43,7 +43,8 @@
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
-html { min-height: 100%; scroll-behavior: smooth; scroll-padding-top: 24px; }
+/* Carry the texture through exposed safe areas and overscroll as well as the hero. */
+html { min-height: 100%; scroll-behavior: smooth; scroll-padding-top: 24px; background: var(--background) url('assets/background-grain.png') center top / 480px auto repeat; }
 body { margin: 0; }
 /* Full-frame evolving noise and independently moving particles; no repeating tile. */
 .section { position: relative; isolation: isolate; }
@@ -58,6 +59,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 /* The screen sets the composition's height; content has no fixed height floor. */
 .hero {
   position: relative;
+  background: var(--background);
   height: 100vh;
   height: 100svh;
   height: 100dvh;
