@@ -43,8 +43,10 @@ Reduced motion retains opacity feedback without compression. Increased contrast 
 
 ## Mobile navigation
 
-At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The opening and closing controls occupy the same fixed 48px hit area. The dialog's icon morphs from three lines into a cross over 200ms, without moving the live trigger between containers. Only the hidden navigation links move into the dialog. Their initial styles are resolved before opening so the animation starts reliably across browser engines. Five equally spaced links enter with a subtle 30ms stagger, finishing within 280ms. The black surface fades over 250ms, and every transition can reverse immediately on another tap.
+At 700px and below, the three-line button above JOSH opens a full-screen black navigation dialog. The opening and closing controls occupy the same fixed 48px hit area. The dialog's icon morphs from three lines into a cross over 200ms, without moving the live trigger between containers. Only the hidden navigation links move into the dialog. Their initial styles are resolved before opening so the animation starts reliably across browser engines. Six equally spaced links enter with a subtle 30ms stagger, finishing within 300ms. The black surface fades over 250ms, and every transition can reverse immediately on another tap.
 
 The native dialog contains keyboard focus and makes the page behind it inert; page scrolling is locked until closing finishes. Escape, link selection, and returning to desktop dismiss it. Keyboard actions are immediate, and reduced motion uses a gentle fade. Without dialog support or JavaScript, the inline links remain available.
 
 The social icons enter individually with a 160ms opacity/8px rise transition and 40ms stagger (280ms for the group), using the existing `--ease-out` curve. Their transitions also run when touch skips the main intro, so they no longer appear abruptly. Hit areas remain available during the entrance. Keyboard skips show them immediately; reduced motion removes the rise. Stagger delays apply only during the entrance, preserving immediate touch and hover feedback afterward.
+
+Blog follows Projects in both desktop and mobile navigation, using the same placeholder behavior as the existing navigation until its destination is provided.
