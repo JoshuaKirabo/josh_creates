@@ -10,114 +10,292 @@ const hero = document.querySelector('.hero');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-// Full-frame noise evolves in place; the larger grains keep independent anchors and speeds.
-function createGrainParticles(canvas) {
-  const context = canvas?.getContext('2d');
-  if (!context) return { setPlaying() {} };
-  let particles = [];
+// Touch feedback follows contact, while native scrolling and click timing stay intact.
+function enableTouchFeedback() {
+  const root = document.documentElement;
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link';
+  let press = null;
+  let released = null;
+
+  function cancel() {
+    if (!press) return;
+    press.cancelled = true;
+    press.element.classList.remove('is-touch-pressed');
+  }
+
+  function reset() {
+    cancel();
+    press = released = null;
+  }
+
+  document.addEventListener('pointerdown', (event) => {
+    const touch = event.pointerType === 'touch' || event.pointerType === 'pen';
+    root.classList.toggle('touch-input', touch);
+    if (!event.isPrimary) {
+      // A second finger belongs to the browser's zoom/pan gesture.
+      cancel();
+      return;
+    }
+    reset();
+    if (!touch || event.button !== 0) return;
+    const element = event.target.closest(controls);
+    if (!element || element.matches(':disabled, [aria-disabled="true"]')) return;
+    press = { element, pointerId: event.pointerId, x: event.clientX, y: event.clientY, cancelled: false };
+    element.classList.add('is-touch-pressed');
+  }, { capture: true, passive: true });
+
+  document.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'mouse') root.classList.remove('touch-input');
+    if (!press || event.pointerId !== press.pointerId || press.cancelled) return;
+    // Ten pixels of tolerance absorb finger jitter. Beyond that, yield to scrolling.
+    if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) cancel();
+  }, { capture: true, passive: true });
+
+  document.addEventListener('pointerup', (event) => {
+    if (!press || event.pointerId !== press.pointerId) return;
+    // Let the browser resolve the click target. Hit-testing the compressed visual
+    // here would incorrectly reject an otherwise valid tap at the button's edge.
+    if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 10) cancel();
+    press.element.classList.remove('is-touch-pressed');
+    released = press;
+    press = null;
+  }, { capture: true, passive: true });
+
+  document.addEventListener('click', (event) => {
+    const completed = released;
+    released = null;
+    // Some browsers still click after a small drag that never started a scroll.
+    if (event.detail !== 0 && completed?.cancelled && completed.element.contains(event.target)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  document.addEventListener('pointercancel', (event) => {
+    if (event.pointerId === press?.pointerId) reset();
+  }, { capture: true, passive: true });
+  document.addEventListener('lostpointercapture', (event) => {
+    if (event.pointerId === press?.pointerId) cancel();
+  }, true);
+  document.addEventListener('contextmenu', cancel, true);
+  document.addEventListener('scroll', cancel, { capture: true, passive: true });
+  document.addEventListener('keydown', () => {
+    reset();
+    root.classList.remove('touch-input');
+  }, true);
+  document.addEventListener('visibilitychange', reset);
+  window.addEventListener('blur', reset);
+  window.addEventListener('pagehide', reset);
+  window.addEventListener('resize', reset, { passive: true });
+  root.classList.add('touch-feedback-ready');
+}
+enableTouchFeedback();
+
+// Keep both controls anchored. Only the hidden links move into the native dialog;
+// reparenting the live hamburger used to interrupt its press/morph on mobile.
+const menuToggle = document.querySelector('.hero .menu-toggle');
+const menuClose = document.querySelector('.menu-close');
+const navigationPanel = document.querySelector('.navigation-panel');
+const mobileMenu = document.querySelector('.mobile-menu');
+const mobileNavigation = window.matchMedia('(max-width: 700px)');
+if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal === 'function') {
+  const dialogHeader = mobileMenu.querySelector('.site-header');
+  const homePosition = document.createComment('Navigation returns here on close.');
+  navigationPanel.before(homePosition);
+  let menuOpen = false;
+  let revision = 0;
+  document.documentElement.classList.add('menu-ready');
+
+  function restoreNavigation() {
+    homePosition.after(navigationPanel);
+    mobileMenu.close();
+    document.documentElement.classList.remove('menu-open');
+    if (mobileNavigation.matches) menuToggle.focus({ preventScroll: true });
+  }
+
+  async function setMenuOpen(open, instant = false) {
+    if (open && !mobileNavigation.matches) return;
+    const currentRevision = ++revision;
+    menuOpen = open;
+    menuToggle.setAttribute('aria-expanded', String(open));
+
+    if (open && !mobileMenu.open) {
+      dialogHeader.append(navigationPanel);
+      document.documentElement.classList.add('menu-open');
+      mobileMenu.showModal();
+      menuClose.focus({ preventScroll: true });
+      // Flush the actual animated properties after showModal. A layout read on
+      // the dialog alone does not reliably establish descendant styles in Safari.
+      mobileMenu.querySelectorAll('.mobile-menu-surface, .menu-icon > span, .nav-link').forEach((element) => {
+        const style = getComputedStyle(element);
+        void style.opacity;
+        void style.transform;
+      });
+    }
+    mobileMenu.classList.toggle('is-open', open);
+    if (open || !mobileMenu.open) return;
+    if (!instant) {
+      // Keep the toggle available throughout exit; reopening cancels this completion.
+      await Promise.allSettled(mobileMenu.getAnimations({ subtree: true }).map(animation => animation.finished));
+    }
+    if (currentRevision === revision && !menuOpen) restoreNavigation();
+  }
+
+  function toggleMenu(event) {
+    document.documentElement.classList.toggle('menu-keyboard', event.detail === 0);
+    setMenuOpen(!menuOpen);
+  }
+  menuToggle.addEventListener('click', toggleMenu);
+  menuClose.addEventListener('click', toggleMenu);
+  mobileMenu.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    setMenuOpen(false);
+  });
+  navigationPanel.addEventListener('click', (event) => {
+    if (event.target.closest('a') && mobileMenu.open) setMenuOpen(false);
+  });
+  document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
+  document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
+  mobileNavigation.addEventListener('change', () => {
+    if (!mobileNavigation.matches) setMenuOpen(false, true);
+  });
+}
+
+// Paint the grain once. Only sparse particle layers move; the fine texture stays anchored.
+function createGrainParticles(container) {
+  if (!container) return { setPlaying() {} };
+  const overscan = 24;
+  const drifts = [
+    { radius: 8, duration: 12000, phase: 0, direction: 1 },
+    { radius: 12, duration: 14000, phase: 95, direction: -1 },
+    { radius: 16, duration: 16000, phase: 205, direction: 1 },
+    { radius: 10, duration: 18000, phase: 290, direction: -1 }
+  ];
+  const layers = [null, ...drifts].map((drift) => {
+    const canvas = document.createElement('canvas');
+    canvas.className = drift ? 'grain-surface grain-drift' : 'grain-surface';
+    return { canvas, context: canvas.getContext('2d'), drift,
+      seed: (Math.random() * 0xffffffff) >>> 0 || 1 };
+  });
+  if (layers.some((layer) => !layer.context)) return { setPlaying() {} };
+  container.replaceChildren(...layers.map((layer) => layer.canvas));
+
   let width = 0;
   let height = 0;
-  let elapsed = 0;
-  let frame = null;
-  let previousTime = 0;
+  let highDetail;
   let playing = false;
-  let textureFrom;
-  let textureTo;
-  let textureCycle = 0;
-  const texturePeriod = 2;
+  let rampFrame = null;
+  let rampStarted = null;
+  const animations = [];
+  const omega = 2 * Math.PI / .3; // Critically damped speed, response 0.3 s, no overshoot.
 
-  function makeTexture() {
-    const texture = document.createElement('canvas');
-    // One unique field covers the view. Cap its size on very large displays.
-    const scale = Math.min(1, Math.sqrt(1400000 / Math.max(1, width * height)));
-    texture.width = Math.max(1, Math.round(width * scale));
-    texture.height = Math.max(1, Math.round(height * scale));
-    const textureContext = texture.getContext('2d');
-    const pixels = textureContext.createImageData(texture.width, texture.height);
-    let seed = (Math.random() * 0xffffffff) >>> 0 || 1;
-    for (let i = 0; i < pixels.data.length; i += 4) {
+  function paint(layer, scale, count) {
+    const { canvas, context, drift } = layer;
+    const surfaceWidth = width + overscan * 2;
+    const surfaceHeight = height + overscan * 2;
+    canvas.width = Math.max(1, Math.floor(surfaceWidth * scale));
+    canvas.height = Math.max(1, Math.floor(surfaceHeight * scale));
+    canvas.style.width = `${surfaceWidth}px`;
+    canvas.style.height = `${surfaceHeight}px`;
+    let seed = layer.seed;
+    const random = () => {
       seed ^= seed << 13;
       seed ^= seed >>> 17;
       seed ^= seed << 5;
-      const shade = seed & 1 ? 255 : 0;
-      const strength = (seed >>> 24) / 255;
-      pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = shade;
-      pixels.data[i + 3] = Math.round(strength * strength * 48);
+      return (seed >>> 0) / 0x100000000;
+    };
+    if (!drift) {
+      const pixels = context.createImageData(canvas.width, canvas.height);
+      for (let i = 0; i < pixels.data.length; i += 4) {
+        const shade = random() < .5 ? 255 : 0;
+        const strength = random();
+        pixels.data[i] = pixels.data[i + 1] = pixels.data[i + 2] = shade;
+        pixels.data[i + 3] = Math.round(strength * strength * 48);
+      }
+      context.putImageData(pixels, 0, 0);
+      return;
     }
-    textureContext.putImageData(pixels, 0, 0);
-    return texture;
-  }
-
-  function draw() {
-    context.clearRect(0, 0, width, height);
-    const nextCycle = Math.floor(elapsed / texturePeriod);
-    if (nextCycle !== textureCycle) {
-      textureFrom = textureTo;
-      textureTo = makeTexture();
-      textureCycle = nextCycle;
-    }
-    // Crossfade different random values at each point, without translating the surface.
-    const blend = (elapsed % texturePeriod) / texturePeriod;
-    context.globalAlpha = 1 - blend;
-    context.drawImage(textureFrom, 0, 0, width, height);
-    context.globalAlpha = blend;
-    context.drawImage(textureTo, 0, 0, width, height);
+    context.setTransform(canvas.width / surfaceWidth, 0, 0, canvas.height / surfaceHeight, 0, 0);
     context.fillStyle = '#fff';
-    const particleTime = elapsed * .5;
-    for (const grain of particles) {
-      const x = grain.x * width + Math.sin(particleTime * grain.speedX + grain.phaseX) * grain.rangeX;
-      const y = grain.y * height + Math.sin(particleTime * grain.speedY + grain.phaseY) * grain.rangeY;
-      context.globalAlpha = grain.alpha;
-      context.fillRect(x, y, grain.size, grain.size);
+    for (let i = 0; i < count; i++) {
+      const x = random() * surfaceWidth;
+      const y = random() * surfaceHeight;
+      const radius = .5 + random() * .4;
+      context.globalAlpha = .18 + random() * .24;
+      context.beginPath();
+      context.arc(x, y, radius, 0, Math.PI * 2);
+      context.fill();
     }
     context.globalAlpha = 1;
   }
 
   function resize() {
-    width = hero.clientWidth;
-    height = hero.clientHeight;
-    const ratio = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.round(width * ratio);
-    canvas.height = Math.round(height * ratio);
-    context.setTransform(ratio, 0, 0, ratio, 0, 0);
-    textureFrom = makeTexture();
-    textureTo = makeTexture();
-    textureCycle = Math.floor(elapsed / texturePeriod);
-    const count = Math.min(3600, Math.round(width * height / 320));
-    particles.length = Math.min(particles.length, count);
-    while (particles.length < count) {
-      particles.push({
-        x: Math.random(), y: Math.random(),
-        phaseX: Math.random() * Math.PI * 2, phaseY: Math.random() * Math.PI * 2,
-        speedX: .7 + Math.random() * 1.2, speedY: .65 + Math.random() * 1.1,
-        rangeX: 14 + Math.random() * 26, rangeY: 12 + Math.random() * 22,
-        size: 1 + Math.random() * .8, alpha: .26 + Math.random() * .28
-      });
-    }
-    draw();
-  }
-
-  function tick(now) {
-    frame = null;
-    if (!playing) return;
-    if (!previousTime) previousTime = now;
-    // Draw at the display cadence so the wider particle travel stays smooth.
-    elapsed += Math.min(now - previousTime, 64) / 1000;
-    previousTime = now;
-    draw();
-    frame = requestAnimationFrame(tick);
+    const nextHighDetail = finePointer.matches;
+    const nextWidth = hero.clientWidth;
+    // Reserve the touch screen's full height so Safari's toolbar does not rebuild
+    // the grain as it expands and collapses. The container clips the spare area.
+    const nextHeight = nextHighDetail ? hero.clientHeight :
+      Math.max(hero.clientHeight, window.screen?.height || 0);
+    if (width === nextWidth && height === nextHeight && highDetail === nextHighDetail) return;
+    width = nextWidth;
+    height = nextHeight;
+    highDetail = nextHighDetail;
+    const area = (width + overscan * 2) * (height + overscan * 2);
+    const pixelBudget = highDetail ? 1400000 : 350000;
+    const scale = Math.min(1, Math.sqrt(pixelBudget / Math.max(1, area)));
+    const count = Math.ceil((highDetail ? Math.min(3600, area / 320) : Math.min(900, area / 700)) / drifts.length);
+    layers.forEach((layer) => paint(layer, scale, count));
   }
 
   resize();
+  layers.forEach(({ canvas, drift }) => {
+    if (!drift) return;
+    // Equal-and-opposite rotations describe a continuous orbit without rotating
+    // the painted field. The first and last positions AND velocities match.
+    const transform = (angle) => `rotate(${angle}deg) translate3d(${drift.radius}px, 0, 0) rotate(${-angle}deg)`;
+    canvas.style.transform = transform(drift.phase);
+    if (typeof canvas.animate !== 'function') return;
+    const animation = canvas.animate([
+      { transform: transform(drift.phase) },
+      { transform: transform(drift.phase + drift.direction * 360) }
+    ], { duration: drift.duration, iterations: Infinity, easing: 'linear', fill: 'both' });
+    animation.pause();
+    animation.currentTime = 0;
+    animation.playbackRate = 0;
+    animations.push(animation);
+  });
+
+  function ramp(now) {
+    rampFrame = null;
+    if (!playing) return;
+    if (rampStarted === null) rampStarted = now;
+    const elapsed = (now - rampStarted) / 1000;
+    const speed = 1 - (1 + omega * elapsed) * Math.exp(-omega * elapsed);
+    const settled = 1 - speed < .001;
+    animations.forEach((animation) => animation.updatePlaybackRate(settled ? 1 : speed));
+    // Once up to speed, the browser owns the motion: no canvas redraws, timers,
+    // texture allocations, or JavaScript animation loop during steady motion.
+    if (!settled) rampFrame = requestAnimationFrame(ramp);
+  }
+
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(hero);
   else window.addEventListener('resize', resize, { passive: true });
+  finePointer.addEventListener('change', resize);
   return {
     setPlaying(value) {
       if (playing === value) return;
       playing = value;
-      previousTime = 0;
-      if (frame !== null) cancelAnimationFrame(frame);
-      frame = playing ? requestAnimationFrame(tick) : null;
+      if (rampFrame !== null) cancelAnimationFrame(rampFrame);
+      rampFrame = null;
+      rampStarted = null;
+      animations.forEach((animation) => {
+        if (playing) {
+          animation.updatePlaybackRate(0);
+          animation.play();
+        } else animation.pause();
+      });
+      // Pausing holds each layer's current position. Resuming accelerates from it.
+      if (playing && animations.length) rampFrame = requestAnimationFrame(ramp);
     }
   };
 }
@@ -195,11 +373,14 @@ const grainParticles = createGrainParticles(hero.querySelector('.grain-particles
 const cursorGlow = createCursorGlow(hero.querySelector('.ambient-light'));
 const increasedContrast = window.matchMedia('(prefers-contrast: more)');
 let heroIsVisible = true;
+let pageIsActive = true;
 function syncAmbientMotion() {
-  const playing = heroIsVisible && !document.hidden && !reducedMotion.matches && !increasedContrast.matches;
+  // Prepainted layers can drift during the entrance without a canvas render loop.
+  const playing = heroIsVisible && pageIsActive && !document.hidden && !reducedMotion.matches &&
+    !increasedContrast.matches;
   hero.dataset.ambientMotion = playing ? 'playing' : 'paused';
   grainParticles.setPlaying(playing);
-  cursorGlow.setActive(playing && finePointer.matches);
+  cursorGlow.setActive(playing && finePointer.matches && !document.documentElement.classList.contains('intro-pending'));
 }
 if ('IntersectionObserver' in window) {
   const ambientVisibility = new IntersectionObserver(([entry]) => {
@@ -210,53 +391,78 @@ if ('IntersectionObserver' in window) {
 }
 document.addEventListener('visibilitychange', syncAmbientMotion);
 window.addEventListener('pagehide', () => {
-  grainParticles.setPlaying(false);
-  cursorGlow.setActive(false);
-  hero.dataset.ambientMotion = 'paused';
+  pageIsActive = false;
+  syncAmbientMotion();
 });
-window.addEventListener('pageshow', syncAmbientMotion);
+window.addEventListener('pageshow', () => {
+  pageIsActive = true;
+  syncAmbientMotion();
+});
 reducedMotion.addEventListener('change', syncAmbientMotion);
 increasedContrast.addEventListener('change', syncAmbientMotion);
 finePointer.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
 
-// Text scrambles into its final position on the shared entrance clock.
+// Transform and opacity reveals share one entrance clock.
 async function playIntro() {
   const root = document.documentElement;
   if (!root.classList.contains('intro-pending')) return;
 
   const wordmark = hero.querySelector('.wordmark');
   const animations = [];
+  const viewportWidth = document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight;
+  const skipEvents = ['orientationchange', 'pagehide', 'wheel', 'touchstart', 'keydown', 'focusin'];
   let clone;
   let finished = false;
   let readyTimeout;
+  let socialTimer;
   const scrambleTimers = [];
-  const finish = () => {
+  const revealSocials = (instant = false) => {
+    if (!root.classList.contains('socials-pending')) return;
+    root.classList.toggle('socials-instant', instant);
+    root.classList.add('socials-revealing');
+    root.classList.remove('socials-pending');
+    setTimeout(() => root.classList.remove('socials-revealing'), 300);
+  };
+  const finish = (event) => {
     if (finished) return;
     finished = true;
     clearTimeout(window.introFallback);
     clearTimeout(readyTimeout);
+    clearTimeout(socialTimer);
     scrambleTimers.forEach(clearTimeout);
     introScrambles.forEach((effect) => effect.reset());
     root.classList.remove('intro-pending');
+    revealSocials(event?.type === 'keydown' || event?.type === 'focusin' || event?.type === 'pagehide');
     animations.forEach((animation) => animation.cancel());
     clone?.remove();
-    ['resize', 'pagehide', 'wheel', 'touchstart', 'keydown', 'focusin'].forEach((event) => {
+    skipEvents.forEach((event) => {
       window.removeEventListener(event, finish);
     });
+    window.removeEventListener('resize', onResize);
     reducedMotion.removeEventListener('change', finish);
+    syncAmbientMotion();
+  };
+  const onResize = () => {
+    // Mobile refresh and browser chrome can emit resize without changing the layout width.
+    // Only a new composition should skip the entrance; height-only touch resizes keep playing.
+    if (document.documentElement.clientWidth !== viewportWidth ||
+        (finePointer.matches && window.innerHeight !== viewportHeight)) finish();
   };
 
   // Any deliberate interaction can skip the intro. History restores keep their position.
-  ['resize', 'pagehide', 'wheel', 'touchstart', 'keydown', 'focusin'].forEach((event) => {
+  skipEvents.forEach((event) => {
     window.addEventListener(event, finish, { passive: true });
   });
+  window.addEventListener('resize', onResize, { passive: true });
   reducedMotion.addEventListener('change', finish);
   clearTimeout(window.introFallback);
   window.introFallback = setTimeout(finish, 8000);
 
   try {
-    const portrait = hero.querySelector('.portrait');
+    const portrait = new Image();
+    portrait.src = 'assets/josh_portrait_cartoon_bw.png';
     const mask = new Image();
     mask.src = 'assets/josh_portrait_cartoon_mask.png';
     await Promise.race([
@@ -282,19 +488,12 @@ async function playIntro() {
     const centerX = window.innerWidth / 2 - (bounds.left + bounds.width / 2);
     const centerY = window.innerHeight / 2 - (bounds.top + bounds.height / 2);
 
-    // Sample the exact power eases; linear() interpolates between these samples.
-    const powerEase = (power, inOut = false) => {
-      const values = Array.from({ length: 81 }, (_, index) => {
-        const t = index / 80;
-        return inOut
-          ? (t < .5 ? Math.pow(2 * t, power) / 2 : 1 - Math.pow(2 * (1 - t), power) / 2)
-          : 1 - Math.pow(1 - t, power);
-      });
-      const easing = `linear(${values.join(',')})`;
-      return CSS.supports('animation-timing-function', easing)
-        ? easing : (inOut ? 'cubic-bezier(.65, 0, .35, 1)' : 'cubic-bezier(.215, .61, .355, 1)');
-    };
-    const easeOut = powerEase(3);
+    // Sampled linear() eases fall back to main-thread animation on older Safari.
+    // Reuse the CSS curves and animate complete transforms on every browser.
+    const rootStyle = getComputedStyle(root);
+    const easeOut = rootStyle.getPropertyValue('--ease-out').trim();
+    const easeInOut = rootStyle.getPropertyValue('--ease-in-out').trim();
+    const wordmarkTransform = getComputedStyle(wordmark).transform;
     // All animations share one clock, including the reference's 200 ms lead-in.
     const startTime = document.timeline.currentTime + 200;
     const animate = (element, keyframes, delay, duration, easing = easeOut) => {
@@ -303,12 +502,19 @@ async function playIntro() {
       animations.push(animation);
       return animation;
     };
-    const reveal = (element, delay, duration, scale = 1, blur = 0) => animate(element, [
-      { opacity: 0, scale: String(scale), filter: `blur(${blur}px)` },
-      { opacity: 1, scale: '1', filter: 'blur(0px)' }
-    ], delay, duration);
+    const reveal = (element, delay, duration, scale = 1) => animate(element,
+      scale === 1 ? [{ opacity: 0 }, { opacity: 1 }] : [
+        { opacity: 0, transform: `scale(${scale})` },
+        { opacity: 1, transform: 'scale(1)' }
+      ], delay, duration);
 
     const scrambleIn = (label, delay, fadeDuration = 0) => {
+      // Closed mobile-menu links have no visible glyphs to scramble. On touch,
+      // keep the visible signature a compositor-only fade during the entrance.
+      if (!finePointer.matches || !label.getClientRects().length) {
+        reveal(label, delay, fadeDuration || 1);
+        return;
+      }
       const effect = introScrambles.get(label);
       const duration = Math.max(effect.duration + 60, fadeDuration);
       const fadeOffset = fadeDuration ? fadeDuration / duration : .001;
@@ -319,26 +525,26 @@ async function playIntro() {
       }, Math.max(0, startTime + delay - document.timeline.currentTime)));
     };
     animate(clone, [
-      { translate: `${window.innerWidth}px ${centerY}px`, offset: 0, easing: powerEase(4, true) },
-      { translate: `${centerX}px ${centerY}px`, offset: .5, easing: powerEase(3, true) },
-      { translate: '0px 0px', offset: 1 }
+      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: 0, easing: easeInOut },
+      { transform: `translate3d(${centerX}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: .5, easing: easeInOut },
+      { transform: `translate3d(0, 0, 0) ${wordmarkTransform}`, offset: 1 }
     ], 0, 2000, 'linear');
     clone.querySelectorAll('.intro-letter').forEach((letter, index) => {
-      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000, powerEase(4));
+      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000);
     });
     animate(wordmark, [{ opacity: 0 }, { opacity: 1 }], 2000, 1);
     animate(clone, [{ opacity: 1 }, { opacity: 0 }], 2000, 1);
     reveal(hero.querySelector('.portrait-stage'), 1400, 1100);
     hero.querySelectorAll('.hero-heading-line').forEach((line, index) => {
-      reveal(line, 1700 + index * 100, 1000, .9, 10);
+      reveal(line, 1700 + index * 100, 1000, .9);
     });
     reveal(hero.querySelector('.site-header'), 2000, 700);
     hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
-    reveal(hero.querySelector('.hero-content .button'), 2650, 800, .94, 10);
+    reveal(hero.querySelector('.hero-content .button'), 2650, 800, .94);
     scrambleIn(hero.querySelector('.signature'), 3050, 700);
-    hero.querySelectorAll('.hero-footer > :not(.signature)').forEach((element, index) => {
-      reveal(element, 3150 + index * 100, 400);
-    });
+    // Independent CSS transitions also reveal smoothly when touch skips the intro.
+    socialTimer = setTimeout(() => revealSocials(),
+      Math.max(0, startTime + 3150 - document.timeline.currentTime));
     await Promise.all(animations.map((animation) => animation.finished));
     finish();
   } catch {
@@ -448,9 +654,6 @@ document.querySelectorAll('.nav-link').forEach((link) => {
   const { scramble } = introScrambles.get(label);
   link.addEventListener('pointerenter', (event) => {
     if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
-  });
-  link.addEventListener('focus', () => {
-    if (link.matches(':focus-visible')) scramble();
   });
 });
 

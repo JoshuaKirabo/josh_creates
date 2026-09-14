@@ -37,27 +37,37 @@
   color-scheme: dark;
   --edge: clamp(20px, 2.8vw, 56px);
   --ease: cubic-bezier(.2, .75, .25, 1);
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --press-in: 100ms;
+  --press-out: 160ms;
   font-family: Arial, Helvetica, sans-serif;
   color: var(--white);
   background: var(--background);
   font-synthesis: none;
 }
 * { box-sizing: border-box; }
-html { min-height: 100%; scroll-behavior: smooth; scroll-padding-top: 24px; }
+/* Carry the texture through exposed safe areas and overscroll as well as the hero. */
+html { min-height: 100%; scroll-behavior: smooth; scroll-padding-top: 24px; background: var(--background) url('assets/background-grain.png') center top / 480px auto repeat; }
 body { margin: 0; }
-/* Full-frame evolving noise and independently moving particles; no repeating tile. */
+/* Anchored fine grain with four sparse, prepainted particle layers. */
 .section { position: relative; isolation: isolate; }
-.grain-particles { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; opacity: .85; pointer-events: none; }
+.grain-particles { position: absolute; inset: 0; z-index: -1; overflow: hidden; contain: layout paint; pointer-events: none; }
+.grain-surface { position: absolute; left: -24px; top: -24px; opacity: .85; pointer-events: none; }
+.hero[data-ambient-motion="playing"] .grain-drift { will-change: transform; }
 
 a { color: inherit; text-decoration: none; }
-button, a { -webkit-tap-highlight-color: transparent; }
-a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
+/* Keep the browser's own tap feedback if the enhancement cannot start. */
+.touch-feedback-ready :is(button, a) { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 ::selection { color: var(--ink); background: var(--accent); }
 .skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; padding: 14px; background: var(--accent); color: var(--ink); transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }
 /* The screen sets the composition's height; content has no fixed height floor. */
 .hero {
   position: relative;
+  background: var(--background);
+  height: 100vh;
   height: 100svh;
   height: 100dvh;
   overflow: clip;
@@ -87,6 +97,7 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .site-header { position: absolute; top: calc(max(8px, env(safe-area-inset-top)) + var(--masthead-size) * 1.06); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); display: flex; justify-content: space-between; align-items: center; z-index: 4; gap: 24px; flex-wrap: wrap; }
 .nav-group { display: flex; align-items: center; gap: 15px; }
 .nav-group-right { margin-left: auto; }
+.nav-divider-mobile { display: none; }
 .nav-link, .small-label { font-size: .8125rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
 .nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Bounded', Arial, sans-serif; font-size: 1.125rem; font-weight: 300; letter-spacing: -.01em; white-space: nowrap; }
 .nav-label { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
@@ -97,7 +108,6 @@ a:focus-visible { outline: 3px solid currentColor; outline-offset: 6px; }
 .nav-divider { width: 1px; height: 10px; background: currentColor; opacity: .6; }
 .portrait-stage { position: absolute; inset: 32px 0 0; z-index: 2; pointer-events: none; }
 .portrait { position: absolute; top: 0; left: 50%; width: auto; max-width: none; height: 190%; transform: translateX(-50%); object-fit: contain; object-position: center top; }
-.portrait-shade { filter: brightness(.26) saturate(.65); -webkit-mask-image: linear-gradient(transparent 25%, #000 37%); mask-image: linear-gradient(transparent 25%, #000 37%); }
 .hero-content { position: absolute; z-index: 5; bottom: var(--content-bottom); left: 50%; width: max-content; max-width: calc(100% - 2 * var(--edge)); transform: translateX(-50%); color: var(--white); text-align: center; }
 h1 { font-family: 'Geist Mono', monospace; text-transform: none; font-size: min(clamp(2.25rem, 5.2vw, 6.25rem), 8dvh); font-weight: 300; line-height: 1.05; letter-spacing: .02em; margin: 0 0 clamp(12px, 2.5dvh, 25px); }
 h1 span { white-space: nowrap; }
@@ -112,22 +122,22 @@ h1 span { white-space: nowrap; }
 .button:focus-visible .button-label { color: var(--white); padding-left: 0; padding-right: 36px; }
 .button:focus-visible .button-arrow { left: calc(100% - 46px); }
 @media (hover: hover) and (pointer: fine) {
-  .button:hover::before { width: calc(100% - 4px); }
-  .button:hover .button-label { color: var(--white); padding-left: 0; padding-right: 36px; }
-  .button:hover .button-arrow { left: calc(100% - 46px); }
+  :root:not(.touch-input) .button:hover::before { width: calc(100% - 4px); }
+  :root:not(.touch-input) .button:hover .button-label { color: var(--white); padding-left: 0; padding-right: 36px; }
+  :root:not(.touch-input) .button:hover .button-arrow { left: calc(100% - 46px); }
 }
 .hero-footer { position: absolute; bottom: var(--footer-bottom); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); z-index: 7; display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; font-size: .75rem; line-height: 1.45; }
-.signature { max-width: 100%; font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
+.signature { max-width: 100%; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
 .signature > span:not(.scramble-text):not(.scramble-layer) { opacity: .7; }
 .social-links { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
-.social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; color: inherit; opacity: .7; transition: opacity 180ms ease; }
+.social-link { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: inherit; opacity: .7; transform: translateY(0); transition: opacity var(--press-out) var(--ease-out), transform var(--press-out) var(--ease-out); }
 .social-link svg { width: 20px; height: 20px; transition: transform 160ms ease; }
 .social-link:focus-visible { opacity: 1; }
 @media (hover: hover) and (pointer: fine) {
-  .social-link:hover { opacity: 1; }
+  :root:not(.touch-input) .social-link:hover { opacity: 1; }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .social-link:hover svg { transform: translateY(-10%) scale(1.05); }
+  :root:not(.touch-input) .social-link:hover svg { transform: translateY(-10%) scale(1.05); }
 }
 .social-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .section { padding: 50px var(--edge) 90px; }
@@ -141,20 +151,30 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .about-copy p { color: var(--muted); font-size: 1rem; line-height: 1.6; margin: 0 0 20px; }
 .about-copy .large-copy { color: var(--white); font-size: clamp(1.75rem, 3vw, 3rem); line-height: 1.12; letter-spacing: -.04em; margin-bottom: 34px; }
 .text-link { display: inline-flex; align-items: center; gap: 30px; font-size: .9375rem; padding: 14px 0 9px; border-bottom: 1px solid rgba(255, 255, 255, .5); }
-.text-link:hover { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .text-link:hover { color: var(--accent); }
+}
 @media (max-width: 1100px) {
   .nav-group { gap: 11px; }
 }
 @media (max-width: 700px) {
+  /* Hide the scrollbar using the reference's rules while keeping touch scrolling. */
+  html, body { scrollbar-width: none; }
+  html::-webkit-scrollbar, body::-webkit-scrollbar { width: 0; height: 0; }
+  html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background: transparent; }
   :root { --edge: 20px; }
   .hero { --masthead-size: min(28vw, 24dvh); --content-bottom: calc(var(--footer-bottom) + 88px); }
-  .site-header { gap: 4px 12px; flex-wrap: wrap; }
-  .nav-group { gap: 10px; }
-  .nav-link { font-size: .9375rem; }
+  .site-header { gap: clamp(3px, .8vw, 6px); flex-wrap: nowrap; justify-content: center; }
+  .nav-group { gap: clamp(3px, .8vw, 6px); }
+  .nav-group-right { margin-left: 0; }
+  .nav-divider-mobile { display: block; flex-shrink: 0; }
+  .nav-link { font-family: Arial, Helvetica, sans-serif; font-size: clamp(.75rem, 2.8vw, 1rem); letter-spacing: -.025em; }
   .portrait-stage { top: calc(var(--masthead-size) * 1.06 + 56px); }
   h1 { font-size: min(9vw, 9dvh, 5.2rem); }
   .button { min-height: 44px; }
-  .hero-footer { align-items: center; }
+  .hero-footer { flex-direction: column; flex-wrap: nowrap; align-items: center; gap: 6px; text-align: center; }
+  .social-links { order: -1; margin-left: 0; justify-content: center; }
+  .signature { font-size: .625rem; }
   .section { padding-top: 35px; padding-bottom: 55px; }
   .small-label { font-size: .75rem; }
   .section-topline { align-items: start; gap: 30px; padding-bottom: 22px; }
@@ -175,9 +195,10 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 }
 @media (max-width: 370px) {
   :root { --edge: 14px; }
-  .nav-group { gap: 7px; }
-  .nav-link { font-size: .8125rem; }
   .hero-footer { font-size: .6875rem; }
+}
+@media (max-width: 700px) and (max-height: 550px) and (min-aspect-ratio: 6/5) {
+  .hero { --content-bottom: calc(var(--footer-bottom) + 82px); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -185,25 +206,8 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .social-link { transition: opacity 180ms ease !important; }
 }
 
-/* Separate cartoon mask preserves the lettering behind the portrait. */
-.portrait-cartoon {
-  -webkit-mask-image: url('assets/josh_portrait_cartoon_mask.png');
-  mask-image: url('assets/josh_portrait_cartoon_mask.png');
-  mask-mode: luminance;
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  filter: grayscale(1);
-}
-.portrait-cartoon.portrait-shade {
-  filter: grayscale(1) brightness(.26);
-  -webkit-mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
-  mask-image: linear-gradient(transparent 25%, #000 37%), url('assets/josh_portrait_cartoon_mask.png');
-  mask-mode: alpha, luminance;
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-}
+/* The SVG owns the cutout and shading masks for consistent Safari rendering. */
+.portrait-cartoon { filter: grayscale(1); }
 
 /* Name-first entrance. The unmodified wordmark returns at the end of its climb. */
 .hero-heading-line { display: inline-block; }
@@ -212,28 +216,235 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .hero-heading-line,
 .intro-pending .hero-content .button,
 .intro-pending .site-header,
-.intro-pending .hero-footer > * { opacity: 0; }
+.intro-pending .signature { opacity: 0; }
 .intro-pending .site-header,
-.intro-pending .hero-content .button,
-.intro-pending .hero-footer { pointer-events: none; }
+.intro-pending .hero-content .button { pointer-events: none; }
 .intro-pending .intro-wordmark { opacity: 1; }
 .intro-wordmark {
   /* Room above and below the short line box keeps the outline intact. */
   clip-path: inset(-.2em -.05em -.15em);
   pointer-events: none;
+  will-change: transform, opacity;
 }
-.intro-letter { display: inline-block; }
+.intro-letter { display: inline-block; will-change: transform; }
 @media (prefers-reduced-motion: reduce) {
   .intro-pending .wordmark,
   .intro-pending .portrait-stage,
   .intro-pending .hero-heading-line,
   .intro-pending .hero-content .button,
   .intro-pending .site-header,
-  .intro-pending .hero-footer > * { opacity: 1; pointer-events: auto; }
+  .intro-pending .signature { opacity: 1; pointer-events: auto; }
   .intro-wordmark { display: none; }
+}
+
+/* Stagger the icons themselves, including when touch skips the main intro.
+   Keep their full hit areas active; only their presentation is delayed. */
+.socials-pending .social-link { opacity: 0; transform: translateY(8px); }
+.socials-revealing .social-link:nth-child(2) { transition-delay: 40ms; }
+.socials-revealing .social-link:nth-child(3) { transition-delay: 80ms; }
+.socials-revealing .social-link:nth-child(4) { transition-delay: 120ms; }
+.socials-instant .social-link, .social-link:focus-visible { transition: none; }
+:root .social-link:is(:focus-visible, .is-touch-pressed) { transition-delay: 0ms; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .social-link:hover { transition-delay: 0ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .social-link, .socials-pending .social-link { transform: none; transition: opacity var(--press-out) var(--ease-out) !important; }
+  .socials-instant .social-link, .social-link:focus-visible { transition: none !important; }
 }
 
 /* Scramble overlays stay anchored to each text label. */
 .hero-heading-line, .signature, .button-label { position: relative; display: inline-block; }
 a[href], button, [role="button"], [role="link"] { cursor: pointer; }
 span.nav-link { cursor: default; }
+
+/* Full-screen mobile navigation: a native dialog keeps the page behind it inert. */
+.navigation-panel { display: contents; }
+.menu-toggle, .mobile-menu { display: none; }
+html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: none; }
+.menu-open .hero .menu-toggle { visibility: hidden; }
+@media (max-width: 700px) {
+  .site-header { z-index: 10; }
+  .menu-ready .site-header { top: max(8px, env(safe-area-inset-top)); justify-content: flex-start; }
+  .menu-ready .wordmark { top: calc(max(8px, env(safe-area-inset-top)) + 56px); }
+  .menu-ready .site-header > .navigation-panel { display: none; }
+  .menu-ready .menu-toggle {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--white);
+    touch-action: manipulation;
+    transition: opacity 160ms ease;
+  }
+  :root:not(.touch-feedback-ready) .menu-toggle:active { opacity: .55; }
+  .menu-icon { position: relative; display: block; width: 26px; height: 20px; }
+  .menu-icon > span {
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 26px;
+    height: 2px;
+    background: currentColor;
+    transform: translateY(-7px) rotate(0deg);
+    transform-origin: center;
+    transition: transform 200ms var(--ease-in-out), opacity 160ms var(--ease-out);
+  }
+  .menu-icon > span:nth-child(2) { transform: translateY(0) rotate(0deg); }
+  .menu-icon > span:nth-child(3) { transform: translateY(7px) rotate(0deg); }
+  .mobile-menu.is-open .menu-icon > span:first-child { transform: translateY(0) rotate(45deg); }
+  .mobile-menu.is-open .menu-icon > span:nth-child(2) { opacity: 0; }
+  .mobile-menu.is-open .menu-icon > span:nth-child(3) { transform: translateY(0) rotate(-45deg); }
+  .mobile-menu {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    color: var(--white);
+    background: transparent;
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  .mobile-menu[open] { display: block; }
+  .mobile-menu::backdrop { background: transparent; }
+  .mobile-menu-surface {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 250ms var(--ease-out);
+  }
+  .mobile-menu.is-open .mobile-menu-surface { opacity: 1; }
+  .mobile-menu .site-header {
+    bottom: max(24px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 0;
+    opacity: 1;
+  }
+  .mobile-menu .menu-toggle { align-self: flex-start; }
+  .menu-ready .mobile-menu .navigation-panel {
+    display: grid;
+    grid-template-rows: repeat(5, minmax(3.5rem, 1fr));
+    flex-shrink: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 38rem;
+    height: min(28rem, 62dvh);
+    margin: auto 0;
+    padding: 16px 12px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .mobile-menu .nav-group { display: contents; }
+  .mobile-menu .nav-divider { display: none; }
+  .mobile-menu .nav-link {
+    min-height: 3.5rem;
+    padding: .5rem 0;
+    font-family: 'Bounded', Arial, sans-serif;
+    font-size: clamp(1.4rem, 5.8vw, 2.5rem);
+    font-weight: 300;
+    line-height: 1.2;
+    letter-spacing: -.035em;
+    white-space: normal;
+    opacity: 0;
+    transform: translateY(-12px);
+    transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+  }
+  .mobile-menu.is-open .nav-link { opacity: 1; transform: translateY(0); }
+  .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(2) { transition-delay: 30ms; }
+  .mobile-menu.is-open .nav-group:first-child .nav-link:nth-of-type(3) { transition-delay: 60ms; }
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(1) { transition-delay: 90ms; }
+  .mobile-menu.is-open .nav-group-right .nav-link:nth-of-type(2) { transition-delay: 120ms; }
+  .menu-keyboard .mobile-menu-surface,
+  .menu-keyboard .menu-icon > span,
+  .menu-keyboard .mobile-menu .nav-link { transition: none !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu-surface { transition: opacity 180ms ease !important; }
+  .mobile-menu .nav-link { transform: none !important; transition: opacity 180ms ease !important; }
+  .menu-keyboard .mobile-menu-surface,
+  .menu-keyboard .mobile-menu .nav-link { transition: none !important; }
+}
+
+/* Contact feedback: quiet compression, then a quick, interruptible release.
+   Menu labels move independently of their row's existing entrance animation. */
+:is(.button, .menu-toggle, .social-link, .text-link, .nav-link) { touch-action: manipulation; }
+.button, .text-link {
+  transition: transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out);
+}
+.button.is-touch-pressed, .text-link.is-touch-pressed {
+  transform: scale(.97);
+  opacity: .82;
+  transition-duration: var(--press-in);
+}
+.text-link { transform-origin: left center; }
+.menu-toggle, .social-link { position: relative; isolation: isolate; }
+.nav-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, .1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--press-out) var(--ease-out);
+}
+.nav-link { isolation: isolate; }
+.nav-link::before { inset: 0 -8px; border-radius: 4px; }
+.menu-icon, .social-link svg, .nav-label {
+  transition: transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out);
+}
+.nav-link.is-touch-pressed::before {
+  opacity: 1;
+  transition-duration: var(--press-in);
+}
+.menu-toggle.is-touch-pressed .menu-icon,
+.social-link.is-touch-pressed svg {
+  transform: scale(.94);
+  transition-duration: var(--press-in);
+}
+.social-link.is-touch-pressed { opacity: 1; transition-duration: var(--press-in); }
+.nav-link.is-touch-pressed .nav-label {
+  transform: scale(.98);
+  opacity: .72;
+  transform-origin: left center;
+  transition-duration: var(--press-in);
+}
+/* Keyboard navigation is immediate, including the existing desktop CTA treatment. */
+:is(.button, .text-link):focus-visible,
+.button:focus-visible::before,
+.button:focus-visible .button-label,
+.button:focus-visible .button-arrow { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .button, .text-link, .menu-icon, .social-link svg, .nav-label,
+  .nav-link::before {
+    transition: opacity var(--press-out) var(--ease-out) !important;
+  }
+  .button.is-touch-pressed, .text-link.is-touch-pressed,
+  .menu-toggle.is-touch-pressed .menu-icon,
+  .social-link.is-touch-pressed svg,
+  .nav-link.is-touch-pressed .nav-label { transform: none; }
+  .menu-toggle.is-touch-pressed .menu-icon,
+  .social-link.is-touch-pressed svg { opacity: .72; }
+}
+@media (prefers-contrast: more) {
+  .nav-link::before {
+    background: transparent;
+    border: 2px solid currentColor;
+  }
+}
