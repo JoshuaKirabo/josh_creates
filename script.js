@@ -1,8 +1,13 @@
 'use strict';
 
+async function startSite() {
+// Home can start its intro while About loads. A direct About visit imports Home
+// first so its return transition has exactly the same source composition.
+if (!document.querySelector('.hero')) await window.sitePagesReady;
+
 // Placeholder links remain focusable and interactive without navigating.
-document.querySelectorAll('[data-placeholder-link]').forEach((link) => {
-  link.addEventListener('click', (event) => event.preventDefault());
+document.addEventListener('click', (event) => {
+  if (event.target.closest('[data-placeholder-link]')) event.preventDefault();
 });
 
 // Content and navigation work without JavaScript. Motion is a small enhancement.
@@ -91,6 +96,7 @@ function enableTouchFeedback() {
   root.classList.add('touch-feedback-ready');
 }
 enableTouchFeedback();
+if (!hero) return;
 
 // Keep both controls anchored. Only the hidden links move into the native dialog;
 // reparenting the live hamburger used to interrupt its press/morph on mobile.
@@ -178,7 +184,7 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
     const link = event.target.closest('a');
     if (link && mobileMenu.open) {
       if (link.matches('[data-section-link]') && link.hash === '#about') {
-        returnFocus = document.querySelector('#about');
+        returnFocus = document.querySelector('#about') || menuToggle;
       }
       setMenuOpen(false);
     }
@@ -508,36 +514,227 @@ function enableSectionScroll() {
   if (!hero || !about) return;
   const wordmark = hero.querySelector('.wordmark-stage');
   const portrait = hero.querySelector('.portrait-scroll');
+  const heroContent = hero.querySelector('.hero-content');
+  const heroFooter = hero.querySelector('.hero-footer');
   const sidebar = about.querySelector('.about-sidebar');
-  const heading = about.querySelector('.about-heading');
+  const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
+  const dividers = [...(hero.querySelectorAll?.('.nav-divider') || [])];
+  const runway = about.previousElementSibling?.classList?.contains('hero-runway')
+    ? about.previousElementSibling : null;
+  // Hero + runway is the fold length. About's offsetTop moves when its
+  // compensating transform is cleared, which used to feed ResizeObserver.
+  const foldDistance = () => runway ? hero.offsetHeight + runway.offsetHeight : about.offsetTop;
   let boundary = 1;
   let running = false;
   let destination = 0;
   let paintFrame = null;
   let focusDestination = false;
-  let lastWheelAt = -Infinity;
-  let wheelDirection = 0;
-  let wheelDistance = 0;
-  let gestureClaimed = false;
+
+  const clamp = value => Math.min(1, Math.max(0, value));
+  // Where one element sits inside its own slice of the shared cascade.
+  const slice = (progress, start, end) => clamp((progress - start) / (end - start));
+  const smooth = value => value * value * (3 - 2 * value);
+  // An empty string hands opacity back to CSS, so the entrance keeps its rules.
+  const fade = (element, value) => {
+    if (element) element.style.opacity = value >= 1 ? '' : String(value);
+  };
+
+  // The name and the six links exist on both screens, so they travel between
+  // them rather than one layout being covered by another. Each word keeps its
+  // reading order and hands over to its sidebar counterpart on arrival.
+  let nameFold = null;
+  let navFolds = [];
+  // Header controls with nothing to become: the hamburger, and any link the
+  // sidebar has no counterpart for.
+  let headerRest = [];
+  let foldStale = true;
+
+  // Range boxes follow the glyphs, not the padded control around them.
+  // Both ends of a fold have to be measured the same way, or the uniform scale
+  // between them inherits the difference. A range over the glyphs is the common
+  // basis: an element box would be the line box at one end and the font's own
+  // metrics at the other. A scrambling label keeps its glyphs in .scramble-text
+  // beside an absolutely positioned layer, so measure that span and skip it.
+  function inkBox(element) {
+    const glyphs = element.querySelector?.('.scramble-text') || element;
+    const range = document.createRange();
+    range.selectNodeContents(glyphs);
+    const box = range.getBoundingClientRect();
+    range.detach?.();
+    return box.width ? box : glyphs.getBoundingClientRect();
+  }
+
+  function planFold(mover, from, to, reveal, start, end) {
+    const source = inkBox(from);
+    const target = inkBox(to);
+    if (!source.width || !target.width) return null;
+    // The sidebar is still below the fold while it is measured. Its sticky pose
+    // at the boundary is the one the travelling word has to land on.
+    const lift = Math.min(window.scrollY, boundary) - boundary;
+    const origin = mover.getBoundingClientRect();
+    return {
+      mover, reveal, start, end,
+      scale: target.width / source.width,
+      originX: origin.left, originY: origin.top,
+      fromX: source.left + source.width / 2,
+      fromY: source.top + source.height / 2,
+      toX: target.left + target.width / 2,
+      toY: target.top + target.height / 2 + lift
+    };
+  }
+
+  function applyFold(plan, progress) {
+    const travel = slice(progress, plan.start, plan.end);
+    const scale = 1 + (plan.scale - 1) * travel;
+    const x = plan.fromX + (plan.toX - plan.fromX) * travel;
+    const y = plan.fromY + (plan.toY - plan.fromY) * travel;
+    // Solve the offset that puts the travelling centre exactly on the straight
+    // line between its two rest positions, whatever the current scale is.
+    plan.mover.style.transform =
+      `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scale}px, ` +
+      `${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scale})`;
+    // Same threshold as hiding the hero, so the travelling copy is never
+    // pulled off-screen a frame before the sidebar mark is there.
+    // Once both copies occupy the same position, blend their rasterization and
+    // outline weight. A hard swap made the small JOSH suddenly turn much bolder.
+    const handover = smooth(slice(progress, .92, .999));
+    plan.mover.style.opacity = String(1 - handover);
+    fade(plan.reveal, handover);
+    // Icons have no counterpart on the hero, so they join the word as it lands
+    // instead of popping in with the handover. Ease-out: fast at first sight.
+    if (plan.icon) {
+      const enter = slice(travel, .7, 1);
+      const eased = enter * (2 - enter);
+      plan.icon.style.opacity = eased >= 1 ? '' : String(eased);
+      plan.icon.style.transform = eased >= 1
+        ? ''
+        : `translate3d(${-40 * (1 - eased)}%, 0, 0) scale(${.94 + .06 * eased})`;
+    }
+  }
+
+  function clearFolds() {
+    [nameFold, ...navFolds].forEach((plan) => {
+      if (!plan) return;
+      plan.mover.style.transform = '';
+      plan.mover.style.opacity = '';
+      plan.reveal.style.opacity = '';
+      if (plan.icon) {
+        plan.icon.style.opacity = '';
+        plan.icon.style.transform = '';
+      }
+    });
+  }
+
+  function measureFolds() {
+    clearFolds();
+    nameFold = null;
+    navFolds = [];
+    about.style.transform = '';
+    if (sidebar) sidebar.style.transform = '';
+    // Reduced motion leaves the hero in flow, so there is nothing to fold into.
+    if (reducedMotion.matches || !root.classList.contains('section-scroll-ready')) return;
+    // Measure rest poses even while intro letters are still entering. The class
+    // is removed in this task, so these measurement-only overrides never paint.
+    root.classList.add('fold-measuring');
+    const heroName = hero.querySelector('.wordmark');
+    const sidebarName = about.querySelector('.sidebar-wordmark');
+    if (wordmark && heroName && sidebarName) {
+      nameFold = planFold(wordmark, heroName, sidebarName, sidebarName, 0, .92);
+    }
+    const heroLinks = [...(hero.querySelectorAll?.('.nav-link') || [])];
+    const sidebarLinks = [...(about.querySelectorAll?.('.section-nav-link') || [])];
+    // The nearest word leads and the farthest trails, so the row peels into the
+    // column. Every word still lands with the scroll, not ahead of it.
+    const lead = .03;
+    const span = Math.max(.3, .92 - lead * (heroLinks.length - 1));
+    heroLinks.forEach((link, index) => {
+      const target = sidebarLinks[index];
+      const label = link.querySelector?.('.nav-label');
+      if (!target || !label) return;
+      const landing = target.querySelector('span') || target;
+      const plan = planFold(link, label, landing, landing,
+        index * lead, index * lead + span);
+      if (plan) {
+        plan.icon = target.querySelector('svg');
+        navFolds.push(plan);
+      }
+    });
+    const travelling = new Set(navFolds.map(plan => plan.mover));
+    headerRest = [...(hero.querySelectorAll?.('.menu-toggle, .nav-link') || [])]
+      .filter(control => !travelling.has(control));
+    root.classList.remove('fold-measuring');
+  }
+
+  // Every inline style the transition writes, handed back to CSS.
+  function releaseTransition() {
+    clearFolds();
+    [portrait, heroContent, heroFooter, wordmark, about, sidebar, ...dividers, ...headerRest]
+      .forEach((element) => {
+        if (!element) return;
+        element.style.transform = '';
+        element.style.opacity = '';
+      });
+    hero.style.pointerEvents = '';
+    hero.style.visibility = '';
+  }
 
   function paint() {
     paintFrame = null;
-    const progress = Math.min(1, Math.max(0, window.scrollY / boundary));
-    const nameProgress = Math.min(1, progress / .65);
-    const portraitProgress = Math.min(1, progress / .9);
-    // Full transforms on the outer layers never compete with the intro's pose.
-    wordmark.style.transform = reducedMotion.matches ? 'none' : `translateY(${-14 * nameProgress}%)`;
-    portrait.style.transform = reducedMotion.matches ? 'none' : `translateY(${-12 * portraitProgress}%)`;
-    wordmark.style.opacity = String(1 - nameProgress);
-    portrait.style.opacity = String(1 - portraitProgress);
-    hero.style.opacity = String(1 - progress);
-    if (sidebar && heading) {
-      sidebar.style.transform = reducedMotion.matches ? 'none' : `translateX(${-24 * (1 - progress)}px)`;
-      heading.style.transform = reducedMotion.matches ? 'none' : `translateY(${24 * (1 - progress)}px)`;
-      sidebar.style.opacity = heading.style.opacity = String(progress);
+    if (foldStale) {
+      foldStale = false;
+      measureFolds();
     }
-    hero.inert = progress >= .999;
+    const progress = clamp(window.scrollY / boundary);
+    // Reduced motion leaves the hero in flow, so the two sections simply scroll
+    // past each other. Nothing is pinned, and nothing has to move out of the way.
+    const still = reducedMotion.matches;
+    root.classList.toggle('section-folding', !still && progress > 0 && progress < .999);
+    if (still) releaseTransition();
+    else {
+      const leaving = smooth(slice(progress, 0, .42));
+      // Everything without a counterpart in the About layout clears out ahead of
+      // the words, so the fold has the screen to itself as it lands.
+      portrait.style.transform = `translateY(${-10 * leaving}%)`;
+      fade(portrait, 1 - leaving);
+      fade(heroContent, 1 - smooth(slice(progress, 0, .28)));
+      fade(heroFooter, 1 - smooth(slice(progress, 0, .24)));
+
+      if (nameFold) applyFold(nameFold, progress);
+      else {
+        const nameProgress = smooth(slice(progress, 0, .65));
+        wordmark.style.transform = `translateY(${-14 * nameProgress}%)`;
+        fade(wordmark, 1 - nameProgress);
+      }
+      navFolds.forEach(plan => applyFold(plan, progress));
+      // Separators have nothing to become, so they are the first to go.
+      dividers.forEach(divider => fade(divider, 1 - smooth(slice(progress, 0, .18))));
+      // The rest of the header leaves with the hero. The entrance owns
+      // .site-header's own opacity, so this stays on the controls themselves.
+      const clearing = 1 - smooth(slice(progress, 0, .3));
+      headerRest.forEach(control => fade(control, clearing));
+
+      // About holds its arrival pose from the start and fades up into it, so no
+      // edge ever sweeps the screen. Only the last 48px are left to the scroll,
+      // and the offset is exactly zero on arrival, where normal scrolling resumes.
+      const remaining = 1 - slice(progress, 0, .92);
+      about.style.transform = `translateY(${48 * remaining * remaining - boundary * (1 - progress)}px)`;
+      fade(about, smooth(slice(progress, .28, .72)));
+      if (sidebar) {
+        sidebar.style.transform = `translateX(${-24 * remaining}px)`;
+        fade(sidebar, smooth(slice(progress, .32, .78)));
+      }
+      hero.style.visibility = progress >= .999 ? 'hidden' : '';
+    }
+    // The hero paints above About and covers the viewport, so it would swallow
+    // clicks meant for the surface behind it. It hands both the pointer and the
+    // accessibility tree over once its own content has gone and only the
+    // travelling words are left, which the sidebar is about to own anyway.
+    const handedOver = !still && progress > .45;
+    hero.style.pointerEvents = handedOver ? 'none' : '';
+    hero.inert = handedOver;
+    about.inert = !still && !handedOver;
+    about.style.pointerEvents = about.inert ? 'none' : '';
     const current = progress >= .5 ? '#about' : '#home';
     links.filter(link => link.matches('.nav-link, .section-nav-link')).forEach(link => {
       if (link.hash === current) link.setAttribute('aria-current', 'location');
@@ -556,10 +753,9 @@ function enableSectionScroll() {
 
   function complete() {
     running = false;
-    root.classList.remove('section-spring-active');
     if (focusDestination) {
       focusDestination = false;
-      // Wheel navigation doesn't steal focus. Explicit links do, after arriving.
+      // Scrolling never steals focus. Explicit links do, after arriving.
       (destination ? about : document.querySelector('#intro')).focus({ preventScroll: true });
     }
   }
@@ -567,7 +763,9 @@ function enableSectionScroll() {
   const spring = createSpring2D(.4, ({ y }, settled) => {
     if (!running) return;
     window.scrollTo({ top: y, behavior: 'instant' });
-    schedulePaint();
+    // Paint with this scroll write, not one animation frame behind it.
+    if (paintFrame !== null) cancelAnimationFrame(paintFrame);
+    paint();
     if (settled) complete();
   });
   spring.setActive(true);
@@ -576,15 +774,15 @@ function enableSectionScroll() {
     spring.stop();
     running = false;
     focusDestination = false;
-    root.classList.remove('section-spring-active');
   }
 
+  // Only ever driven by an explicit destination: a nav link, or a restored
+  // hash. Plain scrolling is the browser's, and scrubs the fold directly.
   function navigate(to, instant = false, focus = false) {
     destination = to;
     focusDestination = focus;
     if (instant || reducedMotion.matches) {
       spring.stop();
-      root.classList.add('section-spring-active');
       window.scrollTo({ top: to, behavior: 'instant' });
       paint();
       complete();
@@ -592,67 +790,42 @@ function enableSectionScroll() {
     }
     if (!running) spring.jumpTo(0, window.scrollY);
     running = true;
-    root.classList.add('section-spring-active');
     spring.setTarget(0, to); // Reversals preserve the current position AND velocity.
   }
 
   function measure() {
     const previousBoundary = boundary;
+    const nextBoundary = Math.max(1, foldDistance());
     const wasAtAbout = Math.abs(window.scrollY - previousBoundary) < 2;
     const wasRunning = running;
     const wasForward = destination > 0;
-    boundary = about.offsetTop;
+    boundary = nextBoundary;
+    // Both ends of the fold move with the layout. Remeasuring inside the next
+    // paint keeps the clearing, reading, and reapplying in a single frame.
+    foldStale = true;
     if (wasRunning) navigate(wasForward ? boundary : 0);
     else if (wasAtAbout) window.scrollTo({ top: boundary, behavior: 'instant' });
     schedulePaint();
   }
 
-  function nestedScrollerCanMove(target, direction) {
-    for (let node = target instanceof Element ? target : null;
-      node && node !== document.body; node = node.parentElement) {
-      if (node.matches('input, textarea, select, [contenteditable="true"], [role="slider"]')) return true;
-      if (node.scrollHeight <= node.clientHeight + 1) continue;
-      if (!/auto|scroll/.test(getComputedStyle(node).overflowY)) continue;
-      if (direction < 0 ? node.scrollTop > 0 : node.scrollTop + node.clientHeight < node.scrollHeight - 1) return true;
-    }
-    return false;
+  function sectionHash() {
+    return location.hash || (entryPage === 'about' ? '#about' : '#home');
   }
 
-  function onWheel(event) {
-    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey ||
-      mobileMenu?.open || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
-    const direction = Math.sign(event.deltaY);
-    if (!direction || nestedScrollerCanMove(event.target, direction)) return;
-    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
-    const now = performance.now();
-    // A pause starts another gesture; reversing direction is always immediate.
-    if (now - lastWheelAt > 180 || direction !== wheelDirection) {
-      wheelDistance = 0;
-      gestureClaimed = false;
-    }
-    lastWheelAt = now;
-    wheelDirection = direction;
-    root.classList.remove('section-scroll-keyboard');
-
-    // Consume only the remainder of a claimed gesture, including its inertia.
-    // A fresh gesture within a taller About page scrolls its content normally.
-    if (gestureClaimed) {
-      event.preventDefault();
-      return;
-    }
-    const y = window.scrollY;
-    if (y > boundary + 2 || (!running && direction > 0 && y >= boundary - 2) ||
-      (!running && direction < 0 && y <= 0)) return;
-    event.preventDefault();
-    wheelDistance += Math.abs(delta);
-    if (wheelDistance < 10) return;
-    gestureClaimed = true;
-    navigate(direction > 0 ? boundary : 0);
+  function restoreSection() {
+    stop();
+    navigate(sectionHash() === '#about' ? boundary : 0, true);
+    document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
   }
+  let traversedHash = null;
 
   document.addEventListener('click', event => {
     const link = event.target.closest('[data-section-link]');
-    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (!link || !['#home', '#about'].includes(link.hash) || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const url = new URL(link.href, location.href);
+    const expected = new URL(link.hash === '#about' ? 'about_me.html' : 'index.html', location.href);
+    if (url.origin !== expected.origin || url.pathname !== expected.pathname || link.hasAttribute('download') ||
+      (link.target && link.target !== '_self')) return;
     event.preventDefault();
     const to = link.hash === '#about' ? boundary : 0;
     // Keyboard links move focus immediately, without a full-screen animation.
@@ -660,44 +833,63 @@ function enableSectionScroll() {
     // The navigation dialog closes through its existing link handler. Defer
     // focus until it has restored the page, without blocking the scroll input.
     navigate(to, keyboard, !mobileMenu?.open);
-    if (location.hash !== link.hash) history.pushState(null, '', link.hash);
+    if (location.hash !== link.hash) history.pushState(null, '', link.getAttribute('href'));
+    document.title = link.hash === '#about' ? 'About me — JOSH' : 'JOSH';
   });
 
+  // Paging, arrows, and space are the browser's own, and now scrub the fold
+  // like any other scroll. Only a spring already in flight has to yield.
   document.addEventListener('keydown', event => {
     if (mobileMenu?.open || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey ||
       event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     stop();
     root.classList.add('section-scroll-keyboard');
-    const y = window.scrollY;
-    if (event.key === 'PageDown' && y < boundary - 2) {
-      event.preventDefault();
-      navigate(boundary, true);
-    } else if (event.key === 'PageUp' && y > 0 && y <= boundary + 2) {
-      event.preventDefault();
-      navigate(0, true);
-    }
   });
-  document.addEventListener('pointerdown', () => {
-    stop();
+  document.addEventListener('pointerdown', event => {
+    // A new destination keeps the spring's velocity through the following click.
+    // Other pointer contact immediately returns the page to native scrolling.
+    if (!event.target.closest('[data-section-link]')) stop();
     root.classList.remove('section-scroll-keyboard');
-    gestureClaimed = false;
   }, { capture: true, passive: true });
-  window.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('wheel', stop, { passive: true });
+  window.addEventListener('touchmove', stop, { passive: true });
   window.addEventListener('scroll', schedulePaint, { passive: true });
   window.addEventListener('resize', measure, { passive: true });
   window.addEventListener('pagehide', stop);
   window.addEventListener('pageshow', measure);
-  window.addEventListener('popstate', () => { stop(); schedulePaint(); });
-  reducedMotion.addEventListener('change', () => {
-    if (running) navigate(destination, true);
+  window.addEventListener('popstate', () => {
+    // Back/Forward restores the reader's exact position, including mid-fold or
+    // deeper in About. Do not replace the browser's restoration with an endpoint.
+    traversedHash = location.hash;
+    stop();
+    document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
     schedulePaint();
   });
-  if ('ResizeObserver' in window) new ResizeObserver(measure).observe(hero);
-  boundary = about.offsetTop;
+  window.addEventListener('hashchange', () => {
+    const restored = traversedHash === location.hash;
+    traversedHash = null;
+    if (!restored) restoreSection();
+  });
+  reducedMotion.addEventListener('change', () => {
+    measure();
+    if (running) navigate(destination, true);
+    foldStale = true;
+    schedulePaint();
+  });
+  // Both ends of the fold are text, so their boxes are only final once the
+  // webfonts have replaced the fallbacks.
+  document.fonts?.ready.then(() => { foldStale = true; schedulePaint(); });
   root.classList.add('section-scroll-ready');
+  boundary = Math.max(1, foldDistance());
+  // A direct About visit gets the same complete scroll surface, already landed.
+  if (sectionHash() === '#about' && window.scrollY < boundary) {
+    window.scrollTo({ top: boundary, behavior: 'instant' });
+  }
+  document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
   paint();
 }
-enableSectionScroll();
+if (window.sitePagesReady) window.sitePagesReady.then(enableSectionScroll);
+else enableSectionScroll();
 
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
@@ -710,12 +902,12 @@ async function playIntro() {
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = window.innerHeight;
   const skipEvents = ['orientationchange', 'pagehide', 'wheel', 'touchstart', 'scroll', 'keydown', 'focusin'];
-  let clone;
   let finished = false;
   let readyTimeout;
   let socialTimer;
   let endSettlement;
   const scrambleTimers = [];
+  const releaseWordmark = () => wordmark.classList.remove('intro-wordmark', 'is-entering');
   const revealSocials = (instant = false) => {
     if (!root.classList.contains('socials-pending')) return;
     root.classList.toggle('socials-instant', instant);
@@ -730,14 +922,17 @@ async function playIntro() {
     }
     finished = true;
     const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
-    const elements = [...hero.querySelectorAll('.wordmark:not(.intro-wordmark), .portrait-stage, .hero-heading-line, .hero-heading-rule, .hero-content .button, .site-header, .signature')];
+    const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .hero-heading-rule, .hero-content .button, .site-header, .signature')];
+    const navSlides = [...hero.querySelectorAll('.nav-label > .scramble-text')];
     // Read the currently painted poses before cancelling the shared intro clock.
     const poses = settle ? elements.map(element => ({ element, opacity: getComputedStyle(element).opacity })) : [];
-    const clonePose = settle && clone ? {
-      opacity: getComputedStyle(clone).opacity,
-      transform: getComputedStyle(clone).transform,
-      letters: [...clone.children].map(element => ({ element, transform: getComputedStyle(element).transform }))
+    const namePose = settle ? {
+      transform: getComputedStyle(wordmark).transform,
+      letters: [...wordmark.querySelectorAll('.intro-letter')].map(element => ({
+        element, transform: getComputedStyle(element).transform
+      }))
     } : null;
+    const navPoses = settle ? navSlides.map(element => ({ element, transform: getComputedStyle(element).transform })) : [];
     // The portrait also carries scale and blur, so its settle needs more than opacity.
     const portraitPose = settle && portraitStage ? {
       transform: getComputedStyle(portraitStage).transform,
@@ -749,6 +944,8 @@ async function playIntro() {
     scrambleTimers.forEach(clearTimeout);
     introScrambles.forEach((effect) => effect.reset());
     root.classList.remove('intro-pending');
+    wordmark.classList.remove('is-entering');
+    hero.querySelector('.site-header')?.classList.remove('is-entering');
     starsReady = true;
     revealSocials(event?.type === 'keydown' || event?.type === 'focusin' || event?.type === 'pagehide');
     animations.forEach((animation) => animation.cancel());
@@ -759,20 +956,20 @@ async function playIntro() {
     reducedMotion.removeEventListener('change', finish);
     syncAmbientMotion();
     if (!settle) {
-      clone?.remove();
+      releaseWordmark();
       return;
     }
-    // A scroll finishes the name's travel from its current pose. It never swaps
-    // mid-flight for a static logo; the scroll wrapper remains independently live.
+    // A scroll finishes the name's travel from its current pose. The same
+    // outlined letters keep moving; nothing else is faded in over them.
     const settling = [];
     const easing = getComputedStyle(root).getPropertyValue('--ease-out').trim();
+    const restTransform = getComputedStyle(wordmark).transform;
     const bridge = (element, keyframes) => {
       const animation = element.animate(keyframes, { duration: 250, easing, fill: 'both' });
       settling.push(animation);
     };
-    const movingName = clonePose && Number(clonePose.opacity) > .01;
     poses.forEach(({ element, opacity }) => {
-      bridge(element, [{ opacity }, { opacity: movingName && element === wordmark ? 0 : 1 }]);
+      bridge(element, [{ opacity }, { opacity: 1 }]);
     });
     if (portraitPose) {
       bridge(portraitStage, [
@@ -780,18 +977,18 @@ async function playIntro() {
         { transform: 'scale(1)', filter: 'blur(0px)' }
       ]);
     }
-    if (movingName) {
-      bridge(clone, [
-        { opacity: clonePose.opacity, transform: clonePose.transform },
-        { opacity: 1, transform: getComputedStyle(wordmark).transform }
-      ]);
-      clonePose.letters.forEach(({ element, transform }) => {
+    if (namePose) {
+      bridge(wordmark, [{ transform: namePose.transform }, { transform: restTransform }]);
+      namePose.letters.forEach(({ element, transform }) => {
         bridge(element, [{ transform }, { transform: 'translateY(0)' }]);
       });
-    } else clone?.remove();
+    }
+    navPoses.forEach(({ element, transform }) => {
+      bridge(element, [{ transform }, { transform: 'translateY(0)' }]);
+    });
     endSettlement = () => {
       settling.forEach(animation => animation.cancel());
-      clone?.remove();
+      releaseWordmark();
       window.removeEventListener('keydown', finish);
       window.removeEventListener('pagehide', finish);
       reducedMotion.removeEventListener('change', finish);
@@ -832,18 +1029,16 @@ async function playIntro() {
     if (finished) return;
     if (reducedMotion.matches || window.scrollY > 24 || location.hash) return finish();
 
-    // Preserve the original JOSH entrance with rising letters and a moving wordmark.
-    clone = wordmark.cloneNode(false);
-    clone.classList.add('intro-wordmark');
-    clone.replaceChildren(...Array.from(wordmark.textContent, (letter) => {
+    // The outlined letters are the wordmark. They rise into a clip, then the
+    // same glyphs glide to rest — never swapped for a second copy.
+    wordmark.replaceChildren(...Array.from(wordmark.textContent, (letter) => {
       const span = document.createElement('span');
       span.className = 'intro-letter';
       span.textContent = letter;
       return span;
     }));
-    wordmark.after(clone);
+    wordmark.classList.add('intro-wordmark', 'is-entering');
     const bounds = wordmark.getBoundingClientRect();
-    const centerX = window.innerWidth / 2 - (bounds.left + bounds.width / 2);
     const centerY = window.innerHeight / 2 - (bounds.top + bounds.height / 2);
 
     // Sampled linear() eases fall back to main-thread animation on older Safari.
@@ -852,8 +1047,7 @@ async function playIntro() {
     const easeOut = rootStyle.getPropertyValue('--ease-out').trim();
     const easeOutCubic = rootStyle.getPropertyValue('--ease-out-cubic').trim();
     const easeOutQuart = rootStyle.getPropertyValue('--ease-out-quart').trim();
-    const easeInOutCubic = rootStyle.getPropertyValue('--ease-in-out-cubic').trim();
-    const easeInOutQuart = rootStyle.getPropertyValue('--ease-in-out-quart').trim();
+    const easeInOut = rootStyle.getPropertyValue('--ease-in-out').trim();
     const wordmarkTransform = getComputedStyle(wordmark).transform;
     // All animations share one clock, including the reference's 200 ms lead-in.
     const startTime = document.timeline.currentTime + 200;
@@ -884,16 +1078,13 @@ async function playIntro() {
         if (!finished) effect.scramble();
       }, Math.max(0, startTime + delay - document.timeline.currentTime)));
     };
-    animate(clone, [
-      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: 0, easing: easeInOutQuart },
-      { transform: `translate3d(${centerX}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: .5, easing: easeInOutCubic },
-      { transform: `translate3d(0, 0, 0) ${wordmarkTransform}`, offset: 1 }
-    ], 0, 2000, 'linear');
-    clone.querySelectorAll('.intro-letter').forEach((letter, index) => {
-      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000, easeOutQuart);
+    animate(wordmark, [
+      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}` },
+      { transform: `translate3d(0, 0, 0) ${wordmarkTransform}` }
+    ], 0, 2000, easeInOut);
+    wordmark.querySelectorAll('.intro-letter').forEach((letter, index) => {
+      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 80, 1000, easeOutQuart);
     });
-    animate(wordmark, [{ opacity: 0 }, { opacity: 1 }], 2000, 1);
-    animate(clone, [{ opacity: 1 }, { opacity: 0 }], 2000, 1);
     animate(portraitStage, [
       { opacity: 0, transform: 'scale(.88)', filter: 'blur(20px)' },
       { opacity: 1, transform: 'scale(1)', filter: 'blur(0px)' }
@@ -902,8 +1093,14 @@ async function playIntro() {
       reveal(line, 1700 + index * 100, 1000);
     });
     reveal(hero.querySelector('.hero-heading-rule'), 1700, 1000);
-    reveal(hero.querySelector('.site-header'), 2000, 700);
-    hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
+    scrambleTimers.push(setTimeout(() => {
+      if (!finished) hero.querySelector('.site-header')?.classList.add('is-entering');
+    }, Math.max(0, startTime + 2000 - document.timeline.currentTime)));
+    hero.querySelectorAll('.nav-label > .scramble-text').forEach((label, index) => {
+      if (!label.getClientRects().length) return;
+      animate(label, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }],
+        2000 + index * 40, 250, easeOut);
+    });
     reveal(hero.querySelector('.hero-content .button'), 2650, 800);
     scrambleIn(hero.querySelector('.signature'), 3050, 700);
     // Independent CSS transitions also reveal smoothly when touch skips the intro.
@@ -1031,3 +1228,6 @@ finePointer.addEventListener('change', resetHoverMotion);
 document.fonts?.ready.then(resetHoverMotion);
 
 playIntro();
+
+}
+startSite();

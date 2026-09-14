@@ -218,6 +218,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .nav-group { gap: clamp(3px, .8vw, 6px); }
   .nav-group-right { margin-left: 0; }
   .nav-divider-mobile { display: block; flex-shrink: 0; }
+  /* Drops to the system grotesque here; .section-nav-link follows it down. */
   .nav-link { font-family: Arial, Helvetica, sans-serif; font-size: clamp(.75rem, 2.8vw, 1rem); letter-spacing: -.025em; }
   .portrait-stage { top: calc(var(--masthead-size) * 1.06 + 56px); }
   h1 { font-size: min(8.2vw, 8svh, 3.75rem); }
@@ -265,19 +266,40 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .wordmark-stage, .portrait-scroll { position: absolute; inset: 0; pointer-events: none; }
 .wordmark-stage { z-index: 0; }
 .portrait-scroll { z-index: 2; }
-.section-scroll-ready { scroll-snap-type: y mandatory; }
-.section-start { height: 1px; margin-bottom: -1px; scroll-snap-align: start; scroll-snap-stop: always; }
-.section-scroll-ready .hero { position: sticky; top: 0; }
-.about { min-height: 100vh; min-height: 100svh; scroll-snap-align: start; scroll-snap-stop: always; z-index: 2; }
+/* The hero outranks About for the length of the fold: its name and its links
+   are still travelling across the surface that is rising underneath them. */
+.section-scroll-ready .hero { position: sticky; top: 0; z-index: 3; }
+.section-scroll-ready .wordmark-stage,
+.section-scroll-ready .hero .nav-link { transform-origin: 0 0; }
+.fold-measuring .wordmark { transform: scaleY(1.25) !important; }
+.fold-measuring .intro-letter,
+.fold-measuring .nav-label > .scramble-text { transform: none !important; }
+/* Promoted only while the words are actually in flight, so neither resting
+   screen carries a full-viewport layer. */
+.section-folding .wordmark-stage,
+.section-folding .hero .nav-link,
+.section-folding .section-nav-link svg { will-change: transform, opacity; }
+.section-folding .section-nav-link[aria-current] { background-color: transparent; color: inherit; }
+/* While About is semi-transparent it is one render surface, so every panel
+   would re-sample the backdrop through it on every frame. Over a flat dark
+   surface the blur resolves to the panel's own tint anyway, so dropping it for
+   the length of the fold costs nothing visible. */
+.section-folding .glass-panel { backdrop-filter: none; -webkit-backdrop-filter: none; }
+/* How far the scroll has to travel for the fold to complete. Scrolling is
+   otherwise untouched: no snapping, no intercepted wheel, so the whole move is
+   scrubbable at whatever pace the reader sets, in either direction. */
+.hero-runway { height: 0; }
+.section-scroll-ready .hero-runway { height: 38svh; }
+.about { min-height: 100vh; min-height: 100svh; z-index: 2; background: #101010; }
 .about:focus { outline: none; }
-.section-spring-active { scroll-snap-type: none; }
-.section-scroll-keyboard { scroll-snap-type: none; }
 @media (prefers-reduced-motion: reduce) {
-  .section-scroll-ready { scroll-snap-type: none; }
+  /* Nothing is pinned here, so there is no fold and no runway to fold across. */
   .section-scroll-ready .hero { position: relative; }
+  .section-scroll-ready .hero-runway { height: 0; }
 }
 
-/* Name-first entrance. The unmodified wordmark returns at the end of its climb. */
+/* Name-first entrance. The outlined letters are the wordmark; they are not
+   swapped for a second mark at the end of the climb. */
 .hero-heading-line { display: inline-block; }
 .intro-pending .wordmark,
 .intro-pending .portrait-stage,
@@ -288,12 +310,14 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .signature { opacity: 0; }
 .intro-pending .site-header,
 .intro-pending .hero-content .button { pointer-events: none; }
-.intro-pending .intro-wordmark { opacity: 1; }
-.intro-wordmark {
+.intro-pending .wordmark.is-entering,
+.intro-pending .site-header.is-entering { opacity: 1; }
+.intro-pending .nav-label > .scramble-text { transform: translateY(110%); }
+.wordmark.intro-wordmark {
   /* Room above and below the short line box keeps the outline intact. */
   clip-path: inset(-.2em -.05em -.15em);
   pointer-events: none;
-  will-change: transform, opacity;
+  will-change: transform;
 }
 .intro-letter { display: inline-block; will-change: transform; }
 .intro-pending .portrait-stage { will-change: transform, opacity, filter; }
@@ -305,7 +329,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .intro-pending .hero-content .button,
   .intro-pending .site-header,
   .intro-pending .signature { opacity: 1; pointer-events: auto; }
-  .intro-wordmark { display: none; }
+  .intro-pending .nav-label > .scramble-text { transform: none; }
 }
 
 /* Stagger the icons themselves, including when touch skips the main intro.
@@ -539,15 +563,19 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   align-items: start;
   gap: clamp(2rem, 4vw, 5rem);
   padding: 1rem clamp(1rem, 2.8vw, 3.5rem) 1rem 1rem;
-  background: #101010;
 }
-.about-backdrop { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-.about-backdrop svg { position: absolute; height: 110svh; width: min(85vw, 80rem); top: 0; left: 10%; filter: blur(32px); opacity: .12; }
 .about-sidebar { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: .75rem; min-height: calc(100svh - 2rem); z-index: 3; }
 .glass-panel { background: rgba(255, 255, 255, .065); border: 1px solid rgba(255, 255, 255, .08); border-radius: .5rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .sidebar-profile { padding: .8rem; }
 .sidebar-profile-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
-.sidebar-wordmark { display: inline-flex; align-items: start; background: var(--white); color: var(--ink); padding: .55rem .6rem; border-radius: .2rem; font-family: 'Bounded', Arial, sans-serif; font-weight: 700; font-size: .875rem; letter-spacing: -.055em; }
+/* Same outlined JOSH as the masthead, only smaller. Fill, stroke and stretch
+   have to match .wordmark or the fold would land on a different mark. Padding
+   is the hit area; it is not a chip. */
+.sidebar-wordmark { display: inline-flex; align-items: start; padding: .34rem .45rem; color: transparent; -webkit-text-stroke: .055em var(--accent); font-family: 'Unbounded Outline', Arial, sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.55vw, 1.45rem); letter-spacing: -.055em; }
+/* Kept under the font's own glyph box, as .wordmark's .88 is, so that the box
+   the fold measures is the glyphs at both ends rather than the line-height at
+   one end and the glyphs at the other. */
+.sidebar-wordmark span { display: block; line-height: .88; transform: scaleY(1.25); transform-origin: center; }
 .sidebar-socials { display: flex; align-items: center; gap: .25rem; }
 .sidebar-socials a { display: grid; place-items: center; min-width: 2rem; min-height: 2.75rem; font-size: .75rem; font-weight: 700; }
 .sidebar-profile p { font-size: .875rem; line-height: 1.6; margin: 1.5rem 0 0; color: rgba(255,255,255,.75); }
@@ -556,56 +584,42 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .sidebar-disciplines > div > span { font-size: 1.7rem; font-weight: 700; line-height: 1; }
 .sidebar-disciplines p { margin: .35rem 0 0; font-size: .875rem; line-height: 1.15; font-weight: 600; }
 .section-nav { display: flex; flex-direction: column; align-items: start; gap: .15rem; padding: .7rem; flex: 1; }
-.section-nav-link { max-width: 100%; display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-size: .875rem; line-height: 1.25; font-weight: 700; text-transform: uppercase; transition: background-color 160ms ease, color 160ms ease; }
+/* Each label here is the landing point of the matching header link, so its
+   typeface, weight, tracking and line-height all have to stay in step with
+   .nav-link above. The fold measures line boxes and scales them uniformly, so
+   line-height decides where a word lands vertically just as much as the face
+   decides its shape. Size is the one thing free to differ. */
+.section-nav-link { max-width: 100%; display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-family: 'Bounded', Arial, sans-serif; font-size: .875rem; line-height: 1.3; font-weight: 300; letter-spacing: -.01em; text-transform: uppercase; transition: background-color 160ms ease, color 160ms ease; }
+/* Matches .nav-label's box model, not just its face: an inline-block takes its
+   height from line-height while a bare inline takes it from the font's own
+   metrics, and the fold cannot scale one into the other. */
+.section-nav-link span { display: inline-block; vertical-align: top; }
 .section-nav-link svg { width: 1rem; height: 1rem; flex-shrink: 0; fill: currentColor; }
 .section-nav-link[aria-current] { color: var(--ink); background: var(--white); }
 .sidebar-footer { display: grid; gap: .5rem; padding: .85rem; font-size: .75rem; line-height: 1.3; }
 .sidebar-footer > :last-child { color: var(--muted); }
 .sidebar-home { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 2.75rem; padding: .6rem; border-radius: .35rem; background: var(--white); color: var(--ink); font-size: .875rem; font-weight: 700; }
-.about-main { min-width: 0; padding-top: 1.25rem; container-type: inline-size; }
-.about-heading { max-width: 42rem; }
-.about-eyebrow { display: inline-block; border: 1px solid rgba(255,255,255,.25); border-radius: 1rem; padding: .12rem .35rem; font-size: .875rem; line-height: 1.1; font-weight: 700; letter-spacing: -.025em; text-transform: uppercase; }
-.about-heading h2 { font-family: Arial, Helvetica, sans-serif; font-size: clamp(2.6rem, 4.4vw, 5rem); font-weight: 700; line-height: 1.02; letter-spacing: -.045em; margin: 1.5rem 0; }
-.about-heading > p { max-width: 29rem; font-size: 1rem; line-height: 1.65; color: rgba(255,255,255,.75); margin: 0; }
-.about-story { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3rem 2rem; margin-top: 2.75rem; padding: 0 0 6rem; }
-.story-path { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; }
-.story-path path { fill: none; stroke: rgba(255,255,255,.35); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
-.story-path circle { fill: var(--white); stroke: var(--background); stroke-width: 2; vector-effect: non-scaling-stroke; }
-.story-card { padding: clamp(1.25rem, 2vw, 2rem); min-height: 18.5rem; }
-.story-card:nth-of-type(odd) { grid-column: 2; }
-.story-card:nth-of-type(even) { grid-column: 1; }
-.story-number { display: block; font-family: Arial, Helvetica, sans-serif; font-size: clamp(3.5rem, 5.5vw, 5.5rem); line-height: 1; font-weight: 700; letter-spacing: -.07em; margin-bottom: .5rem; }
-.story-card h3 { font-size: clamp(1.25rem, 1.6vw, 1.6rem); line-height: 1.15; letter-spacing: -.025em; margin: 0 0 .65rem; }
-.story-card > p { font-size: 1rem; line-height: 1.55; margin: 0; color: rgba(255,255,255,.72); }
-.story-card-footer { display: flex; align-items: center; gap: .75rem; margin-top: 1.5rem; font-size: .875rem; line-height: 1.35; }
-.story-avatar { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 50%; background: rgba(255,255,255,.12); font-weight: 700; font-size: 1.2rem; }
-.story-meta { color: var(--muted); }
+.about-main { min-width: 0; min-height: calc(100svh - 2rem); }
 @media (hover: hover) and (pointer: fine) {
   .section-nav-link:not([aria-current]):hover { background: rgba(255,255,255,.12); }
   .sidebar-socials a:hover { opacity: .65; }
 }
 @media (max-width: 1000px) and (min-width: 701px) {
   .about { grid-template-columns: 12rem minmax(0, 1fr); gap: 2rem; }
-  .about-story { grid-template-columns: 1fr; padding-left: 2rem; }
-  .story-card:nth-of-type(n) { grid-column: 1; max-width: 29rem; }
-  .story-card:nth-of-type(odd) { justify-self: end; }
-  .story-path { opacity: .4; }
 }
 @media (max-width: 700px) {
   .about { display: block; padding: 0 1.25rem 2rem; }
   .about-sidebar { top: 0; margin: 0 -1.25rem; padding: max(.65rem, env(safe-area-inset-top)) 1.25rem .6rem; min-height: 0; gap: .45rem; background: rgba(16,16,16,.96); border-bottom: 1px solid var(--border); }
   .sidebar-profile { padding: 0; background: transparent; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .sidebar-wordmark { font-size: 1rem; }
   .sidebar-profile p, .sidebar-disciplines, .sidebar-footer, .sidebar-home { display: none; }
   .sidebar-socials a { min-width: 2.75rem; }
   .section-nav { flex-direction: row; flex: none; align-items: center; overflow-x: auto; padding: 0; border: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; gap: .25rem; }
-  .section-nav-link { white-space: nowrap; flex-shrink: 0; font-size: .875rem; }
-  .about-main { padding-top: 2rem; }
-  .about-heading h2 { font-size: clamp(2.5rem, 9vw, 3.75rem); }
-  .about-story { display: flex; flex-direction: column; gap: 1.5rem; padding-bottom: 0; margin-top: 2rem; }
-  .story-card { min-height: 0; padding: 1.5rem; }
-  .story-path { display: none; }
-  .story-number { font-size: 4rem; }
-  .about-backdrop svg { width: 130vw; left: -15%; }
+  /* Matching the narrow header's grotesque, so the labels keep their letterform
+     across the fold at this width too. Declared here rather than beside
+     .nav-link so it lands after the base rule above. */
+  .section-nav-link { white-space: nowrap; flex-shrink: 0; font-family: Arial, Helvetica, sans-serif; font-size: .875rem; letter-spacing: -.025em; }
+  .about-main { min-height: 40svh; }
 }
 @media (max-height: 700px) and (min-width: 701px) {
   .about-sidebar { min-height: 0; }
@@ -616,13 +630,6 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .glass-panel, .about-sidebar { background: #1c1c1c; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-contrast: more) {
-  .about-backdrop { display: none; }
   .glass-panel { background: #111; border-color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .story-card > p, .about-heading > p, .sidebar-profile p, .story-meta { color: #fff; }
-}
-
-@container (max-width: 42rem) {
-  .about-story { grid-template-columns: 1fr; }
-  .story-card:nth-of-type(n) { grid-column: 1; max-width: 29rem; }
-  .story-card:nth-of-type(odd) { justify-self: end; }
+  .sidebar-profile p { color: #fff; }
 }

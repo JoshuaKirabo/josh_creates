@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#060606">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Joshua Kirabo — a creative mind bringing ideas to life through design and development.">
+  <title>About me — JOSH</title>
+  <style>
+    /* Paint the screen before fonts, the stylesheet, or the intro are ready. */
+    html { min-height: 100%; background: #060606; color-scheme: dark; }
+    body { margin: 0; isolation: isolate; }
+    .site-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #060606; }
+    .grain-particles { position: absolute; inset: 0; background: url('assets/background-grain.png') center top / 480px auto repeat; }
+    main { position: relative; z-index: 1; }
+    @media (max-width: 700px) {
+      /* Match Safari's solid status tint at the edge, then bring in the grain. */
+      .site-backdrop { -webkit-mask-image: linear-gradient(to bottom, transparent, #000 64px); mask-image: linear-gradient(to bottom, transparent, #000 64px); }
+    }
+  </style>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/josh_portrait_cartoon_bw.png" as="image" fetchpriority="high">
+  <link rel="preload" href="assets/fonts/instrument-serif-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/Haval-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
+  <link rel="stylesheet" href="styles.css">
+  <script src="page-shell.js" defer></script>
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="site-backdrop" aria-hidden="true">
+    <div class="grain-particles"></div>
+  </div>
+  <a class="skip-link" href="#about">Skip to content</a>
+  <main data-entry-page="about">
+    <section class="about section" id="about" aria-label="About" tabindex="-1">
+      <aside class="about-sidebar" aria-label="Josh and navigation">
+        <div class="sidebar-profile glass-panel">
+          <div class="sidebar-profile-top">
+            <a class="sidebar-wordmark" href="index.html#home" data-section-link aria-label="Josh, back to Home"><span>JOSH</span></a>
+            <div class="sidebar-socials" aria-label="Social media">
+              <a href="#" data-placeholder-link aria-label="GitHub">GH</a>
+              <a href="#" data-placeholder-link aria-label="LinkedIn">in</a>
+            </div>
+          </div>
+          <p>A creative mind bringing ideas to life through design and development.</p>
+        </div>
+        <div class="sidebar-disciplines glass-panel" aria-label="My disciplines">
+          <div><span aria-hidden="true">&lt;/&gt;</span><p>Software<br>Engineer</p></div>
+          <div><span aria-hidden="true">✳</span><p>Creative<br>Professional</p></div>
+        </div>
+        <nav class="section-nav glass-panel" aria-label="About page navigation">
+          <a class="section-nav-link" href="index.html#home" data-section-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3Z"/></svg><span>Home</span></a>
+          <a class="section-nav-link" href="about_me.html#about" data-section-link aria-current="location"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 22v-4a8 8 0 0 1 16 0v4Z"/></svg><span>About me</span></a>
+          <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h7l2 3h9v13H3Z"/></svg><span>Projects</span></a>
+          <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 2h10l4 4v16H5Zm3 7v2h8V9Zm0 5v2h8v-2Z" fill-rule="evenodd"/></svg><span>Blog</span></a>
+          <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v14H9l-6 5Z"/></svg><span>Ask Josh</span></a>
+          <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 5h20v14H2Zm2 2 8 6 8-6H4Z" fill-rule="evenodd"/></svg><span>Let’s connect</span></a>
+        </nav>
+        <div class="sidebar-footer glass-panel"><span>Design. Develop. Create.</span><span>© 2026 Joshua Kirabo</span></div>
+        <a class="sidebar-home" href="index.html#home" data-section-link><span aria-hidden="true">↑</span> Back to Home</a>
+      </aside>
+      <div class="about-main"></div>
+    </section>
+  </main>
+</body>
+</html>

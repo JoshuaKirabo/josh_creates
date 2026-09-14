@@ -4,7 +4,9 @@ Joshua Kirabo’s homepage. Plain HTML, CSS and JavaScript, with no frameworks o
 
 Open `index.html` directly, or serve this directory with any static web server.
 
-- `index.html` — homepage and About section, with working profile links
+- `index.html` — homepage and mobile navigation
+- `about_me.html` — standalone About page; the single source of its section markup
+- `page-shell.js` — joins the two documents for continuous scrolling with native page links as fallback
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
@@ -17,7 +19,7 @@ Home, About me, and Meet Josh now navigate between the two sections. Other desti
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
-For the private Sites preview, copy `index.html`, `styles.css`, `script.js`, and the referenced assets into `dist/`. No compilation is needed.
+For the private Sites preview, copy `index.html`, `about_me.html`, `page-shell.js`, `styles.css`, `script.js`, and the referenced assets into `dist/`. No compilation is needed.
 
 ## Opening animation
 
@@ -57,16 +59,18 @@ Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s
 
 ## Scroll motion
 
-One deliberate vertical wheel gesture moves from Home to About. The hero stays pinned while the About surface rises over it; the outer wordmark and portrait layers retreat and fade independently. Their typography and portrait dimensions stay fixed. Native scrolling drives the presentation directly, so the second section can be redesigned without changing the transition.
+Native wheel and touch scrolling scrub the Home-to-About transition in either direction. The hero stays pinned across its height plus a 38svh runway. JOSH and the desktop navigation labels travel into their matching sidebar positions while the portrait and other Home content fade away. The last part of the fold blends the stationary text copies so their outline weight and rendering do not jump at handoff. Transform and opacity are the only animated properties in this transition.
 
-The existing critically damped spring uses Apple's 0.4-second response and no bounce. Reversing the wheel retargets it from the current position and velocity, including mid-transition. A 10px input threshold rejects jitter; a 180ms pause separates wheel gestures. Remaining momentum in the same gesture cannot carry past the landing. A new gesture scrolls normally within About when its content is taller than the screen. Nested scroll areas, horizontal gestures, modified wheel input, and pinch zoom retain their browser behavior.
+Explicit navigation reuses the critically damped spring with Apple's 0.4-second response and no bounce. Clicking another destination preserves its current position and velocity. Wheel input, touch movement, keyboard input and pointer contact outside a destination stop the spring immediately. Native scrolling is never intercepted. Keyboard links land immediately, and reduced motion removes the pinned morph while retaining ordinary section navigation.
 
-Touch uses native scroll snapping and momentum; pointer contact stops an active wheel spring. Stable svh sizing keeps the hero independent of mobile browser toolbars. PageUp/PageDown and keyboard links land immediately, other keyboard navigation stays native, and reduced motion removes the pinned/parallax presentation and uses immediate section navigation. Home/About links and Meet Josh work without JavaScript as ordinary anchors.
+Resting text geometry is measured independently of the opening animation. Width-only resizing, font readiness and motion-preference changes refresh the landing positions. About cannot receive focus or clicks while hidden; the hero becomes inert after handing control to About. Back and Forward preserve the browser's saved scroll position, including a partial transition.
 
-The original intro still settles when scrolling begins. Scroll transforms belong to outer wrappers so the intro never fights them. An offscreen hero becomes inert, and ambient motion pauses after the handoff. A resize keeps a completed landing aligned with the section boundary.
-
-Run `node --test tests/section-scroll.test.cjs` for the gesture, interruption, keyboard, reduced-motion, nested-scroll, and resize checks. These are controller tests; the physical feel of touch snapping still needs checking on an actual device.
+Run `node --test tests/section-scroll.test.cjs` for geometry, resizing, input interruption, history, deep-link and reduced-motion regression checks. These are controller tests; the outline crossfade and touch scrolling should also be feel-checked in a browser and on an actual phone.
 
 ## About page
 
-The second page follows the reference’s profile rail, compact highlighted navigation, large heading, and connected staggered cards. It uses Josh’s existing introduction, with numbered themes instead of invented career dates or project metrics. Home and About links work; the other existing destinations remain placeholders. On mobile the rail becomes a compact sticky header with horizontally scrollable navigation and stacked cards. Container queries also stack the cards when their content column is narrow. The background reuses the existing masked portrait with a static blur, and the panels have opaque alternatives for reduced transparency and higher contrast.
+Edit the About section in `about_me.html`. Both HTML files are complete documents and share the stylesheet and interaction script. The existing compact profile rail, navigation, blank content area and mobile arrangement are retained.
+
+When served over HTTP, `page-shell.js` eagerly loads the other document and imports only its required content. Home's intro starts independently of that request. The combined surface preserves continuous scrolling and the reverse transition; an About URL opens at its landing without replaying the Home intro. Explicit links update the address and title, so refresh, bookmarks and opening either page directly work.
+
+If JavaScript is disabled, a request fails, or the files are opened through `file://`, ordinary links still navigate between the standalone pages. Serve the directory to use the continuous transition. The loader times out after four seconds without hiding either page.
