@@ -105,6 +105,7 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
   navigationPanel.before(homePosition);
   let menuOpen = false;
   let revision = 0;
+  let returnFocus = menuToggle;
   document.documentElement.classList.add('menu-ready');
 
   function positionMenuReveal(event) {
@@ -130,7 +131,8 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
     homePosition.after(navigationPanel);
     mobileMenu.close();
     document.documentElement.classList.remove('menu-open');
-    if (mobileNavigation.matches) menuToggle.focus({ preventScroll: true });
+    if (mobileNavigation.matches) returnFocus.focus({ preventScroll: true });
+    returnFocus = menuToggle;
   }
 
   async function setMenuOpen(open, instant = false) {
@@ -173,7 +175,13 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
     setMenuOpen(false);
   });
   navigationPanel.addEventListener('click', (event) => {
-    if (event.target.closest('a') && mobileMenu.open) setMenuOpen(false);
+    const link = event.target.closest('a');
+    if (link && mobileMenu.open) {
+      if (link.matches('[data-section-link]') && link.hash === '#about') {
+        returnFocus = document.querySelector('#about');
+      }
+      setMenuOpen(false);
+    }
   });
   document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
   document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
@@ -184,24 +192,114 @@ if (menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal =
   window.addEventListener('resize', positionMenuReveal, { passive: true });
 }
 
+// Critically damped 2D spring. Response is Apple's settle window in seconds, not a duration.
+function createSpring2D(response, paint) {
+  const omega = 2 * Math.PI / response;
+  const position = { x: 0, y: 0 };
+  const target = { x: 0, y: 0 };
+  const velocity = { x: 0, y: 0 };
+  let active = false;
+  let frame = null;
+  let previousTime = 0;
+
+  function tick(now) {
+    frame = null;
+    if (!active) return;
+    const dt = previousTime ? Math.min((now - previousTime) / 1000, .064) : 0;
+    previousTime = now;
+    const decay = Math.exp(-omega * dt);
+    let settled = true;
+    for (const axis of ['x', 'y']) {
+      const delta = position[axis] - target[axis];
+      const change = (velocity[axis] + omega * delta) * dt;
+      position[axis] = target[axis] + (delta + change) * decay;
+      velocity[axis] = (velocity[axis] - omega * change) * decay;
+      if (Math.abs(position[axis] - target[axis]) > .1 || Math.abs(velocity[axis]) > .1) {
+        settled = false;
+      }
+    }
+    if (settled) {
+      position.x = target.x;
+      position.y = target.y;
+      velocity.x = velocity.y = 0;
+    }
+    paint(position, settled);
+    if (!settled) frame = requestAnimationFrame(tick);
+  }
+
+  function wake() {
+    if (!active || frame !== null) return;
+    previousTime = 0;
+    frame = requestAnimationFrame(tick);
+  }
+
+  function rest() {
+    position.x = position.y = target.x = target.y = velocity.x = velocity.y = 0;
+    paint(position);
+  }
+
+  return {
+    stop() {
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      previousTime = 0;
+    },
+    jumpTo(x, y) {
+      this.stop();
+      position.x = target.x = x;
+      position.y = target.y = y;
+      velocity.x = velocity.y = 0;
+    },
+    setActive(value) {
+      if (active === value) return;
+      active = value;
+      if (!active) {
+        if (frame !== null) cancelAnimationFrame(frame);
+        frame = null;
+        rest();
+      }
+    },
+    setTarget(x, y) {
+      if (!active) return;
+      target.x = x;
+      target.y = y;
+      wake();
+    }
+  };
+}
+
 // Paint the grain once. Only sparse particle layers move; the fine texture stays anchored.
 function createGrainParticles(container) {
-  if (!container) return { setPlaying() {} };
-  const overscan = 24;
+  if (!container) return { setPlaying() {}, setPointer() {}, setPointerActive() {} };
+  const overscan = 40;
+  const fieldTravel = 18;
   const drifts = [
-    { radius: 8, duration: 12000, phase: 0, direction: 1 },
-    { radius: 12, duration: 14000, phase: 95, direction: -1 },
-    { radius: 16, duration: 16000, phase: 205, direction: 1 },
-    { radius: 10, duration: 18000, phase: 290, direction: -1 }
+    { radius: 8, duration: 3000, phase: 0, direction: 1 },
+    { radius: 12, duration: 3500, phase: 95, direction: -1 },
+    { radius: 16, duration: 4000, phase: 205, direction: 1 },
+    { radius: 10, duration: 4500, phase: 290, direction: -1 }
   ];
   const layers = [null, ...drifts].map((drift) => {
     const canvas = document.createElement('canvas');
     canvas.className = drift ? 'grain-surface grain-drift' : 'grain-surface';
-    return { canvas, context: canvas.getContext('2d'), drift,
-      seed: (Math.random() * 0xffffffff) >>> 0 || 1 };
+    const shell = drift ? document.createElement('div') : null;
+    if (shell) {
+      shell.className = 'grain-drift-shell';
+      shell.append(canvas);
+    }
+    return {
+      canvas,
+      shell,
+      context: canvas.getContext('2d'),
+      drift,
+      depth: drift ? drift.radius / 16 : 0,
+      seed: (Math.random() * 0xffffffff) >>> 0 || 1
+    };
   });
-  if (layers.some((layer) => !layer.context)) return { setPlaying() {} };
-  container.replaceChildren(...layers.map((layer) => layer.canvas));
+  if (layers.some((layer) => !layer.context)) {
+    return { setPlaying() {}, setPointer() {}, setPointerActive() {} };
+  }
+  container.replaceChildren(...layers.map((layer) => layer.shell || layer.canvas));
 
   let width = 0;
   let height = 0;
@@ -210,7 +308,7 @@ function createGrainParticles(container) {
   let rampFrame = null;
   let rampStarted = null;
   const animations = [];
-  const omega = 2 * Math.PI / .3; // Critically damped speed, response 0.3 s, no overshoot.
+  const omega = 2 * Math.PI / 2; // Critically damped speed, response 2 s, no overshoot.
 
   function paint(layer, scale, count) {
     const { canvas, context, drift } = layer;
@@ -303,6 +401,17 @@ function createGrainParticles(container) {
     if (!settled) rampFrame = requestAnimationFrame(ramp);
   }
 
+  function paintField(position) {
+    const shiftX = fieldTravel * Math.tanh(position.x / Math.max(width / 2, 1));
+    const shiftY = fieldTravel * Math.tanh(position.y / Math.max(height / 2, 1));
+    layers.forEach(({ shell, depth }) => {
+      if (!shell) return;
+      shell.style.transform = `translate3d(${shiftX * depth}px, ${shiftY * depth}px, 0)`;
+    });
+  }
+  // Heavier than the spotlight so motes trail the pointer instead of locking to it.
+  const field = createSpring2D(.5, paintField);
+
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(container);
   else window.addEventListener('resize', resize, { passive: true });
   finePointer.addEventListener('change', resize);
@@ -321,91 +430,53 @@ function createGrainParticles(container) {
       });
       // Pausing holds each layer's current position. Resuming accelerates from it.
       if (playing && animations.length) rampFrame = requestAnimationFrame(ramp);
-    }
-  };
-}
-
-// Independent, critically damped X/Y springs preserve velocity when the cursor reverses.
-function createCursorGlow(glow) {
-  if (!glow) return { setActive() {} };
-  const position = { x: 0, y: 0 };
-  const target = { x: 0, y: 0 };
-  const velocity = { x: 0, y: 0 };
-  const omega = 2 * Math.PI / .4; // Apple-style response 0.4 s, damping ratio 1.
-  let active = false;
-  let frame = null;
-  let previousTime = 0;
-
-  function paint() {
-    glow.style.transform = `translate3d(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px), 0)`;
-  }
-  function tick(now) {
-    frame = null;
-    if (!active) return;
-    const dt = previousTime ? Math.min((now - previousTime) / 1000, .064) : 0;
-    previousTime = now;
-    const decay = Math.exp(-omega * dt);
-    let settled = true;
-    for (const axis of ['x', 'y']) {
-      const delta = position[axis] - target[axis];
-      const change = (velocity[axis] + omega * delta) * dt;
-      position[axis] = target[axis] + (delta + change) * decay;
-      velocity[axis] = (velocity[axis] - omega * change) * decay;
-      if (Math.abs(position[axis] - target[axis]) > .1 || Math.abs(velocity[axis]) > .1) settled = false;
-    }
-    if (settled) {
-      position.x = target.x;
-      position.y = target.y;
-      velocity.x = velocity.y = 0;
-    }
-    paint();
-    if (!settled) frame = requestAnimationFrame(tick);
-  }
-  function wake() {
-    if (!active || frame !== null) return;
-    previousTime = 0;
-    frame = requestAnimationFrame(tick);
-  }
-  function recenter() {
-    target.x = target.y = 0;
-    wake();
-  }
-  hero.addEventListener('pointermove', (event) => {
-    if (!active || event.pointerType === 'touch') return;
-    const bounds = hero.getBoundingClientRect();
-    target.x = event.clientX - bounds.left - bounds.width / 2;
-    target.y = event.clientY - bounds.top - bounds.height / 2;
-    wake();
-  }, { passive: true });
-  hero.addEventListener('pointerleave', recenter, { passive: true });
-  window.addEventListener('blur', recenter);
-  window.addEventListener('resize', recenter, { passive: true });
-  return {
-    setActive(value) {
-      if (active === value) return;
-      active = value;
-      if (!active) {
-        if (frame !== null) cancelAnimationFrame(frame);
-        frame = null;
-        position.x = position.y = target.x = target.y = velocity.x = velocity.y = 0;
-        paint();
-      }
+    },
+    setPointer(x, y) {
+      field.setTarget(x, y);
+    },
+    setPointerActive(value) {
+      field.setActive(value);
     }
   };
 }
 
 const grainParticles = createGrainParticles(backdrop.querySelector('.grain-particles'));
-const cursorGlow = createCursorGlow(backdrop.querySelector('.ambient-light'));
 const increasedContrast = window.matchMedia('(prefers-contrast: more)');
 let heroIsVisible = true;
 let pageIsActive = true;
+// Keep the field still until the entrance starts. Skipping or omitting the intro
+// releases it immediately; otherwise it wakes with the shared intro clock.
+let starsReady = !document.documentElement.classList.contains('intro-pending');
+function pointerFromEvent(event) {
+  const bounds = hero.getBoundingClientRect();
+  return {
+    x: event.clientX - bounds.left - bounds.width / 2,
+    y: event.clientY - bounds.top - bounds.height / 2
+  };
+}
+function setAmbientPointer(x, y) {
+  grainParticles.setPointer(x, y);
+}
+function recenterAmbientPointer() {
+  setAmbientPointer(0, 0);
+}
+hero.addEventListener('pointermove', (event) => {
+  if (event.pointerType === 'touch') return;
+  const { x, y } = pointerFromEvent(event);
+  setAmbientPointer(x, y);
+}, { passive: true });
+hero.addEventListener('pointerleave', recenterAmbientPointer, { passive: true });
+window.addEventListener('blur', recenterAmbientPointer);
+window.addEventListener('resize', recenterAmbientPointer, { passive: true });
 function syncAmbientMotion() {
   // Prepainted layers can drift during the entrance without a canvas render loop.
   const playing = heroIsVisible && pageIsActive && !document.hidden && !reducedMotion.matches &&
-    !increasedContrast.matches;
+    !increasedContrast.matches && starsReady;
+  const pointerActive = playing && finePointer.matches &&
+    !document.documentElement.classList.contains('intro-pending');
   backdrop.dataset.ambientMotion = playing ? 'playing' : 'paused';
   grainParticles.setPlaying(playing);
-  cursorGlow.setActive(playing && finePointer.matches && !document.documentElement.classList.contains('intro-pending'));
+  grainParticles.setPointerActive(pointerActive);
 }
 if ('IntersectionObserver' in window) {
   const ambientVisibility = new IntersectionObserver(([entry]) => {
@@ -428,40 +499,205 @@ increasedContrast.addEventListener('change', syncAmbientMotion);
 finePointer.addEventListener('change', syncAmbientMotion);
 syncAmbientMotion();
 
-// Native scroll timelines own the effect when available. Older browsers use a
-// single passive, frame-coalesced update, with no easing loop or scroll hijacking.
-function enableHeroScroll() {
-  if (CSS.supports('animation-timeline: view()')) return;
+// Occasional section navigation: spatial consistency. Reuse the existing
+// critically damped spring (Apple response .4 s) and retain native touch scrolling.
+// Only the two section boundaries matter; the About layout is independent.
+function enableSectionScroll() {
+  const root = document.documentElement;
+  const about = document.querySelector('#about');
+  if (!hero || !about) return;
   const wordmark = hero.querySelector('.wordmark-stage');
   const portrait = hero.querySelector('.portrait-scroll');
-  let height = 1;
-  let top = 0;
-  let frame = null;
+  const sidebar = about.querySelector('.about-sidebar');
+  const heading = about.querySelector('.about-heading');
+  const links = [...document.querySelectorAll('[data-section-link]')];
+  let boundary = 1;
+  let running = false;
+  let destination = 0;
+  let paintFrame = null;
+  let focusDestination = false;
+  let lastWheelAt = -Infinity;
+  let wheelDirection = 0;
+  let wheelDistance = 0;
+  let gestureClaimed = false;
+
   function paint() {
-    frame = null;
-    const progress = Math.min(1, Math.max(0, (window.scrollY - top) / height));
-    const nameProgress = Math.min(1, progress / .45);
-    const portraitProgress = Math.max(0, (progress - .25) / .75);
+    paintFrame = null;
+    const progress = Math.min(1, Math.max(0, window.scrollY / boundary));
+    const nameProgress = Math.min(1, progress / .65);
+    const portraitProgress = Math.min(1, progress / .9);
+    // Full transforms on the outer layers never compete with the intro's pose.
+    wordmark.style.transform = reducedMotion.matches ? 'none' : `translateY(${-14 * nameProgress}%)`;
+    portrait.style.transform = reducedMotion.matches ? 'none' : `translateY(${-12 * portraitProgress}%)`;
     wordmark.style.opacity = String(1 - nameProgress);
     portrait.style.opacity = String(1 - portraitProgress);
-    wordmark.style.transform = reducedMotion.matches ? 'none' : `translateY(${nameProgress * 14}%)`;
-    portrait.style.transform = reducedMotion.matches ? 'none' : `translateY(${portraitProgress * 12}%)`;
+    hero.style.opacity = String(1 - progress);
+    if (sidebar && heading) {
+      sidebar.style.transform = reducedMotion.matches ? 'none' : `translateX(${-24 * (1 - progress)}px)`;
+      heading.style.transform = reducedMotion.matches ? 'none' : `translateY(${24 * (1 - progress)}px)`;
+      sidebar.style.opacity = heading.style.opacity = String(progress);
+    }
+    hero.inert = progress >= .999;
+    const current = progress >= .5 ? '#about' : '#home';
+    links.filter(link => link.matches('.nav-link, .section-nav-link')).forEach(link => {
+      if (link.hash === current) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    });
+    const visible = progress < .999;
+    if (heroIsVisible !== visible) {
+      heroIsVisible = visible;
+      syncAmbientMotion();
+    }
   }
-  function schedule() {
-    if (frame === null) frame = requestAnimationFrame(paint);
+
+  function schedulePaint() {
+    if (paintFrame === null) paintFrame = requestAnimationFrame(paint);
   }
+
+  function complete() {
+    running = false;
+    root.classList.remove('section-spring-active');
+    if (focusDestination) {
+      focusDestination = false;
+      // Wheel navigation doesn't steal focus. Explicit links do, after arriving.
+      (destination ? about : document.querySelector('#intro')).focus({ preventScroll: true });
+    }
+  }
+
+  const spring = createSpring2D(.4, ({ y }, settled) => {
+    if (!running) return;
+    window.scrollTo({ top: y, behavior: 'instant' });
+    schedulePaint();
+    if (settled) complete();
+  });
+  spring.setActive(true);
+
+  function stop() {
+    spring.stop();
+    running = false;
+    focusDestination = false;
+    root.classList.remove('section-spring-active');
+  }
+
+  function navigate(to, instant = false, focus = false) {
+    destination = to;
+    focusDestination = focus;
+    if (instant || reducedMotion.matches) {
+      spring.stop();
+      root.classList.add('section-spring-active');
+      window.scrollTo({ top: to, behavior: 'instant' });
+      paint();
+      complete();
+      return;
+    }
+    if (!running) spring.jumpTo(0, window.scrollY);
+    running = true;
+    root.classList.add('section-spring-active');
+    spring.setTarget(0, to); // Reversals preserve the current position AND velocity.
+  }
+
   function measure() {
-    height = Math.max(1, hero.clientHeight);
-    top = hero.getBoundingClientRect().top + window.scrollY;
-    schedule();
+    const previousBoundary = boundary;
+    const wasAtAbout = Math.abs(window.scrollY - previousBoundary) < 2;
+    const wasRunning = running;
+    const wasForward = destination > 0;
+    boundary = about.offsetTop;
+    if (wasRunning) navigate(wasForward ? boundary : 0);
+    else if (wasAtAbout) window.scrollTo({ top: boundary, behavior: 'instant' });
+    schedulePaint();
   }
-  window.addEventListener('scroll', schedule, { passive: true });
+
+  function nestedScrollerCanMove(target, direction) {
+    for (let node = target instanceof Element ? target : null;
+      node && node !== document.body; node = node.parentElement) {
+      if (node.matches('input, textarea, select, [contenteditable="true"], [role="slider"]')) return true;
+      if (node.scrollHeight <= node.clientHeight + 1) continue;
+      if (!/auto|scroll/.test(getComputedStyle(node).overflowY)) continue;
+      if (direction < 0 ? node.scrollTop > 0 : node.scrollTop + node.clientHeight < node.scrollHeight - 1) return true;
+    }
+    return false;
+  }
+
+  function onWheel(event) {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey ||
+      mobileMenu?.open || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    const direction = Math.sign(event.deltaY);
+    if (!direction || nestedScrollerCanMove(event.target, direction)) return;
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+    const now = performance.now();
+    // A pause starts another gesture; reversing direction is always immediate.
+    if (now - lastWheelAt > 180 || direction !== wheelDirection) {
+      wheelDistance = 0;
+      gestureClaimed = false;
+    }
+    lastWheelAt = now;
+    wheelDirection = direction;
+    root.classList.remove('section-scroll-keyboard');
+
+    // Consume only the remainder of a claimed gesture, including its inertia.
+    // A fresh gesture within a taller About page scrolls its content normally.
+    if (gestureClaimed) {
+      event.preventDefault();
+      return;
+    }
+    const y = window.scrollY;
+    if (y > boundary + 2 || (!running && direction > 0 && y >= boundary - 2) ||
+      (!running && direction < 0 && y <= 0)) return;
+    event.preventDefault();
+    wheelDistance += Math.abs(delta);
+    if (wheelDistance < 10) return;
+    gestureClaimed = true;
+    navigate(direction > 0 ? boundary : 0);
+  }
+
+  document.addEventListener('click', event => {
+    const link = event.target.closest('[data-section-link]');
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const to = link.hash === '#about' ? boundary : 0;
+    // Keyboard links move focus immediately, without a full-screen animation.
+    const keyboard = root.classList.contains('section-scroll-keyboard');
+    // The navigation dialog closes through its existing link handler. Defer
+    // focus until it has restored the page, without blocking the scroll input.
+    navigate(to, keyboard, !mobileMenu?.open);
+    if (location.hash !== link.hash) history.pushState(null, '', link.hash);
+  });
+
+  document.addEventListener('keydown', event => {
+    if (mobileMenu?.open || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey ||
+      event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    stop();
+    root.classList.add('section-scroll-keyboard');
+    const y = window.scrollY;
+    if (event.key === 'PageDown' && y < boundary - 2) {
+      event.preventDefault();
+      navigate(boundary, true);
+    } else if (event.key === 'PageUp' && y > 0 && y <= boundary + 2) {
+      event.preventDefault();
+      navigate(0, true);
+    }
+  });
+  document.addEventListener('pointerdown', () => {
+    stop();
+    root.classList.remove('section-scroll-keyboard');
+    gestureClaimed = false;
+  }, { capture: true, passive: true });
+  window.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('scroll', schedulePaint, { passive: true });
   window.addEventListener('resize', measure, { passive: true });
+  window.addEventListener('pagehide', stop);
   window.addEventListener('pageshow', measure);
-  reducedMotion.addEventListener('change', schedule);
-  measure();
+  window.addEventListener('popstate', () => { stop(); schedulePaint(); });
+  reducedMotion.addEventListener('change', () => {
+    if (running) navigate(destination, true);
+    schedulePaint();
+  });
+  if ('ResizeObserver' in window) new ResizeObserver(measure).observe(hero);
+  boundary = about.offsetTop;
+  root.classList.add('section-scroll-ready');
+  paint();
 }
-enableHeroScroll();
+enableSectionScroll();
 
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
@@ -469,6 +705,7 @@ async function playIntro() {
   if (!root.classList.contains('intro-pending')) return;
 
   const wordmark = hero.querySelector('.wordmark');
+  const portraitStage = hero.querySelector('.portrait-stage');
   const animations = [];
   const viewportWidth = document.documentElement.clientWidth;
   const viewportHeight = window.innerHeight;
@@ -493,7 +730,7 @@ async function playIntro() {
     }
     finished = true;
     const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
-    const elements = [...hero.querySelectorAll('.wordmark:not(.intro-wordmark), .portrait-stage, .hero-heading-line, .hero-content .button, .site-header, .signature')];
+    const elements = [...hero.querySelectorAll('.wordmark:not(.intro-wordmark), .portrait-stage, .hero-heading-line, .hero-heading-rule, .hero-content .button, .site-header, .signature')];
     // Read the currently painted poses before cancelling the shared intro clock.
     const poses = settle ? elements.map(element => ({ element, opacity: getComputedStyle(element).opacity })) : [];
     const clonePose = settle && clone ? {
@@ -501,12 +738,18 @@ async function playIntro() {
       transform: getComputedStyle(clone).transform,
       letters: [...clone.children].map(element => ({ element, transform: getComputedStyle(element).transform }))
     } : null;
+    // The portrait also carries scale and blur, so its settle needs more than opacity.
+    const portraitPose = settle && portraitStage ? {
+      transform: getComputedStyle(portraitStage).transform,
+      filter: getComputedStyle(portraitStage).filter
+    } : null;
     clearTimeout(window.introFallback);
     clearTimeout(readyTimeout);
     clearTimeout(socialTimer);
     scrambleTimers.forEach(clearTimeout);
     introScrambles.forEach((effect) => effect.reset());
     root.classList.remove('intro-pending');
+    starsReady = true;
     revealSocials(event?.type === 'keydown' || event?.type === 'focusin' || event?.type === 'pagehide');
     animations.forEach((animation) => animation.cancel());
     skipEvents.forEach((event) => {
@@ -531,6 +774,12 @@ async function playIntro() {
     poses.forEach(({ element, opacity }) => {
       bridge(element, [{ opacity }, { opacity: movingName && element === wordmark ? 0 : 1 }]);
     });
+    if (portraitPose) {
+      bridge(portraitStage, [
+        { transform: portraitPose.transform, filter: portraitPose.filter },
+        { transform: 'scale(1)', filter: 'blur(0px)' }
+      ]);
+    }
     if (movingName) {
       bridge(clone, [
         { opacity: clonePose.opacity, transform: clonePose.transform },
@@ -601,18 +850,23 @@ async function playIntro() {
     // Reuse the CSS curves and animate complete transforms on every browser.
     const rootStyle = getComputedStyle(root);
     const easeOut = rootStyle.getPropertyValue('--ease-out').trim();
-    const easeInOut = rootStyle.getPropertyValue('--ease-in-out').trim();
+    const easeOutCubic = rootStyle.getPropertyValue('--ease-out-cubic').trim();
+    const easeOutQuart = rootStyle.getPropertyValue('--ease-out-quart').trim();
+    const easeInOutCubic = rootStyle.getPropertyValue('--ease-in-out-cubic').trim();
+    const easeInOutQuart = rootStyle.getPropertyValue('--ease-in-out-quart').trim();
     const wordmarkTransform = getComputedStyle(wordmark).transform;
     // All animations share one clock, including the reference's 200 ms lead-in.
     const startTime = document.timeline.currentTime + 200;
+    starsReady = true;
+    syncAmbientMotion();
     const animate = (element, keyframes, delay, duration, easing = easeOut) => {
       const animation = element.animate(keyframes, { duration, delay, easing, fill: 'both' });
       animation.startTime = startTime;
       animations.push(animation);
       return animation;
     };
-    const reveal = (element, delay, duration) => animate(element,
-      [{ opacity: 0 }, { opacity: 1 }], delay, duration);
+    const reveal = (element, delay, duration, easing = easeOut) => animate(element,
+      [{ opacity: 0 }, { opacity: 1 }], delay, duration, easing);
 
     const scrambleIn = (label, delay, fadeDuration = 0) => {
       // Closed mobile-menu links have no visible glyphs to scramble. On touch,
@@ -631,19 +885,23 @@ async function playIntro() {
       }, Math.max(0, startTime + delay - document.timeline.currentTime)));
     };
     animate(clone, [
-      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: 0, easing: easeInOut },
-      { transform: `translate3d(${centerX}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: .5, easing: easeInOut },
+      { transform: `translate3d(${window.innerWidth}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: 0, easing: easeInOutQuart },
+      { transform: `translate3d(${centerX}px, ${centerY}px, 0) ${wordmarkTransform}`, offset: .5, easing: easeInOutCubic },
       { transform: `translate3d(0, 0, 0) ${wordmarkTransform}`, offset: 1 }
     ], 0, 2000, 'linear');
     clone.querySelectorAll('.intro-letter').forEach((letter, index) => {
-      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000);
+      animate(letter, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], index * 200, 1000, easeOutQuart);
     });
     animate(wordmark, [{ opacity: 0 }, { opacity: 1 }], 2000, 1);
     animate(clone, [{ opacity: 1 }, { opacity: 0 }], 2000, 1);
-    reveal(hero.querySelector('.portrait-stage'), 1400, 1100);
+    animate(portraitStage, [
+      { opacity: 0, transform: 'scale(.88)', filter: 'blur(20px)' },
+      { opacity: 1, transform: 'scale(1)', filter: 'blur(0px)' }
+    ], 1400, 1100, easeOutCubic);
     hero.querySelectorAll('.hero-heading-line').forEach((line, index) => {
       reveal(line, 1700 + index * 100, 1000);
     });
+    reveal(hero.querySelector('.hero-heading-rule'), 1700, 1000);
     reveal(hero.querySelector('.site-header'), 2000, 700);
     hero.querySelectorAll('.nav-label').forEach((label) => scrambleIn(label, 2000));
     reveal(hero.querySelector('.hero-content .button'), 2650, 800);

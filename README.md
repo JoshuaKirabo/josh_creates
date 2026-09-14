@@ -13,7 +13,7 @@ The homepage uses the stable small viewport height and safe areas, so browser to
 
 The decorative background is fixed to the screen outside the hero's clipping. Its static grain and base styles are in the document head so it appears before the animated canvas is ready; the static texture is replaced only after the canvas is painted. On phones, the first 64px blend gently into the same dark color used by Safari's status area, avoiding an abrupt texture boundary. Safari controls the pixels behind its own status icons, so that region still needs checking on an actual iPhone.
 
-Navigation and CTA destinations are currently placeholders. On mobile, the page ends at the copyright line: the retained About section is hidden so a small swipe cannot expose another section below the footer. The About section remains in the desktop layout.
+Home, About me, and Meet Josh now navigate between the two sections. Other destinations remain placeholders. The About section is available on desktop and mobile, using the reference’s compact profile sidebar and staggered introduction cards in the existing monochrome palette.
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
@@ -57,8 +57,16 @@ Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s
 
 ## Scroll motion
 
-The hero, portrait, heading, and wordmark keep constant dimensions during scrolling. Stable `svh` units prevent mobile browser controls from resizing the composition. The intro heading and button fade in at full size.
+One deliberate vertical wheel gesture moves from Home to About. The hero stays pinned while the About surface rises over it; the outer wordmark and portrait layers retreat and fade independently. Their typography and portrait dimensions stay fixed. Native scrolling drives the presentation directly, so the second section can be redesigned without changing the transition.
 
-Separate wordmark and portrait layers follow native scroll timelines: JOSH gently moves and fades over the first 45% of the hero exit, then the portrait fades between 25% and 100%. Scrolling upward reverses the same progress immediately, without restarting an entrance or waiting on a smoothing loop. The typography’s fixed vertical proportion and portrait centering stay on their inner elements. Older browsers use a passive, frame-coalesced transform/opacity fallback. Reduced motion keeps only the fades.
+The existing critically damped spring uses Apple's 0.4-second response and no bounce. Reversing the wheel retargets it from the current position and velocity, including mid-transition. A 10px input threshold rejects jitter; a 180ms pause separates wheel gestures. Remaining momentum in the same gesture cannot carry past the landing. A new gesture scrolls normally within About when its content is taller than the screen. Nested scroll areas, horizontal gestures, modified wheel input, and pinch zoom retain their browser behavior.
 
-Scrolling during the opening sequence settles JOSH from its current position to its resting position over 250ms with the shared `--ease-out` curve, then removes the duplicate only after the handoff. It never changes the letter size. Keyboard input remains immediate.
+Touch uses native scroll snapping and momentum; pointer contact stops an active wheel spring. Stable svh sizing keeps the hero independent of mobile browser toolbars. PageUp/PageDown and keyboard links land immediately, other keyboard navigation stays native, and reduced motion removes the pinned/parallax presentation and uses immediate section navigation. Home/About links and Meet Josh work without JavaScript as ordinary anchors.
+
+The original intro still settles when scrolling begins. Scroll transforms belong to outer wrappers so the intro never fights them. An offscreen hero becomes inert, and ambient motion pauses after the handoff. A resize keeps a completed landing aligned with the section boundary.
+
+Run `node --test tests/section-scroll.test.cjs` for the gesture, interruption, keyboard, reduced-motion, nested-scroll, and resize checks. These are controller tests; the physical feel of touch snapping still needs checking on an actual device.
+
+## About page
+
+The second page follows the reference’s profile rail, compact highlighted navigation, large heading, and connected staggered cards. It uses Josh’s existing introduction, with numbered themes instead of invented career dates or project metrics. Home and About links work; the other existing destinations remain placeholders. On mobile the rail becomes a compact sticky header with horizontally scrollable navigation and stacked cards. Container queries also stack the cards when their content column is narrow. The background reuses the existing masked portrait with a static blur, and the panels have opaque alternatives for reduced transparency and higher contrast.
