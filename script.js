@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .sidebar-socials a, .sidebar-wordmark';
   let press = null;
   let released = null;
 
@@ -508,6 +508,9 @@ function enableSectionScroll() {
   const wordmark = hero.querySelector('.wordmark-stage');
   const portrait = hero.querySelector('.portrait-scroll');
   const heroContent = hero.querySelector('.hero-content');
+  // The heading travels; only the parts of it with no sidebar twin fade.
+  const heroButton = heroContent?.querySelector?.('.button');
+  const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
   const heroFooter = hero.querySelector('.hero-footer');
   const sidebar = about.querySelector('.about-sidebar');
   const entryPage = document.querySelector('main')?.dataset?.entryPage;
@@ -543,6 +546,15 @@ function enableSectionScroll() {
   // reading order and hands over to its sidebar counterpart on arrival.
   let nameFold = null;
   let navFolds = [];
+  // The four heading lines land on the disciplines panel's matching words.
+  let headingFolds = [];
+  // Lines with nowhere to land (the phone rail hides the panel) fade instead.
+  let headingRest = [];
+  // About's own row owns the current-page highlight. The fold sweeps it in
+  // once that row's label has landed, instead of it appearing after the spring.
+  const pillLink = about.querySelector('.section-nav-link[href$="#about"]');
+  let pillWindow = [.62, .92];
+  let pillShown = null;
   // Header controls with nothing to become: the hamburger, and any link the
   // sidebar has no counterpart for.
   let headerRest = [];
@@ -598,7 +610,7 @@ function enableSectionScroll() {
     // pulled off-screen a frame before the sidebar mark is there.
     // Once both copies occupy the same position, blend their rasterization and
     // outline weight. A hard swap made the small JOSH suddenly turn much bolder.
-    const handover = smooth(slice(progress, .92, .999));
+    const handover = smooth(slice(progress, plan.handoverStart ?? .92, plan.handoverEnd ?? .999));
     plan.mover.style.opacity = String(1 - handover);
     fade(plan.reveal, handover);
     // Icons have no counterpart on the hero, so they join the word as it lands
@@ -614,7 +626,7 @@ function enableSectionScroll() {
   }
 
   function clearFolds() {
-    [nameFold, ...navFolds].forEach((plan) => {
+    [nameFold, ...navFolds, ...headingFolds].forEach((plan) => {
       if (!plan) return;
       plan.mover.style.transform = '';
       plan.mover.style.opacity = '';
@@ -630,6 +642,7 @@ function enableSectionScroll() {
     clearFolds();
     nameFold = null;
     navFolds = [];
+    headingFolds = [];
     about.style.transform = '';
     if (sidebar) sidebar.style.transform = '';
     // Reduced motion leaves the hero in flow, so there is nothing to fold into.
@@ -660,6 +673,29 @@ function enableSectionScroll() {
         navFolds.push(plan);
       }
     });
+    // The role lines follow the name, still in reading order, and finish with
+    // it. Same face and tracking at both ends, so one uniform scale lands them.
+    const heroLines = [...(hero.querySelectorAll?.('.hero-heading-line') || [])];
+    const sidebarLines = [...(about.querySelectorAll?.('.sidebar-disciplines p > span') || [])];
+    if (heroLines.length === sidebarLines.length) {
+      heroLines.forEach((line, index) => {
+        const start = .04 + index * .03;
+        const plan = planFold(line, line, sidebarLines[index], sidebarLines[index], start, start + .78);
+        if (plan) headingFolds.push(plan);
+      });
+    }
+    const landing = new Set(headingFolds.map(plan => plan.mover));
+    headingRest = heroLines.filter(line => !landing.has(line));
+    // The highlight needs the label white and alone first: the travelling copy
+    // sits above About and would read as white-on-white over the sweep. So this
+    // row hands over as soon as its glyphs land, and the sweep follows on.
+    // Without a travelling label (phone), the sweep follows the rail's fade-in.
+    const pillPlan = navFolds.find(plan => pillLink?.contains?.(plan.reveal));
+    if (pillPlan) {
+      pillPlan.handoverStart = pillPlan.end;
+      pillPlan.handoverEnd = pillPlan.end + .06;
+      pillWindow = [pillPlan.end + .05, .999];
+    } else pillWindow = [.62, .92];
     const travelling = new Set(navFolds.map(plan => plan.mover));
     headerRest = [...(hero.querySelectorAll?.('.menu-toggle, .nav-link') || [])]
       .filter(control => !travelling.has(control));
@@ -669,7 +705,8 @@ function enableSectionScroll() {
   // Every inline style the transition writes, handed back to CSS.
   function releaseTransition() {
     clearFolds();
-    [portrait, heroContent, heroFooter, wordmark, about, sidebar, ...dividers, ...headerRest]
+    [portrait, heroContent, heroButton, headingRule, heroFooter, wordmark, about, sidebar,
+      ...dividers, ...headerRest, ...headingRest]
       .forEach((element) => {
         if (!element) return;
         element.style.transform = '';
@@ -677,6 +714,8 @@ function enableSectionScroll() {
       });
     hero.style.pointerEvents = '';
     hero.style.visibility = '';
+    pillLink?.style.removeProperty?.('--pill');
+    pillShown = null;
   }
 
   function paint(scrollPosition = window.scrollY) {
@@ -704,7 +743,11 @@ function enableSectionScroll() {
       // the words, so the fold has the screen to itself as it lands.
       portrait.style.transform = `translate3d(0, ${-10 * leaving}%, 0)`;
       fade(portrait, 1 - leaving);
-      fade(heroContent, 1 - smooth(slice(progress, 0, .28)));
+      const contentLeaving = 1 - smooth(slice(progress, 0, .28));
+      fade(heroButton, contentLeaving);
+      fade(headingRule, contentLeaving);
+      headingRest.forEach(line => fade(line, contentLeaving));
+      headingFolds.forEach(plan => applyFold(plan, progress));
       fade(heroFooter, 1 - smooth(slice(progress, 0, .24)));
 
       if (nameFold) applyFold(nameFold, progress);
@@ -720,6 +763,14 @@ function enableSectionScroll() {
       // .site-header's own opacity, so this stays on the controls themselves.
       const clearing = 1 - smooth(slice(progress, 0, .3));
       headerRest.forEach(control => fade(control, clearing));
+      if (pillLink) {
+        // Rounded so a settling spring does not restyle the row every frame.
+        const pill = Math.round(smooth(slice(progress, ...pillWindow)) * 1000) / 1000;
+        if (pill !== pillShown) {
+          pillShown = pill;
+          pillLink.style.setProperty('--pill', String(pill));
+        }
+      }
 
       // Native sticky layout holds About still. Only the sidebar joins the words.
       const remaining = 1 - smooth(slice(progress, 0, .92));
@@ -937,7 +988,10 @@ function enableSectionScroll() {
   function measure() {
     const previousBoundary = boundary;
     const nextBoundary = Math.max(1, foldDistance());
-    const wasAtAbout = Math.abs(window.scrollY - previousBoundary) < 2;
+    // The browser clamps scrollY to the reflowed document before this event
+    // runs, so the last painted position is the only record of where the
+    // reader was. Reading scrollY here stranded a resized About mid-fold.
+    const wasAtAbout = Math.abs(presentedPosition - previousBoundary) < 2;
     const wasRunning = running;
     const wasForward = destination > 0;
     boundary = nextBoundary;

@@ -24,6 +24,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
         toggle: (x, on) => (on ?? !classes.has(x)) ? classes.add(x) : classes.delete(x) };
     }
     closest() { return null; }
+    contains(node) { return node === this || Object.values(this.children).flat().some(child => child.contains?.(node)); }
     matches() { return false; }
     querySelector(selector) { return this.children[selector] || null; }
     querySelectorAll(selector) { return this.children[selector] || []; }
@@ -80,6 +81,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
   about.previousElementSibling = runway;
   about.children['.sidebar-wordmark'] = sidebarName;
   about.children['.section-nav-link'] = sidebarLinks;
+  about.children['.section-nav-link[href$="#about"]'] = sidebarLinks[1];
   hero.children['.wordmark-stage'] = stage;
   hero.children['.wordmark'] = heroName;
   hero.children['.portrait-scroll'] = portrait;
@@ -271,6 +273,64 @@ test('the name and every link land exactly on their sidebar counterparts', () =>
   });
 });
 
+// Home's four role lines and the disciplines panel's four words.
+function withHeading(s, landings = true) {
+  const lines = [rect(420, 600, 290, 96), rect(430, 700, 280, 96), rect(740, 600, 270, 96), rect(740, 700, 440, 96)]
+    .map(ink => { const line = new s.Element(); line.box = ink; line.ink = ink; return line; });
+  const words = [rect(52, 190, 60, 20), rect(50, 210, 64, 20), rect(170, 190, 56, 20), rect(160, 210, 90, 20)]
+    .map(ink => { const word = new s.Element(); word.box = ink; word.ink = ink; return word; });
+  s.hero.children['.hero-heading-line'] = lines;
+  s.about.children['.sidebar-disciplines p > span'] = landings ? words : [];
+  s.dispatch('window', 'resize');
+  s.advance(16);
+  return { lines, words };
+}
+
+test('the heading lines land exactly on the disciplines panel words', () => {
+  const s = setup();
+  const { lines, words } = withHeading(s);
+  s.scrollTo(BOUNDARY);
+  lines.forEach((line, index) => {
+    const [x, y] = s.inkCentreOf(line, line.ink);
+    const [tx, ty] = s.targetCentre(words[index]);
+    near(x, tx, `line ${index} x`);
+    near(y, ty, `line ${index} y`);
+    assert.equal(line.style.opacity, '0', 'the travelling copy hands over');
+    assert.equal(words[index].style.opacity, '', 'the sidebar word owns the landing');
+  });
+  s.scrollTo(0);
+  lines.forEach(line => assert.equal(line.style.transform, 'translate3d(0px, 0px, 0) scale(1)'));
+});
+
+test('heading lines with nowhere to land fade out in place', () => {
+  const s = setup();
+  const { lines } = withHeading(s, false);
+  s.scrollTo(BOUNDARY * .5);
+  lines.forEach(line => {
+    assert.equal(line.style.transform, undefined, 'no fold without a landing');
+    assert.equal(line.style.opacity, '0');
+  });
+});
+
+test('the current-page highlight sweeps in after its label lands, and back out', () => {
+  const s = setup();
+  const about = s.sidebarLinks[1];
+  const pill = () => Number(about.style['--pill']);
+  // With two links, About's label lands at .92, hands over by .98, then sweeps.
+  s.scrollTo(BOUNDARY * .5);
+  assert.equal(pill(), 0, 'no highlight while the label is travelling');
+  s.scrollTo(BOUNDARY * .95);
+  assert.ok(Number(about.children.span.style.opacity) > 0, 'the label is handing over');
+  assert.equal(pill(), 0, 'the sweep waits for the handover');
+  s.scrollTo(BOUNDARY * .985);
+  assert.equal(about.children.span.style.opacity, '', 'the label is fully handed over first');
+  assert.ok(pill() > .2 && pill() < .95, `the sweep is under way, got ${pill()}`);
+  s.scrollTo(BOUNDARY);
+  assert.equal(pill(), 1);
+  s.scrollTo(BOUNDARY * .6);
+  assert.equal(pill(), 0, 'it retracts on the way back');
+});
+
 test('the fold is scrubbed by scroll position, and scrubs back', () => {
   const s = setup();
   s.scrollTo(0);
@@ -408,6 +468,18 @@ test('resizing re-solves the fold against the new layout', () => {
   const [tx, ty] = s.targetCentre(s.sidebarName);
   near(x, tx, 'name x after resize');
   near(y, ty, 'name y after resize');
+});
+
+test('a resize that clamps scrollY before the event still lands on About', () => {
+  const s = setup();
+  s.scrollTo(BOUNDARY);
+  // The shorter document is laid out, and scrollY clamped, before resize fires.
+  s.hero.offsetHeight = 703;
+  s.window.scrollY = 670;
+  s.dispatch('window', 'resize');
+  assert.equal(s.window.scrollY, 703, 'the reader stays landed on About');
+  s.advance(600);
+  assert.equal(s.root.classList.contains('section-folding'), false, 'no fold is left half-drawn');
 });
 
 test('width-only resize remeasures every landing without changing scroll position', () => {
