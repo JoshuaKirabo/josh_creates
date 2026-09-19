@@ -68,6 +68,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     const link = make(rect(4, ink.top - 13, 85, 44), null, false);
     link.children.span = make(null, ink, false);
     link.children.span.inFlow = false;
+    link.children['.nav-label'] = link.children.span;
     link.children.svg = make(rect(12, ink.top, 16, 16), null, false);
     link.children.svg.inFlow = false;
     return link;
@@ -221,12 +222,12 @@ test('one touch swipe completes after release, and a new swipe can reverse it', 
   assert.equal(s.dispatch('window', 'touchmove', { touches: point(380) }).defaultPrevented, true);
   s.dispatch('window', 'touchend');
   s.advance(96);
-  const before = s.window.scrollY;
+  const before = s.stage.style.transform;
   s.dispatch('document', 'pointerdown', { pointerType: 'touch' });
   s.dispatch('window', 'touchstart', { touches: point(380) });
   s.dispatch('window', 'touchmove', { touches: point(410) });
   s.dispatch('window', 'touchend');
-  assert.equal(s.window.scrollY, before, 'reversal retains the current pose');
+  assert.equal(s.stage.style.transform, before, 'reversal retains the current pose');
   s.advance();
   assert.equal(s.window.scrollY, 0);
   s.dispatch('window', 'touchstart', { touches: point(400) });
@@ -342,7 +343,7 @@ test('the hero stops swallowing the pointer once its own content has gone', () =
 test('a nav link still travels smoothly and lands exactly', () => {
   const s = setup();
   s.click('#about');
-  assert.ok(s.window.scrollY < BOUNDARY, 'it animates rather than jumping');
+  assert.equal(s.window.scrollY, 0, 'the document stays put until landing');
   s.advance();
   assert.equal(s.window.scrollY, BOUNDARY);
   assert.equal(s.hero.inert, true);
@@ -356,10 +357,10 @@ test('reversing a link animation retargets it without jumping to an endpoint', (
   const s = setup();
   s.click('#about');
   s.advance(96);
-  const before = s.window.scrollY;
-  assert.ok(before > 0 && before < BOUNDARY);
+  const before = s.stage.style.transform;
+  assert.notEqual(before, 'translate3d(0px, 0px, 0) scale(1)');
   s.click('#home');
-  assert.equal(s.window.scrollY, before, 'it carries its position and velocity into the reversal');
+  assert.equal(s.stage.style.transform, before, 'it carries its position and velocity into the reversal');
   s.advance();
   assert.equal(s.window.scrollY, 0);
 });
@@ -369,9 +370,9 @@ test('mouse contact stops navigation and reduced motion lands immediately', () =
   s.click('#about');
   s.advance(80);
   s.dispatch('document', 'pointerdown');
-  const atContact = s.window.scrollY;
+  const atContact = s.stage.style.transform;
   s.advance();
-  assert.equal(s.window.scrollY, atContact, 'mouse contact stops the page');
+  assert.equal(s.stage.style.transform, atContact, 'mouse contact stops the page');
 
   const r = setup(true);
   r.click('#about');
@@ -425,9 +426,9 @@ test('a reverse wheel flick redirects a link spring and never steals focus after
   const s = setup();
   s.click('#about');
   s.advance(96);
-  const before = s.window.scrollY;
+  const before = s.stage.style.transform;
   assert.equal(s.dispatch('window', 'wheel', { deltaY: -50 }).defaultPrevented, true);
-  assert.equal(s.window.scrollY, before);
+  assert.equal(s.stage.style.transform, before);
   s.advance();
   assert.equal(s.window.scrollY, 0);
   assert.equal(s.about.focused, undefined);
@@ -437,10 +438,11 @@ test('a pointer reversal retains forward momentum before returning Home', () => 
   const s = setup();
   s.click('#about');
   s.advance(96);
-  const turningPoint = s.window.scrollY;
+  const [, turningY] = s.inkCentreOf(s.stage, s.heroName.ink);
   s.click('#home'); // Includes the real pointerdown → click sequence.
   s.advance(16);
-  assert.ok(s.window.scrollY > turningPoint, 'existing velocity decelerates instead of reversing abruptly');
+  const [, afterY] = s.inkCentreOf(s.stage, s.heroName.ink);
+  assert.ok(afterY < turningY, 'existing velocity decelerates instead of reversing abruptly');
   s.advance();
   assert.equal(s.window.scrollY, 0);
 });
@@ -487,10 +489,8 @@ test('travelling glyphs slow into both ends rather than hitting a clamp at speed
 test('rounded browser scroll offsets do not quantize or repaint the spring pose', () => {
   const precise = setup();
   const rounded = setup();
-  let observedRounding = false;
   rounded.window.scrollTo = ({ top }) => {
     rounded.window.scrollY = Math.round(top);
-    observedRounding ||= rounded.window.scrollY !== top;
     rounded.dispatch('window', 'scroll');
   };
   for (const destination of ['#about', '#home']) {
@@ -503,14 +503,49 @@ test('rounded browser scroll offsets do not quantize or repaint the spring pose'
         'the drawn word keeps the spring precision in both directions');
     }
   }
-  assert.equal(observedRounding, true, 'the browser simulation actually rounded');
 });
 
 test('a navigation spring responds on its first display frame', () => {
   const s = setup();
   s.click('#about');
   s.advance(16);
-  assert.ok(s.window.scrollY > 0, 'there is no idle frame before movement begins');
+  assert.notEqual(s.stage.style.transform, 'translate3d(0px, 0px, 0) scale(1)',
+    'there is no idle frame before movement begins');
+});
+
+test('navigation does not write scrollTo until it lands', () => {
+  const s = setup();
+  let writes = 0;
+  const assign = s.window.scrollTo;
+  s.window.scrollTo = (opts) => {
+    writes += 1;
+    assign.call(s.window, opts);
+  };
+  s.click('#about');
+  s.advance(96);
+  assert.equal(writes, 0, 'the spring paints without moving the document');
+  assert.notEqual(s.stage.style.transform, 'translate3d(0px, 0px, 0) scale(1)');
+  s.advance();
+  assert.equal(writes, 1);
+  assert.equal(s.window.scrollY, BOUNDARY);
+});
+
+test('resize during a fold does not remasure until rest', () => {
+  const a = setup();
+  const b = setup();
+  a.click('#about');
+  b.click('#about');
+  a.advance(96);
+  b.advance(96);
+  assert.equal(a.stage.style.transform, b.stage.style.transform);
+  a.sidebarName.ink = rect(15, 200, 47, 18);
+  a.dispatch('window', 'resize');
+  a.advance(16);
+  b.advance(16);
+  assert.equal(a.stage.style.transform, b.stage.style.transform,
+    'ink remasure waits until landing');
+  a.advance();
+  assert.equal(a.window.scrollY, BOUNDARY);
 });
 
 test('native presentation resumes at the landing after navigation completes', () => {
@@ -621,18 +656,19 @@ test('explicit link navigation has only its navigation spring', () => {
   const s = setup(false, '', 'home', true);
   s.click('#about');
   s.advance(96);
+  assert.notEqual(s.stage.style.transform, 'translate3d(0px, 0px, 0) scale(1)');
+  s.advance();
   const direct = setup();
-  direct.scrollTo(s.window.scrollY);
+  direct.scrollTo(BOUNDARY);
   assert.equal(s.stage.style.transform, direct.stage.style.transform, 'no second easing trails the link motion');
 });
 
-test('About has only a small arrival offset, with no inverse-scroll correction', () => {
+test('About is not transformed or faded during the fold', () => {
   const s = setup();
   for (const y of [0, 200, 500, 850, 1000, 1400]) {
     s.scrollTo(y);
-    const offset = Number(/translateY\(([-\d.]+)px\)/.exec(s.about.style.transform)[1]);
-    assert.ok(offset >= 0 && offset <= 48, `at ${y}, offset was ${offset}`);
-    if (y >= BOUNDARY) assert.equal(offset, 0, 'long About content can scroll normally');
+    assert.equal(s.about.style.transform || '', '', `at ${y}, About stayed untransformed`);
+    assert.ok(!s.about.style.opacity, `at ${y}, About kept CSS opacity`);
   }
 });
 

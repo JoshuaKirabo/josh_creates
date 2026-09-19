@@ -652,7 +652,7 @@ function enableSectionScroll() {
       const target = sidebarLinks[index];
       const label = link.querySelector?.('.nav-label');
       if (!target || !label) return;
-      const landing = target.querySelector('span') || target;
+      const landing = target.querySelector?.('.nav-label') || target.querySelector?.('span') || target;
       const plan = planFold(link, label, landing, landing,
         index * lead, index * lead + span);
       if (plan) {
@@ -681,16 +681,19 @@ function enableSectionScroll() {
 
   function paint(scrollPosition = window.scrollY) {
     presentedPosition = scrollPosition;
-    if (foldStale) {
-      foldStale = false;
-      measureFolds();
-    }
     const progress = clamp(scrollPosition / boundary);
     // Reduced motion leaves the hero in flow, so the two sections simply scroll
     // past each other. Nothing is pinned, and nothing has to move out of the way.
     const still = reducedMotion.matches;
     const folding = !still && progress > 0 && progress < .999;
-    if (folding !== foldingState) {
+    // Clearing transforms to remasure mid-fold flashes the words back to rest.
+    if (foldStale && !running && !folding) {
+      foldStale = false;
+      measureFolds();
+    }
+    // A running spring freezes chrome so the first pixel and the 45/50%
+    // handoff do not invalidate styles while the words are travelling.
+    if (!running && folding !== foldingState) {
       foldingState = folding;
       root.classList.toggle('section-folding', folding);
     }
@@ -699,7 +702,7 @@ function enableSectionScroll() {
       const leaving = smooth(slice(progress, 0, .42));
       // Everything without a counterpart in the About layout clears out ahead of
       // the words, so the fold has the screen to itself as it lands.
-      portrait.style.transform = `translateY(${-10 * leaving}%)`;
+      portrait.style.transform = `translate3d(0, ${-10 * leaving}%, 0)`;
       fade(portrait, 1 - leaving);
       fade(heroContent, 1 - smooth(slice(progress, 0, .28)));
       fade(heroFooter, 1 - smooth(slice(progress, 0, .24)));
@@ -707,7 +710,7 @@ function enableSectionScroll() {
       if (nameFold) applyFold(nameFold, progress);
       else {
         const nameProgress = smooth(slice(progress, 0, .65));
-        wordmark.style.transform = `translateY(${-14 * nameProgress}%)`;
+        wordmark.style.transform = `translate3d(0, ${-14 * nameProgress}%, 0)`;
         fade(wordmark, 1 - nameProgress);
       }
       navFolds.forEach(plan => applyFold(plan, progress));
@@ -718,19 +721,17 @@ function enableSectionScroll() {
       const clearing = 1 - smooth(slice(progress, 0, .3));
       headerRest.forEach(control => fade(control, clearing));
 
-      // Native sticky layout holds About still, including during asynchronous
-      // scrolling. Only this small arrival offset changes with the visual fold.
+      // Native sticky layout holds About still. Only the sidebar joins the words.
       const remaining = 1 - smooth(slice(progress, 0, .92));
-      about.style.transform = `translateY(${48 * remaining * remaining}px)`;
-      fade(about, smooth(slice(progress, .28, .72)));
       if (sidebar) {
-        sidebar.style.transform = `translateX(${-24 * remaining}px)`;
+        sidebar.style.transform = `translate3d(${-24 * remaining}px, 0, 0)`;
         fade(sidebar, smooth(slice(progress, .32, .78)));
       }
       // Its children already fade to zero. Keep the transparent hero composed:
       // revealing a hidden, raster-heavy surface on reversal caused a hitch.
       hero.style.visibility = '';
     }
+    if (running) return;
     // The hero paints above About and covers the viewport, so it would swallow
     // clicks meant for the surface behind it. It hands both the pointer and the
     // accessibility tree over once its own content has gone and only the
@@ -786,6 +787,9 @@ function enableSectionScroll() {
     // their presentation spring from this landing, never its old departure.
     presentation.jumpTo(0, presentedPosition);
     running = false;
+    window.scrollTo({ top: destination, behavior: 'instant' });
+    // Landing is still: remasure if fonts/resize landed mid-trip, then chrome.
+    paint(presentedPosition);
     if (focusDestination) {
       focusDestination = false;
       // Scrolling never steals focus. Explicit links do, after arriving.
@@ -795,10 +799,10 @@ function enableSectionScroll() {
 
   // At less than one scroll pixel from rest, the eased glyphs already occupy
   // their landing. Finish the invisible tail so native input and focus resume.
+  // The document scroll is written at complete/stop, not on every frame — both
+  // surfaces stay sticky, and per-frame scrollTo was invalidating them.
   const spring = createSpring2D(1.1, ({ y }, settled) => {
     if (!running) return;
-    window.scrollTo({ top: y, behavior: 'instant' });
-    // Keep subpixel precision even when the browser rounds its scroll offset.
     paint(y);
     if (settled) complete();
   }, { restDistance: 1, restSpeed: 8 });
@@ -806,8 +810,14 @@ function enableSectionScroll() {
 
   function stop() {
     spring.stop();
-    if (running) presentation.jumpTo(0, presentedPosition);
-    running = false;
+    if (running) {
+      window.scrollTo({ top: presentedPosition, behavior: 'instant' });
+      presentation.jumpTo(0, presentedPosition);
+      running = false;
+      paint(presentedPosition);
+    } else {
+      running = false;
+    }
     focusDestination = false;
   }
 
@@ -827,6 +837,8 @@ function enableSectionScroll() {
       paintFrame = null;
       presentation.stop();
       spring.jumpTo(0, presentedPosition);
+      root.classList.add('section-folding');
+      foldingState = true;
     }
     running = true;
     spring.setTarget(0, to); // Reversals preserve the current position AND velocity.
@@ -1017,8 +1029,10 @@ function enableSectionScroll() {
   document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
   paintImmediately();
 }
-if (window.sitePagesReady) window.sitePagesReady.then(enableSectionScroll);
-else enableSectionScroll();
+if (window.sitePagesReady) {
+  window.sitePagesReady.then(bindAboutNavScrambles);
+  window.sitePagesReady.then(enableSectionScroll);
+} else enableSectionScroll();
 
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
@@ -1327,22 +1341,36 @@ function createScramble(label) {
 }
 
 const introScrambles = new Map();
-hero.querySelectorAll('.hero-heading-line, .nav-label, .signature').forEach((label) => {
+hero?.querySelectorAll('.hero-heading-line, .nav-label, .signature').forEach((label) => {
   label.classList.add('scramble-label');
   introScrambles.set(label, createScramble(label));
 });
-document.querySelectorAll('.nav-link').forEach((link) => {
+const boundNavScrambles = new WeakSet();
+function bindNavHoverScramble(link) {
+  if (boundNavScrambles.has(link)) return;
   const label = link.querySelector('.nav-label');
   if (!label) return;
   if (link.matches('a, button')) {
     link.setAttribute('aria-label', label.textContent.trim());
     label.setAttribute('aria-hidden', 'true');
   }
-  const { scramble } = introScrambles.get(label);
+  let effect = introScrambles.get(label);
+  if (!effect) {
+    label.classList.add('scramble-label');
+    effect = createScramble(label);
+    introScrambles.set(label, effect);
+  }
+  const { scramble } = effect;
   link.addEventListener('pointerenter', (event) => {
     if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
   });
-});
+  boundNavScrambles.add(link);
+}
+document.querySelectorAll('.nav-link').forEach(bindNavHoverScramble);
+function bindAboutNavScrambles() {
+  document.querySelectorAll('.section-nav-link').forEach(bindNavHoverScramble);
+}
+bindAboutNavScrambles();
 
 function resetHoverMotion() {
   resetHoverEffects.forEach((reset) => reset());

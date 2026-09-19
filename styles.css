@@ -258,8 +258,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .grain-drift-shell { transform: none !important; }
 }
 
-/* The SVG owns the cutout and shading masks for consistent Safari rendering. */
-.portrait-cartoon { filter: grayscale(1); }
+/* The SVG owns the cutout and shading masks. The PNG is already grayscale. */
 
 /* Separate scroll layers leave the loading animation and portrait sizing intact.
    The next surface travels over the pinned hero; its layout can change freely. */
@@ -322,7 +321,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .hero-content .button { pointer-events: none; }
 .intro-pending .wordmark.is-entering,
 .intro-pending .site-header.is-entering { opacity: 1; }
-.intro-pending .nav-label > .scramble-text { transform: translateY(110%); }
+.intro-pending .hero .nav-label > .scramble-text { transform: translateY(110%); }
 .wordmark.intro-wordmark {
   /* Room above and below the short line box keeps the outline intact. */
   clip-path: inset(-.2em -.05em -.15em);
@@ -340,7 +339,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .intro-pending .hero-content .button,
   .intro-pending .site-header,
   .intro-pending .signature { opacity: 1; pointer-events: auto; }
-  .intro-pending .nav-label > .scramble-text { transform: none; }
+  .intro-pending .hero .nav-label > .scramble-text { transform: none; }
 }
 
 /* Stagger the icons themselves, including when touch skips the main intro.
@@ -604,12 +603,11 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 /* Matches .nav-label's box model, not just its face: an inline-block takes its
    height from line-height while a bare inline takes it from the font's own
    metrics, and the fold cannot scale one into the other. */
-.section-nav-link span { display: inline-block; vertical-align: top; }
+.section-nav-link .nav-label { display: inline-block; vertical-align: top; }
 .section-nav-link svg { width: 1rem; height: 1rem; flex-shrink: 0; fill: currentColor; }
 .section-nav-link[aria-current] { color: var(--ink); background: var(--white); }
-.sidebar-footer { display: grid; gap: .5rem; padding: .85rem; font-size: .75rem; line-height: 1.3; }
+.sidebar-footer { display: grid; gap: .5rem; padding: .85rem; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
 .sidebar-footer > :last-child { color: var(--muted); }
-.sidebar-home { display: flex; align-items: center; justify-content: center; gap: .6rem; min-height: 2.75rem; padding: .6rem; border-radius: .35rem; background: var(--white); color: var(--ink); font-size: .875rem; font-weight: 700; }
 .about-main { min-width: 0; min-height: calc(100svh - 2rem); }
 @media (hover: hover) and (pointer: fine) {
   .section-nav-link:not([aria-current]):hover { background: rgba(255,255,255,.12); }
@@ -623,7 +621,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .about-sidebar { top: 0; margin: 0 -1.25rem; padding: max(.65rem, env(safe-area-inset-top)) 1.25rem .6rem; min-height: 0; gap: .45rem; background: rgba(16,16,16,.96); border-bottom: 1px solid var(--border); }
   .sidebar-profile { padding: 0; background: transparent; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .sidebar-wordmark { font-size: 1rem; }
-  .sidebar-profile p, .sidebar-disciplines, .sidebar-footer, .sidebar-home { display: none; }
+  .sidebar-profile p, .sidebar-disciplines, .sidebar-footer { display: none; }
   .sidebar-socials a { min-width: 2.75rem; }
   .section-nav { flex-direction: row; flex: none; align-items: center; overflow-x: auto; padding: 0; border: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; gap: .25rem; }
   /* Matching the narrow header's grotesque, so the labels keep their letterform
@@ -643,4 +641,38 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 @media (prefers-contrast: more) {
   .glass-panel { background: #111; border-color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
   .sidebar-profile p { color: #fff; }
+}
+
+/* Phone hero: the desktop composition relies on width and scale that a phone
+   does not have, so the heading stacks and the name drops its stroked overlaps. */
+@font-face {
+  font-family: 'Unbounded Outline Merged';
+  src: url('assets/fonts/unbounded-latin-700-merged.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@media (max-width: 700px) {
+  /* A 1px stroke on the overlap cut reads as a glitch, so each letter gets one
+     clean outline. The About sidebar matches so the fold lands on the same name. */
+  .wordmark, .sidebar-wordmark { font-family: 'Unbounded Outline Merged', 'Unbounded Outline', Arial, sans-serif; letter-spacing: -.035em; }
+  /* Each role becomes one centred row, divided by a short horizontal rule. */
+  h1 { grid-template-columns: auto; justify-items: center; gap: .2em; }
+  .hero-heading-column { flex-direction: row; gap: .25em; }
+  .hero-heading-rule { width: 2.5em; height: 1px; margin: 0; }
+  .button { width: min(300px, 100%); }
+  /* Settles the shirt behind the heading and button. */
+  .portrait-stage::after { content: ''; position: absolute; inset: auto 0 0; z-index: 2; height: 62%; background: linear-gradient(to bottom, rgba(6, 6, 6, 0), rgba(6, 6, 6, .72) 42%, rgba(6, 6, 6, .92)); }
+}
+/* Unstacked letters run wider; this keeps the name inside the page gutter. */
+@media (max-width: 700px) and (min-height: 551px) {
+  .hero { --masthead-size: min(26vw, 24svh); }
+}
+/* On iOS the toolbar floats over the page, so the hero's small-viewport box ends
+   above it. The portrait layer reaches the large-viewport edge so nothing stops short. */
+@media (max-width: 700px) {
+  .hero { overflow-x: clip; overflow-y: visible; }
+  .portrait-scroll { bottom: calc(100svh - 100lvh); overflow: clip; }
+  .portrait-stage { bottom: calc(100lvh - 100svh); }
+  .portrait-stage::after { bottom: calc(100svh - 100lvh); height: calc(62% + 100lvh - 100svh); }
 }
