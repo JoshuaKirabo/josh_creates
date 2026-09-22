@@ -96,7 +96,8 @@ function enableTouchFeedback() {
   root.classList.add('touch-feedback-ready');
 }
 enableTouchFeedback();
-if (!hero) return;
+// Pages without the hero (Projects) keep the backdrop and sidebar effects below;
+// everything hero-specific guards itself.
 
 // Keep both controls anchored. Only the hidden links move into the native dialog;
 // reparenting the live hamburger used to interrupt its press/morph on mobile.

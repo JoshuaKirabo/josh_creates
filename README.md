@@ -6,6 +6,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 
 - `index.html` — homepage and mobile navigation
 - `about_me.html` — standalone About page; the single source of its section markup
+- `projects.html` — Projects page, built on the About layout and reached by ordinary navigation
 - `page-shell.js` — joins the two documents for continuous scrolling with native page links as fallback
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
@@ -15,11 +16,11 @@ The homepage uses the stable small viewport height and safe areas, so browser to
 
 The decorative background is fixed to the screen behind both Home and About. Its static grain and base styles are in the document head so it appears before the animated canvas is ready; the static texture is replaced only after the canvas is painted. On phones, the first 64px blend gently into the same dark color used by Safari's status area, avoiding an abrupt texture boundary. Safari controls the pixels behind its own status icons, so that region still needs checking on an actual iPhone.
 
-Home, About me, and Meet Josh now navigate between the two sections. Other destinations remain placeholders. The About section is available on desktop and mobile, using the reference’s compact profile sidebar and staggered introduction cards in the existing monochrome palette.
+Home, About me, and Meet Josh now navigate between the two sections, and Projects opens its own page. Other destinations remain placeholders. The About section is available on desktop and mobile, using the reference’s compact profile sidebar and staggered introduction cards in the existing monochrome palette.
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
-For the private Sites preview, copy `index.html`, `about_me.html`, `page-shell.js`, `styles.css`, `script.js`, and the referenced assets into `dist/`. No compilation is needed.
+For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `page-shell.js`, `styles.css`, `script.js`, and the referenced assets into `dist/`. No compilation is needed.
 
 ## Opening animation
 
@@ -76,3 +77,9 @@ Edit the About section in `about_me.html`. Both HTML files are complete document
 When served over HTTP, `page-shell.js` eagerly loads the other document and imports only its required content. Home's intro starts independently of that request. The combined surface preserves continuous scrolling and the reverse transition; an About URL opens at its landing without replaying the Home intro. Explicit links update the address and title, so refresh, bookmarks and opening either page directly work.
 
 If JavaScript is disabled, a request fails, or the files are opened through `file://`, ordinary links still navigate between the standalone pages. Serve the directory to use the continuous transition. The loader times out after four seconds without hiding either page.
+
+## Projects page
+
+`projects.html` reuses the About sidebar, with Projects as the current page, and puts its own content in the right-hand column. It does not load `page-shell.js`: that script only joins Home and About for the fold, so Projects is an ordinary page link from both. The sidebar sits in the same place as on About, so moving between them changes only the content column. The backdrop grain, sidebar hover scrambles and touch feedback run here as on About; the Home intro and fold do not. Home and About me links return with their fragments, so Home skips the intro and About opens at its landing.
+
+Add project entries as `<li>` items in `.projects-list`; the list stays hidden until it has any.

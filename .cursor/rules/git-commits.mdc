@@ -1,0 +1,42 @@
+---
+description: Git commit authorship and conventional commit messages
+alwaysApply: true
+---
+
+# Git commits
+
+Only commit when the user explicitly asks. Follow the existing git commit protocol, with these overrides.
+
+## Sole author
+
+The user is the only author and the only committer:
+
+- Name: `Joshua Kirabo Kisaku`
+- Email: `jkirabo@asu.edu`
+
+Never attribute a commit to Cursor, a coding agent, or any other identity. Never add `Co-authored-by`, `Made-with`, or similar trailers.
+
+Do not change git config. For the commit command only, force that identity so the environment cannot substitute another author:
+
+```bash
+git -c user.name="Joshua Kirabo Kisaku" -c user.email="jkirabo@asu.edu" commit -m "$(cat <<'EOF'
+feat(ui): Added a toggle.
+
+EOF
+)"
+```
+
+## Message style
+
+Default to one conventional commit subject:
+
+```
+type(scope): Summary.
+```
+
+- `type` is one of `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`.
+- `scope` is a short area such as `ui`, `about`, or `scroll`. Omit it only when no area fits.
+- Capitalize the summary and end it with a period.
+- Example: `feat(ui): Added a toggle.`
+
+Write the subject only, unless the user asks for a detailed commit message. When they do, keep that subject and add a body that explains why, in the same bullet style as recent history.
