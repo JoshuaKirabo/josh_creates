@@ -82,9 +82,8 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
   about.children['.topbar-wordmark'] = barName;
   about.children['.section-nav-link'] = barLinks;
   about.children['.section-nav-link[href$="#about"]'] = barLinks[1];
-  const topbar = new Element(), introBlock = new Element();
+  const topbar = new Element();
   about.children['.about-topbar'] = topbar;
-  about.children['.about-intro'] = introBlock;
   hero.children['.wordmark-stage'] = stage;
   hero.children['.wordmark'] = heroName;
   hero.children['.portrait-scroll'] = portrait;
@@ -145,7 +144,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     return [box.left + box.width / 2, box.top + box.height / 2];
   };
 
-  return { window, root, hero, about, topbar, introBlock, stage, heroName, heroLinks, heroLabels, barName, barLinks,
+  return { window, root, hero, about, topbar, stage, heroName, heroLinks, heroLabels, barName, barLinks,
     Element, advance, dispatch, scrollTo, inkCentreOf, targetCentre, context, runway,
     click: (hash, values = {}) => {
       const link = new Element();
@@ -276,33 +275,54 @@ test('the name and every link land exactly on their top bar counterparts', () =>
   });
 });
 
-// Home's four role lines and the footer's miniature of them, bottom right.
+// Home's four role lines and the footer's two role icons, bottom right.
 function withHeading(s, landings = true) {
   const lines = [rect(420, 600, 290, 96), rect(430, 700, 280, 96), rect(740, 600, 270, 96), rect(740, 700, 440, 96)]
     .map(ink => { const line = new s.Element(); line.box = ink; line.ink = ink; return line; });
-  const words = [rect(1000, 740, 60, 20), rect(998, 760, 64, 20), rect(1080, 740, 56, 20), rect(1070, 760, 90, 20)]
-    .map(ink => { const word = new s.Element(); word.box = ink; word.ink = ink; return word; });
+  const icons = [rect(1300, 850, 26, 26), rect(1360, 850, 26, 26)]
+    .map(box => { const icon = new s.Element(); icon.box = box; icon.style.setProperty = (k, v) => { icon.style[k] = v; };
+      icon.style.removeProperty = k => { delete icon.style[k]; }; return icon; });
   s.hero.children['.hero-heading-line'] = lines;
-  s.about.children['.footer-roles-column > span'] = landings ? words : [];
+  s.about.children['.footer-role'] = landings ? icons : [];
   s.dispatch('window', 'resize');
   s.advance(16);
-  return { lines, words };
+  return { lines, icons };
 }
 
-test('the heading lines land exactly on the footer roles, bottom right', () => {
+// Where a line's glyph centre sits under a translate + (possibly squeezed) scale.
+function morphCentre(line) {
+  const m = /translate3d\(([-\d.e]+)px, ([-\d.e]+)px, 0\) scale\(([-\d.e]+), ([-\d.e]+)\)/.exec(line.style.transform);
+  assert.ok(m, `expected a morph transform, got ${line.style.transform}`);
+  const [tx, ty, sx, sy] = m.slice(1).map(Number);
+  const b = line.box;
+  return [b.left + tx + (b.width / 2) * sx, b.top + ty + (b.height / 2) * sy];
+}
+
+test('each pair of heading lines morphs into its role icon', () => {
   const s = setup();
-  const { lines, words } = withHeading(s);
+  const { lines, icons } = withHeading(s);
+  s.scrollTo(BOUNDARY * .3);
+  assert.equal(icons[0].style.opacity, '0', 'no icon before the words arrive');
+  assert.equal(icons[0].style['--draw'], '0');
+  s.scrollTo(BOUNDARY * .8);
+  const midDraw = Number(icons[0].style['--draw']);
+  assert.ok(midDraw > 0 && midDraw < 1, `strokes are drawing in, got ${midDraw}`);
   s.scrollTo(BOUNDARY);
   lines.forEach((line, index) => {
-    const [x, y] = s.inkCentreOf(line, line.ink);
-    const [tx, ty] = s.targetCentre(words[index]);
-    near(x, tx, `line ${index} x`);
-    near(y, ty, `line ${index} y`);
-    assert.equal(line.style.opacity, '0', 'the travelling copy hands over');
-    assert.equal(words[index].style.opacity, '', 'the footer word owns the landing');
+    const icon = icons[Math.floor(index / 2)];
+    const [x, y] = morphCentre(line);
+    near(x, icon.box.left + 13, `line ${index} x`);
+    near(y, icon.box.top + 13, `line ${index} y`);
+    assert.equal(line.style.opacity, '0', 'the words have collapsed');
+  });
+  icons.forEach((icon) => {
+    assert.equal(icon.style.opacity, '', 'the icon owns the landing');
+    assert.equal(icon.style.transform, '');
+    assert.equal(icon.style['--draw'], undefined, 'fully drawn, handed back to CSS');
   });
   s.scrollTo(0);
-  lines.forEach(line => assert.equal(line.style.transform, 'translate3d(0px, 0px, 0) scale(1)'));
+  lines.forEach(line => assert.equal(line.style.transform, 'translate3d(0px, 0px, 0) scale(1, 1)'));
+  assert.equal(icons[1].style.opacity, '0', 'reverses back to hidden');
 });
 
 test('the signature holds its corner and hands over to About\'s copy', () => {
@@ -768,18 +788,15 @@ test('About is not transformed or faded during the fold', () => {
   }
 });
 
-test('the top bar drops in from above and the intro rises, both at rest on landing', () => {
+test('the top bar drops in from above and is at rest on landing', () => {
   const s = setup();
   s.scrollTo(500);
   const bar = /translate3d\(0, (-?[\d.]+)px, 0\)/.exec(s.topbar.style.transform);
-  const intro = /translate3d\(0, (-?[\d.]+)px, 0\)/.exec(s.introBlock.style.transform);
   assert.ok(bar && Number(bar[1]) < 0, `the bar comes from above, got ${s.topbar.style.transform}`);
-  assert.ok(intro && Number(intro[1]) > 0, `the intro comes from below, got ${s.introBlock.style.transform}`);
   assert.ok(Number(s.topbar.style.opacity) > 0 && Number(s.topbar.style.opacity) < 1, 'the bar is mid-fade');
   s.scrollTo(1000);
   assert.equal(s.topbar.style.transform, 'translate3d(0, 0px, 0)');
   assert.equal(s.topbar.style.opacity, '', 'the bar hands opacity back to CSS');
-  assert.equal(s.introBlock.style.opacity, '', 'the intro hands opacity back to CSS');
 });
 
 test('the JOSH entrance retains its center waypoint and 200ms letter stagger', () => {

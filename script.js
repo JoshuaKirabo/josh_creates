@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .about-socials a, .topbar-wordmark, .project-link, .projects-rail a';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a';
   let press = null;
   let released = null;
 
@@ -514,7 +514,6 @@ function enableSectionScroll() {
   const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
   const heroFooter = hero.querySelector('.hero-footer');
   const topbar = about.querySelector('.about-topbar');
-  const intro = about.querySelector('.about-intro');
   const aboutFooter = about.querySelector('.about-footer');
   const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
@@ -556,7 +555,8 @@ function enableSectionScroll() {
   let heroSignature = null;
   let aboutSignature = null;
   let footerRule = null;
-  // The four heading lines shrink into the footer's miniature of the heading.
+  // Each role's two heading lines shrink into that role's footer icon and
+  // morph into it: the words collapse as the icon's strokes draw in.
   let headingFolds = [];
   // Lines with nowhere to land fade instead.
   let headingRest = [];
@@ -635,12 +635,55 @@ function enableSectionScroll() {
     }
   }
 
+  function planMorph(line, icon, start, end) {
+    const source = inkBox(line);
+    const target = icon.getBoundingClientRect();
+    if (!source.width || !target.width) return null;
+    const origin = line.getBoundingClientRect();
+    return {
+      mover: line, reveal: icon, start, end, morph: true,
+      // The words arrive a little taller than the icon, then collapse into it.
+      scale: target.height * 1.1 / source.height,
+      originX: origin.left, originY: origin.top,
+      fromX: source.left + source.width / 2,
+      fromY: source.top + source.height / 2,
+      toX: target.left + target.width / 2,
+      toY: target.top + target.height / 2
+    };
+  }
+
+  function applyMorph(plan, progress) {
+    const travel = smooth(slice(progress, plan.start, plan.end));
+    // Over the last stretch the word pinches to a sliver and gives way.
+    const collapse = smooth(slice(travel, .75, 1));
+    const scale = 1 + (plan.scale - 1) * travel;
+    const scaleX = scale * (1 - .9 * collapse);
+    const x = plan.fromX + (plan.toX - plan.fromX) * travel;
+    const y = plan.fromY + (plan.toY - plan.fromY) * travel;
+    plan.mover.style.transform =
+      `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scaleX}px, ` +
+      `${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scaleX}, ${scale})`;
+    plan.mover.style.opacity = String(1 - collapse);
+    // Both lines of a role share one icon; only the trailing one drives it,
+    // so the strokes finish drawing as the last word goes.
+    if (!plan.drives) return;
+    const draw = smooth(slice(travel, .8, 1));
+    plan.reveal.style.opacity = draw >= 1 ? '' : String(Math.min(1, draw * 3));
+    plan.reveal.style.transform = draw >= 1 ? '' : `scale(${.7 + .3 * draw}) rotate(${-45 * (1 - draw)}deg)`;
+    if (draw >= 1) plan.reveal.style.removeProperty?.('--draw');
+    else plan.reveal.style.setProperty?.('--draw', String(draw));
+  }
+
   function clearFolds() {
     [nameFold, signatureFold, ...navFolds, ...headingFolds].forEach((plan) => {
       if (!plan) return;
       plan.mover.style.transform = '';
       plan.mover.style.opacity = '';
       plan.reveal.style.opacity = '';
+      if (plan.morph) {
+        plan.reveal.style.transform = '';
+        plan.reveal.style.removeProperty?.('--draw');
+      }
       if (plan.icon) {
         plan.icon.style.opacity = '';
         plan.icon.style.transform = '';
@@ -656,7 +699,6 @@ function enableSectionScroll() {
     headingFolds = [];
     about.style.transform = '';
     if (topbar) topbar.style.transform = '';
-    if (intro) intro.style.transform = '';
     // Reduced motion leaves the hero in flow, so there is nothing to fold into.
     if (reducedMotion.matches || !root.classList.contains('section-scroll-ready')) return;
     // Measure rest poses even while intro letters are still entering. The class
@@ -685,17 +727,21 @@ function enableSectionScroll() {
         navFolds.push(plan);
       }
     });
-    // The role lines follow the name and finish with
-    // it. Same face and tracking at both ends, so one uniform scale lands them.
+    // The role lines follow the name and finish with it, two lines to each
+    // icon in reading order.
     const heroLines = [...(hero.querySelectorAll?.('.hero-heading-line') || [])];
-    const introLines = [...(about.querySelectorAll?.('.footer-roles-column > span') || [])];
-    if (heroLines.length === introLines.length) {
+    const roleIcons = [...(about.querySelectorAll?.('.footer-role') || [])];
+    if (roleIcons.length && heroLines.length % roleIcons.length === 0) {
+      const perIcon = heroLines.length / roleIcons.length;
       // The corner-side words lead, so no line overtakes a slower neighbour
       // while the group shrinks towards the bottom right.
       heroLines.forEach((line, index) => {
         const start = .04 + (heroLines.length - 1 - index) * .03;
-        const plan = planFold(line, line, introLines[index], introLines[index], start, start + .78);
-        if (plan) headingFolds.push(plan);
+        const plan = planMorph(line, roleIcons[Math.floor(index / perIcon)], start, start + .78);
+        if (!plan) return;
+        // The first line of each role starts last, so it drives the drawing.
+        plan.drives = index % perIcon === 0;
+        headingFolds.push(plan);
       });
     }
     const homeFooter = hero.querySelector('.hero-footer');
@@ -728,7 +774,7 @@ function enableSectionScroll() {
   // Every inline style the transition writes, handed back to CSS.
   function releaseTransition() {
     clearFolds();
-    [portrait, heroContent, heroButton, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, intro,
+    [portrait, heroContent, heroButton, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar,
       aboutFooter, aboutSignature, footerRule,
       ...dividers, ...headerRest, ...headingRest]
       .forEach((element) => {
@@ -771,7 +817,7 @@ function enableSectionScroll() {
       fade(heroButton, contentLeaving);
       fade(headingRule, contentLeaving);
       headingRest.forEach(line => fade(line, contentLeaving));
-      headingFolds.forEach(plan => applyFold(plan, progress));
+      headingFolds.forEach(plan => applyMorph(plan, progress));
       const footerLeaving = 1 - smooth(slice(progress, 0, .24));
       fade(heroSocials, footerLeaving);
       if (signatureFold) applyFold(signatureFold, progress);
@@ -800,23 +846,19 @@ function enableSectionScroll() {
       }
 
       // Native sticky layout holds About still. The bar drops in from above
-      // to meet the words; the intro their heading lines land in rises to it.
+      // to meet the words.
       const remaining = 1 - smooth(slice(progress, 0, .92));
       const arriving = smooth(slice(progress, .32, .78));
       if (topbar) {
         topbar.style.transform = `translate3d(0, ${-24 * remaining}px, 0)`;
         fade(topbar, arriving);
       }
-      if (intro) {
-        intro.style.transform = `translate3d(0, ${12 * remaining}px, 0)`;
-        fade(intro, arriving);
-      }
       // The footer's words arrive by fold; only the rule between them, and
       // anything left without a traveller, fades in beneath them.
       fade(footerRule, arriving);
       if (!signatureFold) fade(aboutSignature, arriving);
       if (!headingFolds.length) {
-        about.querySelectorAll?.('.footer-roles-column > span')?.forEach?.(word => fade(word, arriving));
+        about.querySelectorAll?.('.footer-role')?.forEach?.(icon => fade(icon, arriving));
       }
       // Its children already fade to zero. Keep the transparent hero composed:
       // revealing a hidden, raster-heavy surface on reversal caused a hitch.
