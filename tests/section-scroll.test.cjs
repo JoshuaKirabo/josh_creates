@@ -52,7 +52,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
   const intro = new Element(), portrait = new Element();
 
   // A 1440x900 hero, pinned, with its name and two links travelling into the
-  // sidebar boxes that share the same sticky viewport.
+  // top bar boxes that share the same sticky viewport.
   const stage = make(rect(0, 0, 1440, 900));
   const heroName = make(rect(19, 8, 1403, 396), rect(120, -73, 1200, 557));
   const heroLinks = [
@@ -64,8 +64,8 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     link.children['.nav-label'] = label;
     return label;
   });
-  const sidebarName = make(rect(6, 34, 66, 35), rect(15, 43, 47, 18));
-  const sidebarLinks = [rect(38, 230, 42, 18), rect(38, 280, 113, 18)].map((ink) => {
+  const barName = make(rect(6, 34, 66, 35), rect(15, 43, 47, 18));
+  const barLinks = [rect(38, 230, 42, 18), rect(38, 280, 113, 18)].map((ink) => {
     const link = make(rect(4, ink.top - 13, 85, 44), null, false);
     link.children.span = make(null, ink, false);
     link.children.span.inFlow = false;
@@ -79,9 +79,12 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
   const runway = new Element();
   runway.classList.add('hero-runway'); runway.offsetHeight = 0; hero.offsetHeight = BOUNDARY;
   about.previousElementSibling = runway;
-  about.children['.sidebar-wordmark'] = sidebarName;
-  about.children['.section-nav-link'] = sidebarLinks;
-  about.children['.section-nav-link[href$="#about"]'] = sidebarLinks[1];
+  about.children['.topbar-wordmark'] = barName;
+  about.children['.section-nav-link'] = barLinks;
+  about.children['.section-nav-link[href$="#about"]'] = barLinks[1];
+  const topbar = new Element(), introBlock = new Element();
+  about.children['.about-topbar'] = topbar;
+  about.children['.about-intro'] = introBlock;
   hero.children['.wordmark-stage'] = stage;
   hero.children['.wordmark'] = heroName;
   hero.children['.portrait-scroll'] = portrait;
@@ -142,7 +145,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     return [box.left + box.width / 2, box.top + box.height / 2];
   };
 
-  return { window, root, hero, about, stage, heroName, heroLinks, heroLabels, sidebarName, sidebarLinks,
+  return { window, root, hero, about, topbar, introBlock, stage, heroName, heroLinks, heroLabels, barName, barLinks,
     Element, advance, dispatch, scrollTo, inkCentreOf, targetCentre, context, runway,
     click: (hash, values = {}) => {
       const link = new Element();
@@ -166,7 +169,7 @@ test('one wheel flick completes the whole fold with no further input', () => {
   s.advance();
   assert.equal(s.window.scrollY, BOUNDARY);
   assert.equal(s.stage.style.opacity, '0');
-  assert.equal(s.sidebarName.style.opacity, '');
+  assert.equal(s.barName.style.opacity, '');
   assert.equal(s.about.inert, false);
   assert.equal(s.about.focused, undefined, 'scrolling never steals focus');
   s.dispatch('window', 'wheel', { deltaY: -40 });
@@ -258,35 +261,35 @@ test('taps, horizontal swipes, multiple fingers and reduced-motion touch stay na
   }
 });
 
-test('the name and every link land exactly on their sidebar counterparts', () => {
+test('the name and every link land exactly on their top bar counterparts', () => {
   const s = setup();
   s.scrollTo(BOUNDARY);
   const [nameX, nameY] = s.inkCentreOf(s.stage, s.heroName.ink);
-  const [targetX, targetY] = s.targetCentre(s.sidebarName);
+  const [targetX, targetY] = s.targetCentre(s.barName);
   near(nameX, targetX, 'name x');
   near(nameY, targetY, 'name y');
   s.heroLinks.forEach((link, index) => {
     const [x, y] = s.inkCentreOf(link, s.heroLabels[index].ink);
-    const [tx, ty] = s.targetCentre(s.sidebarLinks[index].children.span);
+    const [tx, ty] = s.targetCentre(s.barLinks[index].children.span);
     near(x, tx, `link ${index} x`);
     near(y, ty, `link ${index} y`);
   });
 });
 
-// Home's four role lines and the disciplines panel's four words.
+// Home's four role lines and the footer's miniature of them, bottom right.
 function withHeading(s, landings = true) {
   const lines = [rect(420, 600, 290, 96), rect(430, 700, 280, 96), rect(740, 600, 270, 96), rect(740, 700, 440, 96)]
     .map(ink => { const line = new s.Element(); line.box = ink; line.ink = ink; return line; });
-  const words = [rect(52, 190, 60, 20), rect(50, 210, 64, 20), rect(170, 190, 56, 20), rect(160, 210, 90, 20)]
+  const words = [rect(1000, 740, 60, 20), rect(998, 760, 64, 20), rect(1080, 740, 56, 20), rect(1070, 760, 90, 20)]
     .map(ink => { const word = new s.Element(); word.box = ink; word.ink = ink; return word; });
   s.hero.children['.hero-heading-line'] = lines;
-  s.about.children['.sidebar-disciplines p > span'] = landings ? words : [];
+  s.about.children['.footer-roles-column > span'] = landings ? words : [];
   s.dispatch('window', 'resize');
   s.advance(16);
   return { lines, words };
 }
 
-test('the heading lines land exactly on the disciplines panel words', () => {
+test('the heading lines land exactly on the footer roles, bottom right', () => {
   const s = setup();
   const { lines, words } = withHeading(s);
   s.scrollTo(BOUNDARY);
@@ -296,10 +299,31 @@ test('the heading lines land exactly on the disciplines panel words', () => {
     near(x, tx, `line ${index} x`);
     near(y, ty, `line ${index} y`);
     assert.equal(line.style.opacity, '0', 'the travelling copy hands over');
-    assert.equal(words[index].style.opacity, '', 'the sidebar word owns the landing');
+    assert.equal(words[index].style.opacity, '', 'the footer word owns the landing');
   });
   s.scrollTo(0);
   lines.forEach(line => assert.equal(line.style.transform, 'translate3d(0px, 0px, 0) scale(1)'));
+});
+
+test('the signature holds its corner and hands over to About\'s copy', () => {
+  const s = setup();
+  const make = () => { const el = new s.Element(); el.box = rect(20, 770, 150, 14); el.ink = el.box; return el; };
+  const home = make();
+  const away = make();
+  const heroFooter = new s.Element();
+  heroFooter.children['.signature'] = home;
+  const aboutFooter = new s.Element();
+  aboutFooter.children['.signature'] = away;
+  s.hero.children['.hero-footer'] = heroFooter;
+  s.about.children['.about-footer'] = aboutFooter;
+  s.dispatch('window', 'resize');
+  s.advance(16);
+  s.scrollTo(BOUNDARY * .5);
+  assert.equal(home.style.opacity, '1', 'still showing mid-fold');
+  assert.equal(home.style.transform, 'translate3d(0px, 0px, 0) scale(1)', 'it does not move');
+  s.scrollTo(BOUNDARY);
+  assert.equal(home.style.opacity, '0');
+  assert.equal(away.style.opacity, '');
 });
 
 test('heading lines with nowhere to land fade out in place', () => {
@@ -314,7 +338,7 @@ test('heading lines with nowhere to land fade out in place', () => {
 
 test('the current-page highlight sweeps in after its label lands, and back out', () => {
   const s = setup();
-  const about = s.sidebarLinks[1];
+  const about = s.barLinks[1];
   const pill = () => Number(about.style['--pill']);
   // With two links, About's label lands at .92, hands over by .98, then sweeps.
   s.scrollTo(BOUNDARY * .5);
@@ -356,37 +380,37 @@ test('the fold is scrubbed by scroll position, and scrubs back', () => {
   assert.equal(s.stage.style.transform, quarter, 'the same position gives the same pose');
 });
 
-test('the words hand over to the sidebar instead of both being visible', () => {
+test('the words hand over to the top bar instead of both being visible', () => {
   const s = setup();
   s.scrollTo(BOUNDARY * .3);
   assert.equal(s.stage.style.opacity, '1');
-  assert.equal(s.sidebarName.style.opacity, '0', 'the sidebar name waits its turn');
-  s.sidebarLinks.forEach((link, index) => {
-    assert.equal(link.children.span.style.opacity, '0', `sidebar label ${index} waits`);
-    assert.equal(link.children.svg.style.opacity, '0', `sidebar icon ${index} waits for its word`);
+  assert.equal(s.barName.style.opacity, '0', 'the top bar name waits its turn');
+  s.barLinks.forEach((link, index) => {
+    assert.equal(link.children.span.style.opacity, '0', `top bar label ${index} waits`);
+    assert.equal(link.children.svg.style.opacity, '0', `top bar icon ${index} waits for its word`);
   });
   // The name glides for the whole fold. At 70% it is still travelling, so the
   // destination label must stay gone — no second mark fading or snapping in.
   s.scrollTo(BOUNDARY * .7);
   assert.equal(s.stage.style.opacity, '1', 'the travelling name stays fully opaque while it glides');
-  assert.equal(s.sidebarName.style.opacity, '0', 'the sidebar name must not fade in mid-glide');
+  assert.equal(s.barName.style.opacity, '0', 'the top bar name must not fade in mid-glide');
   s.heroLinks.forEach((link, index) => {
     assert.equal(link.style.opacity, '1', `travelling link ${index} is still the visible copy`);
-    assert.equal(s.sidebarLinks[index].children.span.style.opacity, '0', `sidebar label ${index} has not faded in`);
+    assert.equal(s.barLinks[index].children.span.style.opacity, '0', `top bar label ${index} has not faded in`);
   });
   s.scrollTo(BOUNDARY * .8);
   assert.equal(s.stage.style.opacity, '1', 'the name is still the travelling copy near the end');
-  assert.equal(s.sidebarName.style.opacity, '0', 'handover waits for the fold to finish');
-  const landingIcon = Number(s.sidebarLinks[0].children.svg.style.opacity);
+  assert.equal(s.barName.style.opacity, '0', 'handover waits for the fold to finish');
+  const landingIcon = Number(s.barLinks[0].children.svg.style.opacity);
   assert.ok(landingIcon > 0 && landingIcon < 1, `the first icon eases in with its word, got ${landingIcon}`);
   s.scrollTo(BOUNDARY);
   assert.equal(s.stage.style.opacity, '0');
-  assert.equal(s.sidebarName.style.opacity, '', 'the sidebar name is handed its own opacity back');
+  assert.equal(s.barName.style.opacity, '', 'the top bar name is handed its own opacity back');
   s.heroLinks.forEach((link, index) => {
     assert.equal(link.style.opacity, '0', `travelling link ${index} is gone`);
-    assert.equal(s.sidebarLinks[index].children.span.style.opacity, '', `sidebar label ${index} has taken over`);
-    assert.equal(s.sidebarLinks[index].children.svg.style.opacity, '', `sidebar icon ${index} is at rest`);
-    assert.equal(s.sidebarLinks[index].children.svg.style.transform, '', `sidebar icon ${index} is not left mid-scale`);
+    assert.equal(s.barLinks[index].children.span.style.opacity, '', `top bar label ${index} has taken over`);
+    assert.equal(s.barLinks[index].children.svg.style.opacity, '', `top bar icon ${index} is at rest`);
+    assert.equal(s.barLinks[index].children.svg.style.transform, '', `top bar icon ${index} is not left mid-scale`);
   });
 });
 
@@ -456,16 +480,16 @@ test('reduced motion leaves the hero untouched at every scroll position', () => 
 test('resizing re-solves the fold against the new layout', () => {
   const s = setup();
   s.scrollTo(BOUNDARY);
-  // A shorter viewport and a reflowed sidebar.
+  // A shorter viewport and a reflowed top bar.
   s.hero.offsetHeight = 880;
-  s.sidebarName.ink = rect(15, 53, 47, 18);
-  s.sidebarLinks[0].children.span.ink = rect(38, 240, 42, 18);
-  s.sidebarLinks[1].children.span.ink = rect(38, 290, 113, 18);
+  s.barName.ink = rect(15, 53, 47, 18);
+  s.barLinks[0].children.span.ink = rect(38, 240, 42, 18);
+  s.barLinks[1].children.span.ink = rect(38, 290, 113, 18);
   s.dispatch('window', 'resize');
   assert.equal(s.window.scrollY, 880, 'a shorter viewport still ends at About');
   s.advance(16);
   const [x, y] = s.inkCentreOf(s.stage, s.heroName.ink);
-  const [tx, ty] = s.targetCentre(s.sidebarName);
+  const [tx, ty] = s.targetCentre(s.barName);
   near(x, tx, 'name x after resize');
   near(y, ty, 'name y after resize');
 });
@@ -485,13 +509,13 @@ test('a resize that clamps scrollY before the event still lands on About', () =>
 test('width-only resize remeasures every landing without changing scroll position', () => {
   const s = setup();
   s.scrollTo(BOUNDARY);
-  s.sidebarName.ink.left += 80;
-  s.sidebarLinks[1].children.span.ink.left += 60;
+  s.barName.ink.left += 80;
+  s.barLinks[1].children.span.ink.left += 60;
   s.dispatch('window', 'resize');
   s.advance(16);
   assert.equal(s.window.scrollY, BOUNDARY);
-  near(s.inkCentreOf(s.stage, s.heroName.ink)[0], s.targetCentre(s.sidebarName)[0], 'resized name');
-  near(s.inkCentreOf(s.heroLinks[1], s.heroLabels[1].ink)[0], s.targetCentre(s.sidebarLinks[1].children.span)[0], 'resized link');
+  near(s.inkCentreOf(s.stage, s.heroName.ink)[0], s.targetCentre(s.barName)[0], 'resized name');
+  near(s.inkCentreOf(s.heroLinks[1], s.heroLabels[1].ink)[0], s.targetCentre(s.barLinks[1].children.span)[0], 'resized link');
 });
 
 test('a reverse wheel flick redirects a link spring and never steals focus afterward', () => {
@@ -535,7 +559,7 @@ test('outline handoff blends only after the travelling glyphs have landed', () =
   s.scrollTo(BOUNDARY * .96);
   assert.equal(s.stage.style.transform, landed);
   const sourceOpacity = Number(s.stage.style.opacity);
-  const targetOpacity = Number(s.sidebarName.style.opacity);
+  const targetOpacity = Number(s.barName.style.opacity);
   assert.ok(sourceOpacity > 0 && sourceOpacity < 1);
   assert.ok(targetOpacity > 0 && targetOpacity < 1);
   near(sourceOpacity + targetOpacity, 1, 'handoff opacity');
@@ -610,7 +634,7 @@ test('resize during a fold does not remasure until rest', () => {
   a.advance(96);
   b.advance(96);
   assert.equal(a.stage.style.transform, b.stage.style.transform);
-  a.sidebarName.ink = rect(15, 200, 47, 18);
+  a.barName.ink = rect(15, 200, 47, 18);
   a.dispatch('window', 'resize');
   a.advance(16);
   b.advance(16);
@@ -742,6 +766,20 @@ test('About is not transformed or faded during the fold', () => {
     assert.equal(s.about.style.transform || '', '', `at ${y}, About stayed untransformed`);
     assert.ok(!s.about.style.opacity, `at ${y}, About kept CSS opacity`);
   }
+});
+
+test('the top bar drops in from above and the intro rises, both at rest on landing', () => {
+  const s = setup();
+  s.scrollTo(500);
+  const bar = /translate3d\(0, (-?[\d.]+)px, 0\)/.exec(s.topbar.style.transform);
+  const intro = /translate3d\(0, (-?[\d.]+)px, 0\)/.exec(s.introBlock.style.transform);
+  assert.ok(bar && Number(bar[1]) < 0, `the bar comes from above, got ${s.topbar.style.transform}`);
+  assert.ok(intro && Number(intro[1]) > 0, `the intro comes from below, got ${s.introBlock.style.transform}`);
+  assert.ok(Number(s.topbar.style.opacity) > 0 && Number(s.topbar.style.opacity) < 1, 'the bar is mid-fade');
+  s.scrollTo(1000);
+  assert.equal(s.topbar.style.transform, 'translate3d(0, 0px, 0)');
+  assert.equal(s.topbar.style.opacity, '', 'the bar hands opacity back to CSS');
+  assert.equal(s.introBlock.style.opacity, '', 'the intro hands opacity back to CSS');
 });
 
 test('the JOSH entrance retains its center waypoint and 200ms letter stagger', () => {

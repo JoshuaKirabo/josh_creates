@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .sidebar-socials a, .sidebar-wordmark, .project-link, .projects-rail a';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .about-socials a, .topbar-wordmark, .project-link, .projects-rail a';
   let press = null;
   let released = null;
 
@@ -96,7 +96,7 @@ function enableTouchFeedback() {
   root.classList.add('touch-feedback-ready');
 }
 enableTouchFeedback();
-// Pages without the hero (Projects) keep the backdrop and sidebar effects below;
+// Pages without the hero (Projects) keep the backdrop and top bar effects below;
 // everything hero-specific guards itself.
 
 // Keep both controls anchored. Only the hidden links move into the native dialog;
@@ -509,11 +509,13 @@ function enableSectionScroll() {
   const wordmark = hero.querySelector('.wordmark-stage');
   const portrait = hero.querySelector('.portrait-scroll');
   const heroContent = hero.querySelector('.hero-content');
-  // The heading travels; only the parts of it with no sidebar twin fade.
+  // The heading travels; only the parts of it with no About twin fade.
   const heroButton = heroContent?.querySelector?.('.button');
   const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
   const heroFooter = hero.querySelector('.hero-footer');
-  const sidebar = about.querySelector('.about-sidebar');
+  const topbar = about.querySelector('.about-topbar');
+  const intro = about.querySelector('.about-intro');
+  const aboutFooter = about.querySelector('.about-footer');
   const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
   const currentLinks = links.filter(link => link.matches('.nav-link, .section-nav-link'));
@@ -544,12 +546,19 @@ function enableSectionScroll() {
 
   // The name and the six links exist on both screens, so they travel between
   // them rather than one layout being covered by another. Each word keeps its
-  // reading order and hands over to its sidebar counterpart on arrival.
+  // reading order and hands over to its top bar counterpart on arrival.
   let nameFold = null;
   let navFolds = [];
-  // The four heading lines land on the disciplines panel's matching words.
+  // The signature sits in the same corner on every page, so it holds still
+  // and only hands over to About's copy.
+  let signatureFold = null;
+  let heroSocials = null;
+  let heroSignature = null;
+  let aboutSignature = null;
+  let footerRule = null;
+  // The four heading lines shrink into the footer's miniature of the heading.
   let headingFolds = [];
-  // Lines with nowhere to land (the phone rail hides the panel) fade instead.
+  // Lines with nowhere to land fade instead.
   let headingRest = [];
   // About's own row owns the current-page highlight. The fold sweeps it in
   // once that row's label has landed, instead of it appearing after the spring.
@@ -557,7 +566,7 @@ function enableSectionScroll() {
   let pillWindow = [.62, .92];
   let pillShown = null;
   // Header controls with nothing to become: the hamburger, and any link the
-  // sidebar has no counterpart for.
+  // top bar has no counterpart for.
   let headerRest = [];
   let foldStale = true;
 
@@ -608,7 +617,7 @@ function enableSectionScroll() {
       `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scale}px, ` +
       `${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scale})`;
     // Same threshold as hiding the hero, so the travelling copy is never
-    // pulled off-screen a frame before the sidebar mark is there.
+    // pulled off-screen a frame before the top bar mark is there.
     // Once both copies occupy the same position, blend their rasterization and
     // outline weight. A hard swap made the small JOSH suddenly turn much bolder.
     const handover = smooth(slice(progress, plan.handoverStart ?? .92, plan.handoverEnd ?? .999));
@@ -627,7 +636,7 @@ function enableSectionScroll() {
   }
 
   function clearFolds() {
-    [nameFold, ...navFolds, ...headingFolds].forEach((plan) => {
+    [nameFold, signatureFold, ...navFolds, ...headingFolds].forEach((plan) => {
       if (!plan) return;
       plan.mover.style.transform = '';
       plan.mover.style.opacity = '';
@@ -642,28 +651,30 @@ function enableSectionScroll() {
   function measureFolds() {
     clearFolds();
     nameFold = null;
+    signatureFold = null;
     navFolds = [];
     headingFolds = [];
     about.style.transform = '';
-    if (sidebar) sidebar.style.transform = '';
+    if (topbar) topbar.style.transform = '';
+    if (intro) intro.style.transform = '';
     // Reduced motion leaves the hero in flow, so there is nothing to fold into.
     if (reducedMotion.matches || !root.classList.contains('section-scroll-ready')) return;
     // Measure rest poses even while intro letters are still entering. The class
     // is removed in this task, so these measurement-only overrides never paint.
     root.classList.add('fold-measuring');
     const heroName = hero.querySelector('.wordmark');
-    const sidebarName = about.querySelector('.sidebar-wordmark');
-    if (wordmark && heroName && sidebarName) {
-      nameFold = planFold(wordmark, heroName, sidebarName, sidebarName, 0, .92);
+    const barName = about.querySelector('.topbar-wordmark');
+    if (wordmark && heroName && barName) {
+      nameFold = planFold(wordmark, heroName, barName, barName, 0, .92);
     }
     const heroLinks = [...(hero.querySelectorAll?.('.nav-link') || [])];
-    const sidebarLinks = [...(about.querySelectorAll?.('.section-nav-link') || [])];
-    // The nearest word leads and the farthest trails, so the row peels into the
-    // column. Every word still lands with the scroll, not ahead of it.
+    const barLinks = [...(about.querySelectorAll?.('.section-nav-link') || [])];
+    // The nearest word leads and the farthest trails, so the row peels up into
+    // the bar. Every word still lands with the scroll, not ahead of it.
     const lead = .03;
     const span = Math.max(.3, .92 - lead * (heroLinks.length - 1));
     heroLinks.forEach((link, index) => {
-      const target = sidebarLinks[index];
+      const target = barLinks[index];
       const label = link.querySelector?.('.nav-label');
       if (!target || !label) return;
       const landing = target.querySelector?.('.nav-label') || target.querySelector?.('span') || target;
@@ -674,16 +685,27 @@ function enableSectionScroll() {
         navFolds.push(plan);
       }
     });
-    // The role lines follow the name, still in reading order, and finish with
+    // The role lines follow the name and finish with
     // it. Same face and tracking at both ends, so one uniform scale lands them.
     const heroLines = [...(hero.querySelectorAll?.('.hero-heading-line') || [])];
-    const sidebarLines = [...(about.querySelectorAll?.('.sidebar-disciplines p > span') || [])];
-    if (heroLines.length === sidebarLines.length) {
+    const introLines = [...(about.querySelectorAll?.('.footer-roles-column > span') || [])];
+    if (heroLines.length === introLines.length) {
+      // The corner-side words lead, so no line overtakes a slower neighbour
+      // while the group shrinks towards the bottom right.
       heroLines.forEach((line, index) => {
-        const start = .04 + index * .03;
-        const plan = planFold(line, line, sidebarLines[index], sidebarLines[index], start, start + .78);
+        const start = .04 + (heroLines.length - 1 - index) * .03;
+        const plan = planFold(line, line, introLines[index], introLines[index], start, start + .78);
         if (plan) headingFolds.push(plan);
       });
+    }
+    const homeFooter = hero.querySelector('.hero-footer');
+    const awayFooter = about.querySelector('.about-footer');
+    heroSocials = homeFooter?.querySelector?.('.social-links') || null;
+    heroSignature = homeFooter?.querySelector?.('.signature') || null;
+    aboutSignature = awayFooter?.querySelector?.('.signature') || null;
+    footerRule = awayFooter?.querySelector?.('.footer-roles-rule') || null;
+    if (heroSignature && aboutSignature) {
+      signatureFold = planFold(heroSignature, heroSignature, aboutSignature, aboutSignature, 0, .92);
     }
     const landing = new Set(headingFolds.map(plan => plan.mover));
     headingRest = heroLines.filter(line => !landing.has(line));
@@ -706,7 +728,8 @@ function enableSectionScroll() {
   // Every inline style the transition writes, handed back to CSS.
   function releaseTransition() {
     clearFolds();
-    [portrait, heroContent, heroButton, headingRule, heroFooter, wordmark, about, sidebar,
+    [portrait, heroContent, heroButton, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, intro,
+      aboutFooter, aboutSignature, footerRule,
       ...dividers, ...headerRest, ...headingRest]
       .forEach((element) => {
         if (!element) return;
@@ -749,7 +772,10 @@ function enableSectionScroll() {
       fade(headingRule, contentLeaving);
       headingRest.forEach(line => fade(line, contentLeaving));
       headingFolds.forEach(plan => applyFold(plan, progress));
-      fade(heroFooter, 1 - smooth(slice(progress, 0, .24)));
+      const footerLeaving = 1 - smooth(slice(progress, 0, .24));
+      fade(heroSocials, footerLeaving);
+      if (signatureFold) applyFold(signatureFold, progress);
+      else fade(heroSignature, footerLeaving);
 
       if (nameFold) applyFold(nameFold, progress);
       else {
@@ -773,11 +799,24 @@ function enableSectionScroll() {
         }
       }
 
-      // Native sticky layout holds About still. Only the sidebar joins the words.
+      // Native sticky layout holds About still. The bar drops in from above
+      // to meet the words; the intro their heading lines land in rises to it.
       const remaining = 1 - smooth(slice(progress, 0, .92));
-      if (sidebar) {
-        sidebar.style.transform = `translate3d(${-24 * remaining}px, 0, 0)`;
-        fade(sidebar, smooth(slice(progress, .32, .78)));
+      const arriving = smooth(slice(progress, .32, .78));
+      if (topbar) {
+        topbar.style.transform = `translate3d(0, ${-24 * remaining}px, 0)`;
+        fade(topbar, arriving);
+      }
+      if (intro) {
+        intro.style.transform = `translate3d(0, ${12 * remaining}px, 0)`;
+        fade(intro, arriving);
+      }
+      // The footer's words arrive by fold; only the rule between them, and
+      // anything left without a traveller, fades in beneath them.
+      fade(footerRule, arriving);
+      if (!signatureFold) fade(aboutSignature, arriving);
+      if (!headingFolds.length) {
+        about.querySelectorAll?.('.footer-roles-column > span')?.forEach?.(word => fade(word, arriving));
       }
       // Its children already fade to zero. Keep the transparent hero composed:
       // revealing a hidden, raster-heavy surface on reversal caused a hitch.
@@ -787,7 +826,7 @@ function enableSectionScroll() {
     // The hero paints above About and covers the viewport, so it would swallow
     // clicks meant for the surface behind it. It hands both the pointer and the
     // accessibility tree over once its own content has gone and only the
-    // travelling words are left, which the sidebar is about to own anyway.
+    // travelling words are left, which the top bar is about to own anyway.
     const handedOver = !still && progress > .45;
     const handover = still ? 'native' : handedOver ? 'about' : 'home';
     if (handover !== handoverState) {
@@ -1466,7 +1505,7 @@ function initProjectsTrack() {
   const cards = [...track.querySelectorAll('[data-project]')];
   const railLinks = [...runway.querySelectorAll('[data-project-jump]')];
   const rail = runway.querySelector('.projects-rail');
-  const sidebar = document.querySelector('.about-sidebar');
+  const topbar = document.querySelector('.about-topbar');
   const phone = window.matchMedia('(max-width: 700px)');
   // Scroll pixels per pixel of horizontal travel.
   const PACE = 1.15;
@@ -1490,7 +1529,10 @@ function initProjectsTrack() {
   const fills = cards.map(() => -1);
 
   function measure() {
-    main.style.setProperty('--projects-top', phone.matches && sidebar ? `${sidebar.offsetHeight}px` : '0px');
+    // The frame pins where the sticky bar ends, plus the page's own gap on
+    // wider screens where the bar floats.
+    const barEnd = topbar ? (parseFloat(getComputedStyle(topbar).top) || 0) + topbar.offsetHeight : 0;
+    main.style.setProperty('--projects-top', `${barEnd + (phone.matches ? 0 : 12)}px`);
     const viewWidth = viewport.clientWidth;
     const last = cards[cards.length - 1];
     // Travel ends with the last card centred, so every card has its turn.

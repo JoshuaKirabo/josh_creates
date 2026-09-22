@@ -94,7 +94,6 @@ button:focus-visible, a:focus-visible { outline: 3px solid currentColor; outline
   height: 100svh;
   overflow: clip;
   isolation: isolate;
-  --footer-bottom: max(18px, env(safe-area-inset-bottom));
   --content-bottom: calc(var(--footer-bottom) + 54px);
   --masthead-size: min(28vw, 40svh);
 }
@@ -156,6 +155,7 @@ h1 span { white-space: nowrap; }
   :root:not(.touch-input) .button:hover .button-label { color: var(--white); padding-left: 0; padding-right: 36px; }
   :root:not(.touch-input) .button:hover .button-arrow { left: calc(100% - 46px); }
 }
+.hero, .about { --footer-bottom: max(18px, env(safe-area-inset-bottom)); }
 .hero-footer { position: absolute; bottom: var(--footer-bottom); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); z-index: 7; display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; font-size: .75rem; line-height: 1.45; }
 .signature { max-width: 100%; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
 .signature > span:not(.scramble-text):not(.scramble-layer) { opacity: .7; }
@@ -243,7 +243,8 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 }
 /* Give short landscape screens a side-by-side composition. */
 @media (max-height: 550px) and (min-aspect-ratio: 6/5) {
-  .hero { --footer-bottom: max(10px, env(safe-area-inset-bottom)); --content-bottom: calc(var(--footer-bottom) + 44px); --masthead-size: min(28vw, 50svh); }
+  .hero, .about { --footer-bottom: max(10px, env(safe-area-inset-bottom)); }
+  .hero { --content-bottom: calc(var(--footer-bottom) + 44px); --masthead-size: min(28vw, 50svh); }
   .wordmark { top: max(54px, calc(env(safe-area-inset-top) + 44px)); }
   .site-header { top: max(8px, env(safe-area-inset-top)); }
   .portrait-stage { top: 48px; right: 40%; }
@@ -293,7 +294,9 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .section-scroll-ready .hero .nav-link,
 .section-scroll-ready .hero-heading-line,
 .section-scroll-ready .about,
-.section-scroll-ready .about-sidebar { will-change: transform, opacity; }
+.section-scroll-ready .about-topbar,
+.section-scroll-ready .about-intro,
+.section-scroll-ready .hero-footer .signature { will-change: transform, opacity; }
 /* aria-current flips halfway through the fold; the travelling link's own
    highlight is drawn by the fold instead, so no other row flashes one. */
 .section-folding .section-nav-link[aria-current] { --pill: 0; }
@@ -316,7 +319,8 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .section-scroll-ready .hero .nav-link,
   .section-scroll-ready .hero-heading-line,
   .section-scroll-ready .about,
-  .section-scroll-ready .about-sidebar { will-change: auto; }
+  .section-scroll-ready .about-topbar,
+  .section-scroll-ready .about-intro { will-change: auto; }
 }
 
 /* Name-first entrance. The outlined letters are the wordmark; they are not
@@ -328,7 +332,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .hero-heading-rule,
 .intro-pending .hero-content .button,
 .intro-pending .site-header,
-.intro-pending .signature { opacity: 0; }
+.intro-pending .hero-footer .signature { opacity: 0; }
 .intro-pending .site-header,
 .intro-pending .hero-content .button { pointer-events: none; }
 .intro-pending .wordmark.is-entering,
@@ -350,7 +354,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .intro-pending .hero-heading-rule,
   .intro-pending .hero-content .button,
   .intro-pending .site-header,
-  .intro-pending .signature { opacity: 1; pointer-events: auto; }
+  .intro-pending .hero-footer .signature { opacity: 1; pointer-events: auto; }
   .intro-pending .hero .nav-label > .scramble-text { transform: none; }
 }
 
@@ -579,48 +583,43 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   }
 }
 
-/* The reference's persistent profile rail and staggered story cards, in JOSH's palette. */
+/* One bar across the top of About and Projects: JOSH on the left, the site's
+   links on the right. The content column runs the full width beneath it. */
 .about {
-  display: grid;
-  grid-template-columns: clamp(12rem, 17vw, 16rem) minmax(0, 1fr);
-  align-items: start;
-  gap: clamp(2rem, 4vw, 5rem);
-  padding: 1rem clamp(1rem, 2.8vw, 3.5rem) 1rem 1rem;
+  --page-gutter: clamp(1rem, 2.8vw, 3.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.5rem, 4svh, 3rem);
+  padding: .75rem var(--page-gutter) 1rem;
 }
-.about-sidebar { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: .75rem; min-height: calc(100svh - 2rem); z-index: 3; }
-.glass-panel { background: rgba(255, 255, 255, .065); border: 1px solid rgba(255, 255, 255, .08); border-top-color: rgba(255, 255, 255, .14); border-radius: .5rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.sidebar-profile { padding: .8rem; }
-.sidebar-profile-top { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+/* Content can scroll under the bar, and backdrop blur is off during the fold,
+   so it is opaque: the colour a .065 white panel reads as over the backdrop. */
+.about-topbar { position: sticky; top: .75rem; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: .35rem .5rem; background: rgba(22, 22, 22, .94); }
 /* Same outlined JOSH as the masthead, only smaller. Fill, stroke and stretch
    have to match .wordmark or the fold would land on a different mark. Padding
    is the hit area; it is not a chip. */
-.sidebar-wordmark { display: inline-flex; align-items: start; padding: .34rem .45rem; color: transparent; -webkit-text-stroke: .055em var(--accent); font-family: 'Unbounded Outline', Arial, sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.55vw, 1.45rem); letter-spacing: -.055em; }
+.topbar-wordmark { flex: none; display: inline-flex; align-items: start; padding: .34rem .45rem; color: transparent; -webkit-text-stroke: .055em var(--accent); font-family: 'Unbounded Outline', Arial, sans-serif; font-weight: 700; font-size: clamp(1.1rem, 1.55vw, 1.45rem); letter-spacing: -.055em; }
 /* Kept under the font's own glyph box, as .wordmark's .88 is, so that the box
    the fold measures is the glyphs at both ends rather than the line-height at
    one end and the glyphs at the other. */
-.sidebar-wordmark span { display: block; line-height: .88; transform: scaleY(1.25); transform-origin: center; }
-.sidebar-socials { display: flex; align-items: center; margin-right: -.45rem; }
+.topbar-wordmark span { display: block; line-height: .88; transform: scaleY(1.25); transform-origin: center; }
+.about-intro { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; max-width: 27rem; }
+.about-profile { display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; padding: .8rem .8rem .8rem 1rem; }
+.about-profile p { font-size: .875rem; line-height: 1.6; margin: 0; color: rgba(255,255,255,.75); }
+.about-socials { display: flex; align-items: center; margin: 0 0 -.4rem -.7rem; }
 /* The same glyphs as Home's footer, at the same resting brightness. */
-.sidebar-socials a { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: .25rem; color: rgba(255, 255, 255, .7); transition: color var(--press-out) var(--ease-out); }
-.sidebar-socials svg { width: 1.125rem; height: 1.125rem; transition: transform var(--press-out) var(--ease-out); }
-.sidebar-profile p { font-size: .875rem; line-height: 1.6; margin: 1.5rem 0 0; color: rgba(255,255,255,.75); }
-.sidebar-disciplines { display: grid; grid-template-columns: 1fr 1fr; padding: .9rem .5rem; text-align: center; }
-.sidebar-disciplines > div { display: grid; justify-items: center; align-content: start; gap: .5rem; }
-.sidebar-disciplines > div + div { border-left: 1px solid var(--border); }
-.sidebar-disciplines svg { width: 1.375rem; height: 1.375rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
-/* Home's heading lines fold into these words, so face, weight and tracking
-   match h1 exactly; the fold scales one into the other uniformly. Each line is
-   its own landing, measured by its glyphs as .hero-heading-line is. */
-.sidebar-disciplines p { margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 1.1875rem; line-height: 1; font-weight: 400; letter-spacing: -.015em; }
-.sidebar-disciplines p > span { display: inline-block; }
-/* The panel hugs its links; the footer takes up the slack below. */
-.section-nav { display: flex; flex-direction: column; align-items: stretch; gap: .15rem; padding: .5rem; }
+.about-socials a { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: .25rem; color: rgba(255, 255, 255, .7); transition: color var(--press-out) var(--ease-out); }
+.about-socials svg { width: 1.125rem; height: 1.125rem; transition: transform var(--press-out) var(--ease-out); }
+/* The row hugs the right edge and scrolls sideways, fading at its ends, when
+   the bar is narrower than its links. */
+.section-nav { display: flex; align-items: center; gap: .15rem; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.section-nav::-webkit-scrollbar { display: none; }
 /* Each label here is the landing point of the matching header link, so its
    typeface, weight, tracking and line-height all have to stay in step with
    .nav-link above. The fold measures line boxes and scales them uniformly, so
    line-height decides where a word lands vertically just as much as the face
    decides its shape. Size is the one thing free to differ. */
-.section-nav-link { max-width: 100%; display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-family: 'Bounded', Arial, sans-serif; font-size: .875rem; line-height: 1.3; font-weight: 300; letter-spacing: -.01em; text-transform: uppercase; transition: background-color var(--press-out) var(--ease-out), color var(--press-out) var(--ease-out); }
+.section-nav-link { flex-shrink: 0; display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-family: 'Bounded', Arial, sans-serif; font-size: .875rem; line-height: 1.3; font-weight: 300; letter-spacing: -.01em; text-transform: uppercase; white-space: nowrap; transition: background-color var(--press-out) var(--ease-out), color var(--press-out) var(--ease-out); }
 /* Matches .nav-label's box model, not just its face: an inline-block takes its
    height from line-height while a bare inline takes it from the font's own
    metrics, and the fold cannot scale one into the other. */
@@ -636,18 +635,31 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .section-nav-link[aria-current] { --pill: 1; }
 .section-nav-link[aria-current] :is(.nav-label, svg) { mix-blend-mode: difference; }
 .section-nav-link[aria-current]:focus-visible { outline-color: var(--ink); }
-.sidebar-footer { display: grid; gap: .5rem; margin-top: auto; padding: .85rem; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
-.sidebar-footer > :last-child { color: var(--muted); }
-.about-main { min-width: 0; min-height: calc(100svh - 2rem); }
+/* Pinned to the same insets as .hero-footer, so the signature never moves
+   between pages. The section reserves the room it takes. */
+.about { padding-bottom: calc(var(--footer-bottom) + 4rem); }
+.about-footer { position: absolute; bottom: var(--footer-bottom); left: max(var(--edge), env(safe-area-inset-left)); right: max(var(--edge), env(safe-area-inset-right)); display: flex; align-items: end; justify-content: space-between; gap: 8px 16px; }
+/* A miniature of Home's heading, which folds into it. Face, weight, tracking
+   and line-height match h1 so one uniform scale lands each line on its twin. */
+/* Projects is a long scroll track, so its footer is held to the screen instead. */
+.projects .about-footer { position: fixed; z-index: 2; }
+.footer-roles { margin: 0; display: grid; grid-template-columns: auto auto auto; gap: .28em; font-family: 'Instrument Serif', Georgia, serif; font-size: 1.25rem; font-weight: 400; line-height: 1.02; letter-spacing: -.015em; }
+.footer-roles-column { display: flex; flex-direction: column; }
+.footer-roles-column:first-child { align-items: flex-end; }
+.footer-roles-column:last-child { align-items: flex-start; }
+.footer-roles-column > span { display: inline-block; white-space: nowrap; }
+.footer-roles-rule { width: 1px; margin: .1em 0 .2em; background: rgba(255, 255, 255, .5); }
+.about-main { flex: 1 0 auto; min-width: 0; }
 /* Projects is its own document on the About layout; only the content column
    differs. It is a pinned horizontal track: the runway's height is the travel,
-   the frame sticks beside the sidebar, and scroll slides the cards sideways.
+   the frame sticks under the top bar, and scroll slides the cards sideways.
    Script sets --fill (0-1) on each card from its distance to the column centre
    and marks the nearest card current; everything else here is static. */
 .projects-main:focus { outline: none; }
-.projects-main { --projects-gutter: clamp(1rem, 2.8vw, 3.5rem); --projects-lead: clamp(2rem, 4vw, 5rem); --card-w: min(58vw, 860px, 100%); --card-gap: clamp(1rem, 3vw, 3.5rem); }
+.projects-main { --projects-gutter: var(--page-gutter); --projects-lead: var(--page-gutter); --card-w: min(58vw, 860px, 100%); --card-gap: clamp(1rem, 3vw, 3.5rem); }
 .projects-frame { display: flex; flex-direction: column; justify-content: center; gap: clamp(1rem, 3.2svh, 2.5rem); min-height: calc(100svh - 2rem); padding-block: clamp(.25rem, 2svh, 2rem); }
-.projects-pinned .projects-frame { position: sticky; top: 1rem; height: calc(100svh - 2rem); }
+/* --projects-top is where the sticky bar ends, set by script. */
+.projects-pinned .projects-frame { position: sticky; top: var(--projects-top, 1rem); height: calc(100svh - var(--projects-top, 1rem) - var(--footer-bottom) - 1.5rem); min-height: 0; }
 
 .projects-eyebrow { display: flex; align-items: center; gap: 1rem; margin: 0 0 clamp(1rem, 2.4svh, 1.75rem); color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
 .projects-rule { position: relative; flex: 1; max-width: 280px; height: 1px; background: rgba(255, 255, 255, .1); }
@@ -668,7 +680,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .projects-entered .project-card:nth-child(n + 3) { transition-delay: .36s; }
 
 /* The column's right gutter is given back so cards run off the screen edge;
-   the left edge fades against the sidebar instead of cutting. Clipping would
+   the left edge bleeds and fades the same way instead of cutting. Clipping would
    let flex shrink this row below the cards and cut their bottom border, so
    it keeps its full height. */
 .projects-viewport { flex: none; margin: 0 calc(-1 * var(--projects-gutter)) 0 calc(-1 * var(--projects-lead)); overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--projects-lead)); mask-image: linear-gradient(to right, transparent, #000 var(--projects-lead)); }
@@ -757,74 +769,77 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 /* Contact feedback. The fold writes opacity on the wordmark, labels and icons
    every frame, so presses only touch the row, the inner name and the social
    glyphs, never a property the fold is animating. */
-:is(.section-nav-link, .sidebar-socials a, .sidebar-wordmark) { touch-action: manipulation; }
-.sidebar-wordmark span { transition: opacity var(--press-out) var(--ease-out); }
+:is(.section-nav-link, .about-socials a, .topbar-wordmark) { touch-action: manipulation; }
+.topbar-wordmark span { transition: opacity var(--press-out) var(--ease-out); }
 .section-nav-link:not([aria-current]).is-touch-pressed { background: rgba(255, 255, 255, .12); transition-duration: var(--press-in); }
 .section-nav-link[aria-current].is-touch-pressed::before { opacity: .82; transition-duration: var(--press-in); }
-.sidebar-wordmark.is-touch-pressed span { opacity: .6; transition-duration: var(--press-in); }
-.sidebar-socials a.is-touch-pressed { color: var(--white); transition-duration: var(--press-in); }
-.sidebar-socials a.is-touch-pressed svg { transform: scale(.94); transition-duration: var(--press-in); }
+.topbar-wordmark.is-touch-pressed span { opacity: .6; transition-duration: var(--press-in); }
+.about-socials a.is-touch-pressed { color: var(--white); transition-duration: var(--press-in); }
+.about-socials a.is-touch-pressed svg { transform: scale(.94); transition-duration: var(--press-in); }
 @media (hover: hover) and (pointer: fine) {
   :root:not(.touch-input) .section-nav-link:not([aria-current]):hover { background: rgba(255, 255, 255, .08); }
   :root:not(.touch-input) .section-nav-link:not([aria-current]):active { background: rgba(255, 255, 255, .14); transition-duration: var(--press-in); }
   :root:not(.touch-input) .section-nav-link[aria-current]:active::before { opacity: .82; transition-duration: var(--press-in); }
-  :root:not(.touch-input) .sidebar-wordmark:hover span { opacity: .75; }
-  :root:not(.touch-input) .sidebar-wordmark:active span { opacity: .6; transition-duration: var(--press-in); }
-  :root:not(.touch-input) .sidebar-socials a:hover { color: var(--white); }
-  :root:not(.touch-input) .sidebar-socials a:active svg { transform: scale(.94); transition-duration: var(--press-in); }
+  :root:not(.touch-input) .topbar-wordmark:hover span { opacity: .75; }
+  :root:not(.touch-input) .topbar-wordmark:active span { opacity: .6; transition-duration: var(--press-in); }
+  :root:not(.touch-input) .about-socials a:hover { color: var(--white); }
+  :root:not(.touch-input) .about-socials a:active svg { transform: scale(.94); transition-duration: var(--press-in); }
 }
-/* Rings sit inside the controls: the panels and the phone's scrolling nav row
+/* Rings sit inside the controls: the panels and the scrolling nav row
    would otherwise cut off the page's default outset ring. */
-.section-nav-link:focus-visible, .sidebar-socials a:focus-visible { outline-width: 2px; outline-offset: -2px; }
-.sidebar-wordmark:focus-visible { outline-width: 2px; outline-offset: 0; }
-.sidebar-socials a:focus-visible { color: var(--white); }
+.section-nav-link:focus-visible, .about-socials a:focus-visible { outline-width: 2px; outline-offset: -2px; }
+.topbar-wordmark:focus-visible { outline-width: 2px; outline-offset: 0; }
+.about-socials a:focus-visible { color: var(--white); }
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-socials svg { transition: none; }
-  .sidebar-socials a.is-touch-pressed svg, :root .sidebar-socials a:active svg { transform: none; }
+  .about-socials svg { transition: none; }
+  .about-socials a.is-touch-pressed svg, :root .about-socials a:active svg { transform: none; }
 }
-@media (max-width: 1000px) and (min-width: 701px) {
-  .about { grid-template-columns: 12rem minmax(0, 1fr); gap: 2rem; }
-  .projects-main { --projects-lead: 2rem; }
+/* Seven labels and seven icons need about 60rem. Below that the icons go
+   first; the row then scrolls rather than wrapping. */
+@media (max-width: 1100px) {
+  .section-nav-link svg { display: none; }
+  .section-nav-link { padding-inline: .5rem; }
+  /* Padding as wide as the fades, so a row that fits is never dimmed. */
+  .section-nav { padding-inline: .75rem 1.25rem; -webkit-mask-image: linear-gradient(to right, transparent, #000 .75rem, #000 calc(100% - 1.25rem), transparent); mask-image: linear-gradient(to right, transparent, #000 .75rem, #000 calc(100% - 1.25rem), transparent); }
 }
 @media (max-width: 700px) {
-  .about { display: block; padding: 0 1.25rem 2rem; }
-  .about-sidebar { top: 0; margin: 0 -1.25rem; padding: max(.65rem, env(safe-area-inset-top)) 1.25rem .6rem; min-height: 0; gap: .45rem; background: rgba(10, 10, 10, .92); }
+  .about { --page-gutter: 1.25rem; gap: 1.5rem; padding: 0 var(--page-gutter) calc(var(--footer-bottom) + 6rem); }
+  /* Edge to edge under the status bar, the way a phone's own top bar sits. */
+  .about-topbar { top: 0; gap: .5rem; margin: 0 calc(-1 * var(--page-gutter)); padding: max(.5rem, env(safe-area-inset-top)) 0 .5rem var(--page-gutter); border: 0; border-radius: 0; background: rgba(10, 10, 10, .92); }
   /* A soft edge instead of a rule: the bar settles into the grain below it. */
-  .about-sidebar::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 1.25rem; background: linear-gradient(rgba(10, 10, 10, .92), rgba(10, 10, 10, 0)); pointer-events: none; }
-  .sidebar-profile { padding: 0; background: transparent; border: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .sidebar-wordmark { font-size: 1rem; }
-  .sidebar-profile p, .sidebar-disciplines, .sidebar-footer { display: none; }
-  /* The row bleeds to the screen edges and fades there, so a clipped link reads
-     as "more this way". Inline padding lets the first and last links scroll
-     fully clear of the fade. */
-  .section-nav { flex-direction: row; flex: none; align-items: center; overflow-x: auto; margin: 0 -1.25rem; padding: 0 1.25rem; border: 0; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; gap: .25rem; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.75rem), transparent); mask-image: linear-gradient(to right, transparent, #000 1.25rem, #000 calc(100% - 1.75rem), transparent); }
-  .section-nav::-webkit-scrollbar { display: none; }
+  .about-topbar::after { content: ''; position: absolute; top: 100%; left: 0; right: 0; height: 1.25rem; background: linear-gradient(rgba(10, 10, 10, .92), rgba(10, 10, 10, 0)); pointer-events: none; }
+  .topbar-wordmark { font-size: 1rem; margin-left: -.45rem; }
+  /* The row runs to the screen's right edge and fades there, so a clipped
+     link reads as "more this way". */
+  .section-nav { gap: .25rem; }
   /* Matching the narrow header's grotesque, so the labels keep their letterform
      across the fold at this width too. Declared here rather than beside
      .nav-link so it lands after the base rule above. */
-  .section-nav-link { white-space: nowrap; flex-shrink: 0; font-family: Arial, Helvetica, sans-serif; font-size: .875rem; letter-spacing: -.025em; }
-  .about-main { min-height: 40svh; }
+  .section-nav-link { font-family: Arial, Helvetica, sans-serif; font-size: .875rem; letter-spacing: -.025em; }
+  .about-intro { grid-template-columns: minmax(0, 1fr); }
+  /* Centred and stacked like Home's phone footer: roles above the signature. */
+  .about-footer { flex-direction: column; align-items: center; gap: 10px; }
+  .footer-roles { order: -1; grid-template-columns: auto; justify-items: center; gap: .2em; font-size: 1.125rem; }
+  .footer-roles-column { flex-direction: row; gap: .25em; }
+  .footer-roles-rule { width: 2.5em; height: 1px; margin: 0; }
   .projects-main { --card-w: 84vw; --card-gap: .75rem; --projects-gutter: 1.25rem; --projects-lead: 1.25rem; }
   .projects-frame { min-height: 0; padding-block: 1.5rem; }
-  .projects-pinned .projects-frame { top: var(--projects-top, 0px); height: calc(100svh - var(--projects-top, 0px)); padding-block: 1rem; }
+  .projects-pinned .projects-frame { top: var(--projects-top, 0px); height: calc(100svh - var(--projects-top, 0px) - var(--footer-bottom) - 1rem); padding-block: 1rem; }
   .project-link { height: clamp(300px, 52svh, 440px); }
 }
-@media (max-height: 700px) and (min-width: 701px) {
-  .about-sidebar { min-height: 0; }
-  .sidebar-profile p { margin-top: .75rem; }
-  .sidebar-footer { display: none; }
+@media (prefers-reduced-transparency: reduce) {
+  .glass-panel, .about-topbar { background: #1c1c1c; backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .glass-panel { background: #1c1c1c; backdrop-filter: none; -webkit-backdrop-filter: none; }
-}
-@media (prefers-reduced-transparency: reduce) and (max-width: 700px) {
-  .about-sidebar { background: #1c1c1c; }
-  .about-sidebar::after { display: none; }
   .section-nav { -webkit-mask-image: none; mask-image: none; }
 }
+@media (prefers-reduced-transparency: reduce) and (max-width: 700px) {
+  .about-topbar { background: #1c1c1c; }
+  .about-topbar::after { display: none; }
+}
 @media (prefers-contrast: more) {
-  .glass-panel { background: #111; border-color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .sidebar-profile p, .sidebar-socials a { color: #fff; }
+  .glass-panel, .about-topbar { background: #111; border-color: #fff; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .about-profile p, .about-socials a { color: #fff; }
 }
 /* Forced colours drop the fill; an outline marks the current page instead. */
 @media (forced-colors: active) {
@@ -833,8 +848,8 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
   .section-nav-link[aria-current] { outline: 2px solid CanvasText; outline-offset: -2px; }
 }
 @media (prefers-contrast: more) and (max-width: 700px) {
-  .about-sidebar { background: #111; border-bottom: 1px solid #fff; }
-  .about-sidebar::after { display: none; }
+  .about-topbar { background: #111; border-bottom: 1px solid #fff; }
+  .about-topbar::after { display: none; }
 }
 
 /* Phone hero: the desktop composition relies on width and scale that a phone
@@ -848,8 +863,8 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 }
 @media (max-width: 700px) {
   /* A 1px stroke on the overlap cut reads as a glitch, so each letter gets one
-     clean outline. The About sidebar matches so the fold lands on the same name. */
-  .wordmark, .sidebar-wordmark { font-family: 'Unbounded Outline Merged', 'Unbounded Outline', Arial, sans-serif; letter-spacing: -.035em; }
+     clean outline. The About top bar matches so the fold lands on the same name. */
+  .wordmark, .topbar-wordmark { font-family: 'Unbounded Outline Merged', 'Unbounded Outline', Arial, sans-serif; letter-spacing: -.035em; }
   /* Each role becomes one centred row, divided by a short horizontal rule. */
   h1 { grid-template-columns: auto; justify-items: center; gap: .2em; }
   .hero-heading-column { flex-direction: row; gap: .25em; }
