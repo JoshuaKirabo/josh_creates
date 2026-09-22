@@ -659,7 +659,7 @@ test('enhanced links update the HTML URL and browser history restores the sectio
   s.click('#about');
   s.advance();
   assert.equal(s.context.location.href, 'https://example.test/about_me.html#about');
-  assert.equal(s.context.document.title, 'About me — JOSH');
+  assert.equal(s.context.document.title, 'About me · JOSH');
   s.context.location.hash = '#home';
   s.dispatch('window', 'popstate');
   // The browser restores the previous position after popstate, then hashchange.

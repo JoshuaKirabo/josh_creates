@@ -83,3 +83,9 @@ If JavaScript is disabled, a request fails, or the files are opened through `fil
 `projects.html` reuses the About sidebar, with Projects as the current page, and puts its own content in the right-hand column. It does not load `page-shell.js`: that script only joins Home and About for the fold, so Projects is an ordinary page link from both. The sidebar sits in the same place as on About, so moving between them changes only the content column. The backdrop grain, sidebar hover scrambles and touch feedback run here as on About; the Home intro and fold do not. Home and About me links return with their fragments, so Home skips the intro and About opens at its landing.
 
 Add project entries as `<li>` items in `.projects-list`; the list stays hidden until it has any.
+
+## Projects page
+
+Projects is a pinned horizontal track beside the About sidebar. Its layout and motion follow the "Engineered for scale" section of daqconsulting.com. The copy and implementation are written for Josh. The runway is sized to the track's travel, so ordinary scrolling drives it; nothing intercepts the wheel or touch. As each card crosses the column, its name and corner numeral fill in over a hairline outline through a soft 100° edge, finishing at centre. The centred card takes a brighter border, and a progress hairline with one label per card follows along. Rail labels jump to their card. Keyboard focus brings its card to centre immediately.
+
+A fine pointer gets a 90ms glide behind the scroll. Touch keeps native momentum, and reduced motion follows the scroll exactly without entrance motion. Without JavaScript the track is an ordinary horizontal scroller. Edit the cards in `projects.html`: projects two to five are placeholders.

@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .sidebar-socials a, .sidebar-wordmark';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .sidebar-socials a, .sidebar-wordmark, .project-link, .projects-rail a';
   let press = null;
   let released = null;
 
@@ -1012,7 +1012,7 @@ function enableSectionScroll() {
   function restoreSection() {
     stop();
     navigate(sectionHash() === '#about' ? boundary : 0, true);
-    document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
+    document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
   }
   let traversedHash = null;
 
@@ -1031,7 +1031,7 @@ function enableSectionScroll() {
     // focus until it has restored the page, without blocking the scroll input.
     navigate(to, keyboard, !mobileMenu?.open);
     if (location.hash !== link.hash) history.pushState(null, '', link.getAttribute('href'));
-    document.title = link.hash === '#about' ? 'About me — JOSH' : 'JOSH';
+    document.title = link.hash === '#about' ? 'About me · JOSH' : 'JOSH';
   });
 
   // Paging, arrows, and space are the browser's own, and now scrub the fold
@@ -1057,7 +1057,7 @@ function enableSectionScroll() {
     // deeper in About. Do not replace the browser's restoration with an endpoint.
     traversedHash = location.hash;
     stop();
-    document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
+    document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
     paintImmediately();
   });
   window.addEventListener('hashchange', () => {
@@ -1081,7 +1081,7 @@ function enableSectionScroll() {
   if (sectionHash() === '#about' && window.scrollY < boundary) {
     window.scrollTo({ top: boundary, behavior: 'instant' });
   }
-  document.title = sectionHash() === '#about' ? 'About me — JOSH' : 'JOSH';
+  document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
   paintImmediately();
 }
 if (window.sitePagesReady) {
@@ -1427,6 +1427,18 @@ function bindAboutNavScrambles() {
 }
 bindAboutNavScrambles();
 
+const boundProjectCtaScrambles = new WeakSet();
+document.querySelectorAll('.project-cta-label').forEach((label) => {
+  if (boundProjectCtaScrambles.has(label)) return;
+  label.classList.add('scramble-label');
+  const { scramble } = createScramble(label);
+  // Start with the card's hover color and arrow, not when the pointer reaches the label.
+  (label.closest('.project-link') || label).addEventListener('pointerenter', (event) => {
+    if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
+  });
+  boundProjectCtaScrambles.add(label);
+});
+
 function resetHoverMotion() {
   resetHoverEffects.forEach((reset) => reset());
 }
@@ -1435,6 +1447,161 @@ window.addEventListener('pagehide', resetHoverMotion);
 reducedMotion.addEventListener('change', resetHoverMotion);
 finePointer.addEventListener('change', resetHoverMotion);
 document.fonts?.ready.then(resetHoverMotion);
+
+// Projects: a pinned horizontal track. The runway is sized to the track's
+// travel, so native scroll drives it; nothing is intercepted. Each frame paints
+// one transform, the rail's scale and each card's --fill, all from cached
+// geometry. A fine pointer gets a short glide behind the scroll; touch already
+// has native momentum, and reduced motion follows the scroll exactly.
+// Each card owns a snap point in the runway with scroll-snap-stop, so one flick
+// of wheel, trackpad or finger lands exactly one card on; the browser owns the
+// settle, so it stays interruptible and keeps touch momentum.
+function initProjectsTrack() {
+  const runway = document.querySelector('[data-projects-runway]');
+  if (!runway) return;
+  const main = runway.closest('.projects-main');
+  const frame = runway.querySelector('.projects-frame');
+  const viewport = runway.querySelector('.projects-viewport');
+  const track = runway.querySelector('.projects-track');
+  const cards = [...track.querySelectorAll('[data-project]')];
+  const railLinks = [...runway.querySelectorAll('[data-project-jump]')];
+  const rail = runway.querySelector('.projects-rail');
+  const sidebar = document.querySelector('.about-sidebar');
+  const phone = window.matchMedia('(max-width: 700px)');
+  // Scroll pixels per pixel of horizontal travel.
+  const PACE = 1.15;
+  // Glide time constant for a fine pointer, in seconds.
+  const GLIDE = .09;
+
+  main.classList.add('projects-pinned');
+  document.documentElement.classList.add('projects-snapping');
+  const snaps = cards.map(() => {
+    const snap = document.createElement('span');
+    snap.className = 'projects-snap';
+    snap.setAttribute('aria-hidden', 'true');
+    runway.append(snap);
+    return snap;
+  });
+  let geometry = null;
+  let shown = 0;
+  let frameId = 0;
+  let lastTime = 0;
+  let current = -1;
+  const fills = cards.map(() => -1);
+
+  function measure() {
+    main.style.setProperty('--projects-top', phone.matches && sidebar ? `${sidebar.offsetHeight}px` : '0px');
+    const viewWidth = viewport.clientWidth;
+    const last = cards[cards.length - 1];
+    // Travel ends with the last card centred, so every card has its turn.
+    const travel = last ? Math.max(0, last.offsetLeft + last.offsetWidth / 2 - viewWidth / 2) : 0;
+    const distance = travel * PACE;
+    runway.style.height = `${frame.offsetHeight + distance}px`;
+    const stickyTop = parseFloat(getComputedStyle(frame).top) || 0;
+    geometry = {
+      viewWidth,
+      travel,
+      distance,
+      start: runway.getBoundingClientRect().top + window.scrollY - stickyTop,
+      width: cards[0]?.offsetWidth || 1,
+      centers: cards.map((card) => card.offsetLeft + card.offsetWidth / 2)
+    };
+    // Markers sit in the runway where the page must stop for each card.
+    const runwayTop = geometry.start + stickyTop;
+    snaps.forEach((snap, index) => {
+      snap.style.top = `${scrollFor(index) - runwayTop}px`;
+    });
+  }
+
+  function target() {
+    if (!geometry.distance) return 0;
+    const progress = Math.min(1, Math.max(0, (window.scrollY - geometry.start) / geometry.distance));
+    return progress * geometry.travel;
+  }
+
+  function paint(x) {
+    const { viewWidth, travel, width, centers } = geometry;
+    track.style.transform = `translate3d(${-x}px, 0, 0)`;
+    rail.style.setProperty('--progress', travel ? (x / travel).toFixed(4) : '1');
+    let nearest = 0;
+    centers.forEach((center, index) => {
+      const offset = center - x - viewWidth / 2;
+      if (Math.abs(offset) < Math.abs(centers[nearest] - x - viewWidth / 2)) nearest = index;
+      // The name fills while its card travels in from the right and is full
+      // at centre; reversing empties it the same way.
+      const fill = Math.round(Math.min(1, Math.max(0, (width * .39 - offset) / (width * .39))) * 1000) / 1000;
+      if (fill !== fills[index]) {
+        fills[index] = fill;
+        cards[index].style.setProperty('--fill', fill);
+      }
+    });
+    if (nearest !== current) {
+      cards[current]?.classList.remove('is-current');
+      railLinks[current]?.removeAttribute('aria-current');
+      cards[nearest].classList.add('is-current');
+      railLinks[nearest]?.setAttribute('aria-current', 'step');
+      current = nearest;
+    }
+  }
+
+  function tick(time) {
+    frameId = 0;
+    const goal = target();
+    const glide = finePointer.matches && !reducedMotion.matches && !document.documentElement.classList.contains('touch-input');
+    const dt = lastTime ? Math.min(.064, (time - lastTime) / 1000) : 1 / 60;
+    lastTime = time;
+    shown = glide ? goal + (shown - goal) * Math.exp(-dt / GLIDE) : goal;
+    if (Math.abs(goal - shown) < .1) shown = goal;
+    paint(shown);
+    if (shown !== goal) frameId = requestAnimationFrame(tick);
+    else lastTime = 0;
+  }
+
+  function schedule() {
+    if (!frameId) frameId = requestAnimationFrame(tick);
+  }
+
+  function refresh() {
+    measure();
+    shown = target();
+    paint(shown);
+  }
+
+  // Scroll position that brings card `index` to the column's centre.
+  function scrollFor(index) {
+    const { viewWidth, travel, distance, start, centers } = geometry;
+    const x = Math.min(travel, Math.max(0, centers[index] - viewWidth / 2));
+    return start + (travel ? x / travel : 0) * distance;
+  }
+
+  railLinks.forEach((link, index) => {
+    link.addEventListener('click', (event) => {
+      event.preventDefault();
+      window.scrollTo({ top: scrollFor(index), behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+    });
+  });
+  // Keyboard focus lands on the card at once; the track follows without a glide.
+  track.addEventListener('focusin', (event) => {
+    const index = cards.indexOf(event.target.closest('[data-project]'));
+    if (index < 0 || index === current) return;
+    window.scrollTo({ top: scrollFor(index), behavior: 'auto' });
+    refresh();
+  });
+
+  window.addEventListener('scroll', schedule, { passive: true });
+  new ResizeObserver(refresh).observe(frame);
+  window.addEventListener('resize', refresh, { passive: true });
+  phone.addEventListener('change', refresh);
+  document.fonts?.ready.then(refresh);
+  refresh();
+
+  if (reducedMotion.matches) {
+    main.classList.add('projects-entered');
+  } else {
+    requestAnimationFrame(() => requestAnimationFrame(() => main.classList.add('projects-entered')));
+  }
+}
+initProjectsTrack();
 
 playIntro();
 

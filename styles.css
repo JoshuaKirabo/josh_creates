@@ -27,6 +27,13 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'Google Sans';
+  src: url('assets/fonts/google-sans-latin-400.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
   font-family: 'Unbounded Outline';
   src: url('assets/fonts/unbounded-latin-700-overlap.woff2') format('woff2');
   font-style: normal;
@@ -116,7 +123,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid currentColor; outline
 .nav-divider-mobile { display: none; }
 .nav-link, .small-label { font-size: .8125rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
 .nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Bounded', Arial, sans-serif; font-size: 1.125rem; font-weight: 300; letter-spacing: -.01em; white-space: nowrap; }
-.nav-label { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
+.nav-label, .project-cta-label { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
 .scramble-layer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .scramble-char { position: absolute; top: 0; text-align: center; }
 .is-scrambling .scramble-text { opacity: 0; }
@@ -632,16 +639,121 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .sidebar-footer { display: grid; gap: .5rem; margin-top: auto; padding: .85rem; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
 .sidebar-footer > :last-child { color: var(--muted); }
 .about-main { min-width: 0; min-height: calc(100svh - 2rem); }
-/* Projects is its own document on the About layout; only the content column differs. */
-.projects-main { padding-top: clamp(1rem, 6svh, 4.5rem); }
+/* Projects is its own document on the About layout; only the content column
+   differs. It is a pinned horizontal track: the runway's height is the travel,
+   the frame sticks beside the sidebar, and scroll slides the cards sideways.
+   Script sets --fill (0-1) on each card from its distance to the column centre
+   and marks the nearest card current; everything else here is static. */
 .projects-main:focus { outline: none; }
-.projects-header { max-width: 40rem; }
-.projects-eyebrow { margin: 0 0 1rem; color: var(--muted); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .02em; line-height: 1.3; text-transform: uppercase; }
-/* The global h1 is the hero's two-column heading; this one is a plain title. */
-.projects-title { display: block; margin: 0; font-size: clamp(3rem, 7vw, 6.5rem); line-height: .95; }
-.projects-intro { max-width: 32rem; margin: 1.25rem 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
-.projects-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr)); gap: .75rem; margin: clamp(2.5rem, 6svh, 4rem) 0 0; padding: 0; list-style: none; }
-.projects-list:empty { display: none; }
+.projects-main { --projects-gutter: clamp(1rem, 2.8vw, 3.5rem); --projects-lead: clamp(2rem, 4vw, 5rem); --card-w: min(58vw, 860px, 100%); --card-gap: clamp(1rem, 3vw, 3.5rem); }
+.projects-frame { display: flex; flex-direction: column; justify-content: center; gap: clamp(1rem, 3.2svh, 2.5rem); min-height: calc(100svh - 2rem); padding-block: clamp(.25rem, 2svh, 2rem); }
+.projects-pinned .projects-frame { position: sticky; top: 1rem; height: calc(100svh - 2rem); }
+
+.projects-eyebrow { display: flex; align-items: center; gap: 1rem; margin: 0 0 clamp(1rem, 2.4svh, 1.75rem); color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+.projects-rule { position: relative; flex: 1; max-width: 280px; height: 1px; background: rgba(255, 255, 255, .1); }
+.projects-rule::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, .4); transform-origin: left; }
+.projects-pinned:not(.projects-entered) .projects-rule::after { transform: scaleX(0); }
+.projects-entered .projects-rule::after { transition: transform 1.2s var(--ease-out) .15s; }
+/* The global h1 is the hero's two-column heading; this is a plain two-weight stack. */
+.projects-title { display: block; margin: 0; text-align: left; font-family: 'Bounded', Arial, sans-serif; font-size: min(clamp(2.4rem, 5.2vw, 5.6rem), 11svh); font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
+.projects-title-line { display: block; }
+.projects-title-strong { font-weight: 800; }
+/* Entrance: the lines rise a fraction of an em, then the cards settle in. */
+.projects-pinned:not(.projects-entered) :is(.projects-title-line, .project-card) { opacity: 0; transform: translateY(.35em); }
+.projects-pinned:not(.projects-entered) .project-card { transform: translateX(2.5rem); }
+.projects-entered :is(.projects-title-line, .project-card) { transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+.projects-entered .projects-title-strong { transition-delay: .08s; }
+.projects-entered .project-card:nth-child(1) { transition-delay: .2s; }
+.projects-entered .project-card:nth-child(2) { transition-delay: .28s; }
+.projects-entered .project-card:nth-child(n + 3) { transition-delay: .36s; }
+
+/* The column's right gutter is given back so cards run off the screen edge;
+   the left edge fades against the sidebar instead of cutting. Clipping would
+   let flex shrink this row below the cards and cut their bottom border, so
+   it keeps its full height. */
+.projects-viewport { flex: none; margin: 0 calc(-1 * var(--projects-gutter)) 0 calc(-1 * var(--projects-lead)); overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--projects-lead)); mask-image: linear-gradient(to right, transparent, #000 var(--projects-lead)); }
+.projects-viewport::-webkit-scrollbar { display: none; }
+.projects-pinned .projects-viewport { overflow: clip; }
+/* One snap point per card; scroll-snap-stop keeps a hard flick from skipping. */
+html.projects-snapping { scroll-snap-type: y mandatory; }
+.projects-pinned .projects-runway { position: relative; }
+.projects-snap { position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; scroll-snap-align: start; scroll-snap-stop: always; }
+.projects-track { position: relative; display: flex; gap: var(--card-gap); width: max-content; margin: 0; padding: 0 var(--projects-gutter) 0 var(--projects-lead); list-style: none; }
+.projects-pinned .projects-track { will-change: transform; }
+.project-card { --fill: 0; flex: none; width: var(--card-w); }
+.project-link { position: relative; display: flex; flex-direction: column; justify-content: space-between; height: clamp(280px, 44svh, 520px); padding: clamp(1.5rem, 2.2vw, 2.5rem); overflow: hidden; background: rgba(255, 255, 255, .02); border: 1px solid rgba(255, 255, 255, .1); transition: border-color .7s var(--ease-out); }
+.project-card.is-current .project-link { border-color: rgba(255, 255, 255, .3); }
+
+.project-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem; }
+.project-index, .project-tags, .project-cta, .projects-rail { font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; text-transform: uppercase; }
+.project-index { color: rgba(255, 255, 255, .5); letter-spacing: .24em; }
+.project-tags { font-size: 11px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem .5rem; max-width: 70%; margin: 0; padding: 0; list-style: none; color: rgba(255, 255, 255, calc(.3 + var(--fill) * .55)); letter-spacing: .14em; }
+.project-tags li { display: flex; align-items: center; gap: .5rem; }
+.project-tags li + li::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: rgba(255, 255, 255, calc(.2 + var(--fill) * .4)); }
+/* Stack logos wake into their brand colour, with a matching glow, as the card
+   takes the centre. Black marks (Next.js, Express) keep white and just glow. */
+.project-tag-icon { --brand: #fff; flex: none; width: 1.1em; height: 1.1em; margin-right: -.2rem; fill: color-mix(in srgb, var(--brand) calc(var(--fill) * 100%), currentColor); filter: drop-shadow(0 0 calc(var(--fill) * 4px) color-mix(in srgb, var(--brand) calc(var(--fill) * 75%), transparent)); }
+.project-tag-icon--swift { --brand: #f05138; }
+.project-tag-icon--spotify { --brand: #1ed760; }
+.project-tag-icon--electron { --brand: #9feaf9; }
+.project-tag-icon--fastapi { --brand: #05998b; }
+.project-tag-icon--nodedotjs { --brand: #5fa04e; }
+.project-tag-icon--postgresql { --brand: #699eca; }
+.project-tag-icon--html5 { --brand: #e34f26; }
+.project-tag-icon--css { --brand: #2f9be8; }
+.project-tag-icon--javascript { --brand: #f7df1e; }
+.project-tag-icon--sqlite { --brand: #44a8e0; }
+
+/* The name is drawn twice: a hairline outline, and a solid copy revealed
+   through a soft 100deg edge as --fill runs 0 to 1. The numeral does the same. */
+.project-name { position: relative; margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(1.9rem, 3.2vw, 3.4rem); font-weight: 300; line-height: 1.05; letter-spacing: -.04em; }
+.project-name-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .3); }
+.project-name-fill, .project-numeral-fill { position: absolute; inset: 0; display: block; --edge-at: calc(var(--fill) * 124% - 12%); -webkit-mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
+.project-name-fill { color: var(--white); }
+.project-desc { max-width: 38ch; margin: 1rem 0 0; color: rgba(255, 255, 255, .55); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(.875rem, .95vw, .9375rem); font-weight: 400; line-height: 1.65; transition: color .7s var(--ease-out); }
+.project-card.is-current .project-desc { color: rgba(255, 255, 255, .8); }
+.project-cta { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: .5rem; align-self: flex-start; color: rgba(255, 255, 255, .45); letter-spacing: .22em; transition: color .5s var(--ease-out); }
+/* Kisaka-style flying arrow: one copy exits top-right, the ghost enters from bottom-left. */
+.project-cta-arrow-box { position: relative; flex: none; width: .875rem; height: .875rem; overflow: hidden; }
+.project-cta-arrow { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 420ms cubic-bezier(.2, .7, .2, 1); }
+.project-cta-arrow--ghost { transform: translate(-115%, 115%); }
+.project-numeral { position: absolute; right: clamp(1.5rem, 2.2vw, 2.5rem); bottom: clamp(1rem, 1.6vw, 1.5rem); font-family: 'Bounded', Arial, sans-serif; font-size: clamp(4.5rem, 9vw, 8.5rem); font-weight: 200; line-height: 1; letter-spacing: -.06em; pointer-events: none; user-select: none; }
+.project-numeral-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .12); }
+.project-numeral-fill { color: rgba(255, 255, 255, .14); }
+.project-logo-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* A logo stands in for the numeral: stroked like the outline digits, filled
+   by the same --fill sweep. Width follows each mark's own proportions. */
+.project-numeral--logo svg { display: block; height: .8em; width: auto; overflow: visible; }
+.project-numeral--logo .project-numeral-outline { fill: none; stroke: rgba(255, 255, 255, .12); stroke-width: 1; }
+.project-numeral--logo .project-numeral-fill svg { fill: currentColor; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .project-link:hover { border-color: rgba(255, 255, 255, .4); }
+  :root:not(.touch-input) .project-link:hover .project-cta { color: var(--white); }
+  :root:not(.touch-input) .project-link:hover .project-cta-arrow:not(.project-cta-arrow--ghost),
+  :root:not(.touch-input) .project-link:focus-visible .project-cta-arrow:not(.project-cta-arrow--ghost) { transform: translate(115%, -115%); }
+  :root:not(.touch-input) .project-link:hover .project-cta-arrow--ghost,
+  :root:not(.touch-input) .project-link:focus-visible .project-cta-arrow--ghost { transform: translate(0, 0); }
+}
+.project-link:focus-visible { outline: 2px solid var(--white); outline-offset: -2px; }
+.project-link.is-touch-pressed { border-color: rgba(255, 255, 255, .4); }
+
+/* Progress: a hairline that fills with the scroll, over one label per card. */
+.projects-rail { position: relative; padding-top: 1rem; letter-spacing: .2em; }
+.projects-rail-line { position: absolute; top: 0; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, .1); }
+.projects-rail-fill { position: absolute; inset: 0; background: var(--white); transform-origin: left; transform: scaleX(var(--progress, 0)); }
+.projects-rail ol { display: flex; justify-content: space-between; margin: 0; padding: 0; list-style: none; }
+.projects-rail a { display: inline-flex; gap: .5rem; padding-block: .5rem; color: rgba(255, 255, 255, .3); transition: color .5s var(--ease-out); }
+.projects-rail a[aria-current] { color: var(--white); }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .projects-rail a:hover { color: rgba(255, 255, 255, .7); }
+}
+.projects-rail a:focus-visible { outline-width: 2px; outline-offset: 2px; }
+@media (max-width: 1200px) { .projects-rail-name { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .projects-entered :is(.projects-title-line, .project-card) { transition: none; }
+  .projects-entered .projects-rule::after { transition: none; }
+  .project-cta-arrow { transition: none; }
+}
 /* Contact feedback. The fold writes opacity on the wordmark, labels and icons
    every frame, so presses only touch the row, the inner name and the social
    glyphs, never a property the fold is animating. */
@@ -672,6 +784,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 }
 @media (max-width: 1000px) and (min-width: 701px) {
   .about { grid-template-columns: 12rem minmax(0, 1fr); gap: 2rem; }
+  .projects-main { --projects-lead: 2rem; }
 }
 @media (max-width: 700px) {
   .about { display: block; padding: 0 1.25rem 2rem; }
@@ -691,7 +804,10 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
      .nav-link so it lands after the base rule above. */
   .section-nav-link { white-space: nowrap; flex-shrink: 0; font-family: Arial, Helvetica, sans-serif; font-size: .875rem; letter-spacing: -.025em; }
   .about-main { min-height: 40svh; }
-  .projects-main { padding-top: 2rem; }
+  .projects-main { --card-w: 84vw; --card-gap: .75rem; --projects-gutter: 1.25rem; --projects-lead: 1.25rem; }
+  .projects-frame { min-height: 0; padding-block: 1.5rem; }
+  .projects-pinned .projects-frame { top: var(--projects-top, 0px); height: calc(100svh - var(--projects-top, 0px)); padding-block: 1rem; }
+  .project-link { height: clamp(300px, 52svh, 440px); }
 }
 @media (max-height: 700px) and (min-width: 701px) {
   .about-sidebar { min-height: 0; }
