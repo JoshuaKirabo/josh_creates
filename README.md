@@ -11,6 +11,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
+- `assets/josh_workspace.webp` (and a 900px copy) — the Meet Josh scene, standing in for the planned 3D scene; `josh_workspace_source.png` is the original
 - `assets/workplace-logos/` — employer marks on the About Experience cards (see `assets/workplace-logos-source.txt`)
 
 The homepage uses the stable small viewport height and safe areas, so browser toolbar movement cannot resize its contents. The navigation, heading, button, and hero footer fit within the first screen. The large portrait is intentionally cropped within the composition. Short landscape screens use a side-by-side layout.

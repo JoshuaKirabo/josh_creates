@@ -1188,6 +1188,7 @@ if (window.sitePagesReady) {
   window.sitePagesReady.then(enableSectionScroll);
   window.sitePagesReady.then(initAboutContent);
   window.sitePagesReady.then(initAboutPages);
+  window.sitePagesReady.then(() => { bindProjectCtaScrambles(); initProjectsTrack(); initProjectsNav(); });
 } else {
   enableSectionScroll();
   initAboutContent();
@@ -1716,6 +1717,95 @@ function initAboutPages() {
   root.classList.add('about-paging');
 }
 
+// Projects continues on from Education in the same scroll. The top bar's
+// underline travels from About me to Projects as it arrives, and back again.
+function initProjectsNav() {
+  const about = document.querySelector('#about');
+  const nav = about?.querySelector('.about-topbar .section-nav');
+  const aboutLink = nav?.querySelector('.section-nav-link[href$="#about"]');
+  const projectsLink = nav?.querySelector('.section-nav-link[href="projects.html"]');
+  const runway = about?.querySelector('[data-projects-runway]');
+  if (!aboutLink || !projectsLink || !runway) return;
+  const frame = runway.querySelector('.projects-frame') || runway;
+  let shown = aboutLink;
+  let glide = null;
+  let animation = null;
+  let frameId = 0;
+
+  // Where a link's underline is drawn, in the row's own scrolling coordinates.
+  function rule(link) {
+    const style = getComputedStyle(link, '::before');
+    const left = parseFloat(style.left) || 0;
+    const right = parseFloat(style.right) || 0;
+    return {
+      x: link.offsetLeft + left,
+      y: link.offsetTop + (parseFloat(style.top) || 0),
+      width: link.offsetWidth - left - right
+    };
+  }
+  const pose = ({ x, y, width }) => `translate3d(${x}px, ${y}px, 0) scaleX(${width})`;
+
+  function show(link, instant = false) {
+    if (link === shown) return;
+    const from = shown;
+    shown = link;
+    from.removeAttribute('aria-current');
+    link.setAttribute('aria-current', 'location');
+    // About's underline can carry the fold's inline --pill, so it is hidden
+    // outright while Projects is current.
+    nav.classList.toggle('is-projects', link === projectsLink);
+    if (instant || reducedMotion.matches) return;
+    // A reversal mid-glide leaves from wherever the rule is now.
+    let start = rule(from);
+    if (glide) {
+      const m = new DOMMatrix(getComputedStyle(glide).transform);
+      start = { x: m.e, y: m.f, width: m.a };
+      animation?.cancel();
+    } else {
+      glide = document.createElement('span');
+      glide.className = 'section-nav-glide';
+      glide.setAttribute('aria-hidden', 'true');
+      nav.append(glide);
+      nav.classList.add('is-gliding');
+    }
+    const current = animation = glide.animate([{ transform: pose(start) }, { transform: pose(rule(link)) }], {
+      duration: 420,
+      easing: 'cubic-bezier(.65, 0, .35, 1)',
+      fill: 'forwards'
+    });
+    current.finished.then(() => {
+      if (animation !== current) return;
+      glide.remove();
+      glide = null;
+      animation = null;
+      nav.classList.remove('is-gliding');
+    }, () => {});
+  }
+
+  // Projects is current once its frame fills the lower half of the screen.
+  function update(instant = false) {
+    frameId = 0;
+    const arrived = frame.getBoundingClientRect().top < window.innerHeight / 2;
+    show(arrived ? projectsLink : aboutLink, instant);
+  }
+
+  // The link scrolls on to Projects rather than leaving the page.
+  projectsLink.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const top = window.scrollY + runway.getBoundingClientRect().top - (parseFloat(getComputedStyle(frame).top) || 0);
+    window.scrollTo({ top, behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  });
+
+  window.addEventListener('scroll', () => {
+    if (!frameId) frameId = requestAnimationFrame(() => update());
+  }, { passive: true });
+  window.addEventListener('resize', () => update(true), { passive: true });
+  // The fold writes About's current state when it lands, so read after it.
+  window.addEventListener('pageshow', () => requestAnimationFrame(() => update(true)));
+  update(true);
+}
+
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
   const root = document.documentElement;
@@ -2054,16 +2144,19 @@ function bindAboutNavScrambles() {
 bindAboutNavScrambles();
 
 const boundProjectCtaScrambles = new WeakSet();
-document.querySelectorAll('.project-cta-label').forEach((label) => {
-  if (boundProjectCtaScrambles.has(label)) return;
-  label.classList.add('scramble-label');
-  const { scramble } = createScramble(label);
-  // Start with the card's hover color and arrow, not when the pointer reaches the label.
-  (label.closest('.project-link') || label).addEventListener('pointerenter', (event) => {
-    if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
+function bindProjectCtaScrambles() {
+  document.querySelectorAll('.project-cta-label').forEach((label) => {
+    if (boundProjectCtaScrambles.has(label)) return;
+    label.classList.add('scramble-label');
+    const { scramble } = createScramble(label);
+    // Start with the card's hover color and arrow, not when the pointer reaches the label.
+    (label.closest('.project-link') || label).addEventListener('pointerenter', (event) => {
+      if (event.pointerType !== 'touch' && finePointer.matches) scramble(event);
+    });
+    boundProjectCtaScrambles.add(label);
   });
-  boundProjectCtaScrambles.add(label);
-});
+}
+bindProjectCtaScrambles();
 
 function resetHoverMotion() {
   resetHoverEffects.forEach((reset) => reset());
@@ -2084,7 +2177,10 @@ document.fonts?.ready.then(resetHoverMotion);
 // settle, so it stays interruptible and keeps touch momentum.
 function initProjectsTrack() {
   const runway = document.querySelector('[data-projects-runway]');
-  if (!runway) return;
+  // About joins Projects in after load, so this can be called a second time.
+  if (!runway || runway.dataset.tracked !== undefined) return;
+  runway.dataset.tracked = '';
+  const about = runway.closest('#about');
   const main = runway.closest('.projects-main');
   const frame = runway.querySelector('.projects-frame');
   const viewport = runway.querySelector('.projects-viewport');
@@ -2131,7 +2227,7 @@ function initProjectsTrack() {
       viewWidth,
       travel,
       distance,
-      start: runway.getBoundingClientRect().top + window.scrollY - stickyTop,
+      start: runwayOffset() - stickyTop,
       width: cards[0]?.offsetWidth || 1,
       centers: cards.map((card) => card.offsetLeft + card.offsetWidth / 2)
     };
@@ -2140,6 +2236,18 @@ function initProjectsTrack() {
     snaps.forEach((snap, index) => {
       snap.style.top = `${scrollFor(index) - runwayTop}px`;
     });
+  }
+
+  // Inside About the section is pinned for the fold, so its box is not where
+  // it scrolls to. Past the fold About scrolls in flow from the fold distance.
+  function runwayOffset() {
+    const root = document.documentElement;
+    if (!about || !root.classList.contains('section-scroll-ready') || reducedMotion.matches) {
+      return runway.getBoundingClientRect().top + window.scrollY;
+    }
+    let top = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
+    for (let node = runway; node && node !== about; node = node.offsetParent) top += node.offsetTop;
+    return top;
   }
 
   function target() {
@@ -2226,6 +2334,13 @@ function initProjectsTrack() {
 
   if (reducedMotion.matches) {
     main.classList.add('projects-entered');
+  } else if (about && 'IntersectionObserver' in window) {
+    // Below About the entrance waits for the reader, and replays each time
+    // they come back down to it, as About's own sections do.
+    new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) main.classList.remove('projects-entered');
+      else if (entry.intersectionRatio >= .35) main.classList.add('projects-entered');
+    }, { threshold: [0, .35] }).observe(frame);
   } else {
     requestAnimationFrame(() => requestAnimationFrame(() => main.classList.add('projects-entered')));
   }
