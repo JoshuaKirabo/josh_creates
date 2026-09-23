@@ -890,10 +890,10 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-title-fill { position: absolute; inset: 0; display: block; color: var(--white); --edge-at: calc(var(--about-fill) * 124% - 12%); -webkit-mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
 .about-lead { max-width: 44ch; margin: clamp(2rem, 4svh, 2.5rem) 0 0; color: rgba(255, 255, 255, .55); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(1.05rem, 2vw, 1.4rem); font-weight: 400; line-height: 1.6; text-wrap: pretty; }
 
-.about-motion:not(.is-arrived) .about-title-line { --about-fill: 0; }
+.about-motion:not(.is-arrived) .about-hero .about-title-line { --about-fill: 0; }
 .about-motion:not(.is-arrived) .about-hero .about-rule::after { transform: scaleX(0); }
 .about-motion:not(.is-arrived) :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(12px); }
-.about-motion.is-arrived .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.about-motion.is-arrived .about-hero .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
 .about-motion.is-arrived .about-title-strong { transition-delay: .3s; }
 .about-motion.is-arrived .about-hero .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
 .about-motion.is-arrived .about-lead { transition: opacity .9s var(--ease-out) .5s, transform .9s var(--ease-out) .5s; }
@@ -932,10 +932,25 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .core-subject-sep { margin-inline: .5em; opacity: .6; }
 .core-subject:last-child { border-bottom: 1px solid rgba(255, 255, 255, .14); }
 .core-subject[aria-selected="true"] { color: var(--white); }
-/* The job being read carries a rule down its left edge, drawn from the top. */
+/* A rail runs down the list's left edge. The job being read carries one
+   marker that slides and stretches from job to job; script places it. While
+   Experience is pinned, a fainter fill shows how far through the jobs the
+   page has turned. */
 .core-subject { position: relative; }
-.core-subject::before { content: ''; position: absolute; left: -12px; top: 12px; bottom: 12px; width: 1px; background: var(--white); transform: scaleY(0); transform-origin: top; transition: transform 160ms var(--ease-out); pointer-events: none; }
-.core-subject[aria-selected="true"]::before { transform: scaleY(1); transition-duration: 300ms; }
+.core-subjects { position: relative; }
+.core-rail { position: absolute; top: 0; bottom: 0; left: -12px; width: 1px; background: rgba(255, 255, 255, .12); pointer-events: none; }
+.core-rail-fill, .core-rail-marker { position: absolute; top: 0; left: 0; width: 1px; transform-origin: top; }
+.core-rail-fill { height: 100%; background: rgba(255, 255, 255, .32); transform: scaleY(var(--core-progress, 0)); transition: transform 380ms var(--ease-out-quart); }
+:root:not(.core-pinned) .core-rail-fill { visibility: hidden; }
+.core-rail-marker { height: 1px; background: var(--white); transform: translateY(var(--marker-y, 0)) scaleY(var(--marker-h, 0)); }
+.core-rail.is-placed .core-rail-marker { transition: transform 380ms var(--ease-out-quart); }
+/* Where scroll-driven animation exists, the fill follows the scroll itself
+   rather than stepping from job to job. */
+@keyframes core-progress { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@supports (animation-timeline: view()) {
+  .core-pinned .core-section { view-timeline: --core-runway block; }
+  .core-pinned .core-rail-fill { transition: none; animation: core-progress linear both; animation-timeline: --core-runway; animation-range: contain 0% contain 100%; }
+}
 .core-subject:focus-visible { outline: 1px solid rgba(255, 255, 255, .9); outline-offset: -5px; }
 .core-subject.is-touch-pressed { color: rgba(255, 255, 255, .85); transition-duration: var(--press-in); }
 
@@ -944,15 +959,49 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .core-panel { display: flex; flex-direction: column; min-width: 0; padding: 27px 24px 19px; }
 .core-panel + .core-panel { border-top: 1px solid #bdbdb7; }
 .core-panel:focus-visible { outline: 1px solid #171717; outline-offset: -7px; }
+/* A workplace's mark sits behind the card as a watermark, cropped by the
+   bottom-right corner: a faint outline always, with an ink fill that sweeps
+   in with the title. Same build as the project logos, inked for paper. */
+.core-panel { position: relative; isolation: isolate; }
+.core-logo-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+/* Each mark sets --logo-ratio (width over height) and is sized to whichever
+   runs out first, the card's height or 60% of its width, so wide wordmarks
+   don't overrun a phone. The corner crops a fixed share of the mark itself. */
+.core-logo { position: absolute; inset: 0; z-index: -1; overflow: hidden; container-type: size; pointer-events: none; user-select: none; }
+.core-logo-outline, .core-logo-fill { position: absolute; right: 0; bottom: 0; height: min(82cqh, 60cqw / var(--logo-ratio, 1)); aspect-ratio: var(--logo-ratio, 1); translate: 9% 19.5%; }
+.core-logo svg { display: block; overflow: visible; }
+.core-logo-fill svg { width: 100%; height: 100%; }
+.core-logo-outline { fill: none; stroke: rgba(23, 23, 23, .12); stroke-width: 1; }
+.core-logo-fill { color: rgba(23, 23, 23, .045); }
+.core-logo-fill svg { fill: currentColor; }
 /* With script, the panels stack in one cell inside a card of fixed height,
    so the card never jumps as the subject changes and long copy can't grow
    it. Copy is written to fit; anything past the card is clipped. */
 .core-ready .core-reading { grid-template-rows: minmax(0, 1fr); min-height: var(--core-card-height, 400px); overflow: hidden; }
 /* The incoming job waits for the outgoing one to clear so the two never read
-   on top of each other. */
-.core-ready .core-panel { grid-area: 1 / 1; border-top: 0; transition: opacity 240ms var(--ease-out) 100ms, transform 240ms var(--ease-out) 100ms; }
-/* The outgoing job only fades; it drops back into place once it is gone. */
-.core-ready .core-panel[aria-hidden="true"] { visibility: hidden; opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity 160ms var(--ease-out), visibility 0s linear 160ms, transform 0s linear 160ms; }
+   on top of each other. Script moves them in the direction of the scroll. */
+.core-ready .core-panel { grid-area: 1 / 1; border-top: 0; transition: opacity 240ms var(--ease-out) 100ms; }
+.core-ready .core-panel[aria-hidden="true"] { visibility: hidden; opacity: 0; pointer-events: none; transition: opacity 160ms var(--ease-out), visibility 0s linear 160ms; }
+/* A turn keeps the card still and hands its contents over piece by piece,
+   so script owns the handover and the crossfade stands down. */
+.core-reading.is-turning .core-panel { transition: none; }
+/* Titles sweep in on the same 100° edge as the About title and the project
+   cards; script runs --core-reveal from 0 to 1 and flips the angle when the
+   scroll runs back. At rest the mask is fully open. */
+@property --core-reveal { syntax: '<number>'; inherits: false; initial-value: 1; }
+.core-title-text, .core-logo-fill { --edge-at: calc(var(--core-reveal) * 124% - 12%); display: inline-block; -webkit-mask-image: linear-gradient(var(--sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(var(--sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
+.core-title-text.is-erasing, .core-logo-fill.is-erasing { -webkit-mask-image: linear-gradient(var(--sweep, 100deg), transparent var(--edge-at), #000 calc(var(--edge-at) + 10%)); mask-image: linear-gradient(var(--sweep, 100deg), transparent var(--edge-at), #000 calc(var(--edge-at) + 10%)); }
+/* The workplace draws its letters on an SVG copy laid over the real name:
+   each word traces its outline, fills, then hands back to the text. */
+.core-org { position: relative; }
+.core-org-mark { display: inline-block; width: 0; height: 0; }
+.core-org-ink { position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none; }
+.core-org-ink text { font: inherit; letter-spacing: inherit; fill: currentColor; stroke: currentColor; stroke-width: .6px; stroke-opacity: 0; }
+.core-org.is-inking > .core-org-word { color: transparent; }
+/* Detail words decode on a copy laid over the real words. */
+.core-decode { position: relative; }
+.core-decode-code { position: absolute; inset: 0; white-space: nowrap; pointer-events: none; }
+.core-decode.is-decoding .core-decode-text { color: transparent; }
 /* Titles hold one line; the script shrinks any that would run past it. */
 .core-ready .core-title { white-space: nowrap; }
 .core-org { margin: 14px 0 0; color: #6b6b66; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 300; letter-spacing: .18em; line-height: 1.5; text-transform: uppercase; }
@@ -1006,13 +1055,27 @@ html.about-paging { scroll-snap-type: y mandatory; }
   .about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 5rem); padding-bottom: 0; }
   .about-title { font-size: clamp(2.75rem, 17vw, 5rem); }
 }
+/* Experience arrives once, the first time the page turns to it: the rule
+   draws, the heading fills, the jobs fade in one after another and the card
+   wipes up from the bottom. Script adds .core-motion only when motion is
+   allowed, so without it everything is already in place. */
+.core-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
+.core-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
+.core-motion:not(.is-entered) .core-subject { opacity: 0; }
+.core-motion:not(.is-entered) .core-rail { opacity: 0; }
+.core-motion:not(.is-entered) .core-reading { clip-path: inset(100% 0 0 0); }
+.core-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.core-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.core-motion.is-entered .core-subject { transition: color var(--press-out) var(--ease-out), opacity .6s var(--ease-out) calc(.35s + var(--i, 0) * 60ms); }
+.core-motion.is-entered .core-subject.is-touch-pressed { transition-duration: var(--press-in); }
+.core-motion.is-entered .core-rail { transition: opacity .6s var(--ease-out) .35s; }
+.core-motion.is-entered .core-reading { clip-path: inset(0); transition: clip-path .9s var(--ease-out-quart) .5s; }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
 @media (prefers-reduced-motion: reduce) {
-  .about-motion:not(.is-arrived) .about-title-line { --about-fill: 1; }
+  .about-motion:not(.is-arrived) .about-hero .about-title-line { --about-fill: 1; }
   .about-motion:not(.is-arrived) .about-hero .about-rule::after { transform: none; }
   .about-motion:not(.is-arrived) :is(.about-lead, .about-resume) { opacity: 1; transform: none; }
-  .core-ready .core-panel[aria-hidden="true"] { transform: none; }
 }
 @media (forced-colors: active) {
   .core-reading { forced-color-adjust: auto; border: 1px solid CanvasText; }

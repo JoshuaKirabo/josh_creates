@@ -36,15 +36,34 @@
   <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin media="(min-width: 701px)">
   <link rel="preload" href="assets/fonts/unbounded-latin-700-merged.woff2" as="font" type="font/woff2" crossorigin media="(max-width: 700px)">
   <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=about15">
+  <link rel="stylesheet" href="styles.css?v=about20">
   <script src="page-shell.js?v=cf3d538" defer></script>
-  <script src="script.js?v=about4" defer></script>
+  <script src="script.js?v=about10" defer></script>
 </head>
 <body>
   <div class="site-backdrop" aria-hidden="true">
     <div class="grain-particles"></div>
   </div>
   <a class="skip-link" href="#about">Skip to content</a>
+  <!-- Workplace marks drawn once and reused by each card's outline and fill
+       layers, so a logo sweeps in on the same edge as the title. -->
+  <svg class="core-logo-sprite" aria-hidden="true" focusable="false">
+    <symbol id="logo-kisaka" viewBox="0 0 118 116">
+      <path vector-effect="non-scaling-stroke" d="M39 0H84L46 44L118 116H65L0 45Z"/>
+    </symbol>
+    <symbol id="logo-asu" viewBox="0 0 656 286">
+      <path fill-rule="evenodd" vector-effect="non-scaling-stroke" d="M41 1L52 14L59 27L60 43L0 279L3 283L85 282L97 235L101 231L180 231L184 235L194 279L198 283L351 282L381 275L396 267L412 252L435 273L457 282L475 285L508 285L524 282L541 275L553 264L557 265L561 275L566 280L573 283L655 283L655 267L651 265L645 252L645 3L642 0L553 1L552 199L550 207L543 215L536 219L524 221L508 217L503 212L498 199L498 2L496 0L325 0L312 3L296 3L275 9L254 20L244 29L234 44L231 44L228 40L220 8L207 0ZM422 234L434 247L433 251L429 250L420 241L419 238ZM426 210L430 209L452 230L452 233L450 234L428 221L425 217ZM426 187L430 185L468 212L466 214L429 200L426 196ZM179 118L189 116L194 118L234 119L250 138L264 148L296 163L332 175L346 183L357 197L355 214L345 223L332 228L311 229L291 224L263 258L255 264L254 259L269 232L273 219L236 250L232 249L233 245L259 209L254 210L216 234L212 233L248 196L204 213L198 212L237 183L231 182L187 192L186 190L189 187L232 167L182 169L179 166L183 163L216 156L227 151L219 148L191 147L178 143L196 138L225 137L227 133L183 122ZM187 95L196 94L225 101L231 107L232 113L229 116L190 99ZM197 73L203 72L223 80L228 85L228 90L226 92L220 90L201 78ZM140 69L144 74L169 174L165 180L122 181L115 180L112 177L137 73ZM213 53L216 52L226 58L229 64L224 66ZM304 66L312 60L324 56L349 56L374 62L410 20L412 25L392 66L395 66L433 34L434 38L407 76L452 52L452 56L418 89L462 72L467 72L468 74L463 79L428 102L436 103L468 94L478 94L475 99L435 118L454 119L477 116L487 118L484 122L439 133L441 137L471 138L486 142L486 144L474 147L445 148L439 151L450 156L482 163L486 166L484 169L436 166L434 168L475 186L480 191L467 191L426 181L416 158L394 136L375 125L323 105L310 97L300 84L300 73Z"/>
+    </symbol>
+    <symbol id="logo-tellistic" viewBox="0 0 620 500">
+      <path fill-rule="evenodd" vector-effect="non-scaling-stroke" d="M15 0L480 0L480 30L42 30L280 500L250 500L0 25L3 8ZM510 0L600 0L617 10L620 25L370 500L340 500L566 30L510 30ZM200 115L400 115L400 145L320 145L320 370L290 370L290 145L200 145Z"/>
+    </symbol>
+    <symbol id="logo-gce" viewBox="0 0 942 412">
+      <path fill-rule="evenodd" vector-effect="non-scaling-stroke" d="M628 178L551 376L542 408L547 411L785 409L790 402L790 396L785 392L642 392L635 387L634 185L632 178ZM89 174L0 402L1 408L6 411L244 409L252 392L251 381L244 373L201 396L164 396L134 384L110 360L98 330L98 313L94 302L94 201L98 186L93 174ZM369 148L271 401L272 409L516 409L523 395L521 387L493 396L448 396L421 387L407 378L384 351L374 322L374 156L372 148ZM938 1L712 0L697 2L691 7L688 23L694 27L795 27L803 35L803 72L798 79L705 80L696 87L697 170L705 175L769 175L776 181L776 221L771 227L705 228L699 231L695 245L695 328L699 334L799 335L810 343L817 338L941 13ZM669 2L429 0L421 5L412 26L415 35L448 23L493 23L511 29L530 41L547 59L557 79L563 101L563 140L558 147L510 148L502 140L502 109L498 96L487 80L477 76L460 76L450 80L441 91L439 318L445 331L453 338L472 342L488 338L495 332L502 314L502 268L507 261L555 259L562 264L565 277L569 277L671 14L672 6ZM399 2L158 0L151 4L143 21L145 29L168 23L209 23L231 29L250 41L273 71L283 109L283 136L278 143L234 144L225 135L222 105L214 87L207 80L197 76L181 76L164 90L159 105L159 314L171 335L185 342L211 336L220 324L226 294L225 260L219 256L194 256L187 251L186 215L191 208L282 208L287 215L287 283L289 291L292 291L401 9Z"/>
+    </symbol>
+    <symbol id="logo-pearl" viewBox="0 0 120 108">
+      <path fill-rule="evenodd" vector-effect="non-scaling-stroke" d="M47 6Q36 34 20 66L47 64ZM52 0L52 62L94 64Q88 30 52 0ZM8 70L104 68Q101 80 88 84L30 84Q16 80 8 70ZM4.0 92.0L5.4 92.5L6.8 93.0L8.2 93.4L9.6 93.8L11.0 94.0L12.4 94.2L13.8 94.2L15.2 94.1L16.6 93.9L18.0 93.5L19.4 93.1L20.8 92.6L22.2 92.1L23.6 91.6L25.0 91.1L26.4 90.6L27.8 90.3L29.2 90.0L30.6 89.8L32.0 89.8L33.4 89.9L34.8 90.1L36.2 90.4L37.6 90.8L39.0 91.3L40.4 91.8L41.8 92.3L43.2 92.8L44.6 93.3L46.0 93.7L47.4 93.9L48.8 94.1L50.2 94.2L51.6 94.1L53.0 94.0L54.4 93.7L55.8 93.3L57.2 92.8L58.6 92.3L60.0 91.8L61.4 91.3L62.8 90.8L64.2 90.4L65.6 90.1L67.0 89.9L68.4 89.8L69.8 89.8L71.2 90.0L72.6 90.3L74.0 90.6L75.4 91.1L76.8 91.6L78.2 92.1L79.6 92.6L81.0 93.1L82.4 93.5L83.8 93.8L85.2 94.1L86.6 94.2L88.0 94.2L89.4 94.1L90.8 93.8L92.2 93.5L93.6 93.0L95.0 92.6L96.4 92.0L97.8 91.5L99.2 91.0L100.6 90.6L102.0 90.2L103.4 90.0L104.8 89.8L106.2 89.8L107.6 89.9L109.0 90.1L110.4 90.5L111.8 90.9L113.2 91.3L114.6 91.9L116.0 92.4L116.0 94.0L114.6 93.5L113.2 92.9L111.8 92.5L110.4 92.1L109.0 91.7L107.6 91.5L106.2 91.4L104.8 91.4L103.4 91.6L102.0 91.8L100.6 92.2L99.2 92.6L97.8 93.1L96.4 93.6L95.0 94.2L93.6 94.6L92.2 95.1L90.8 95.4L89.4 95.7L88.0 95.8L86.6 95.8L85.2 95.7L83.8 95.4L82.4 95.1L81.0 94.7L79.6 94.2L78.2 93.7L76.8 93.2L75.4 92.7L74.0 92.2L72.6 91.9L71.2 91.6L69.8 91.4L68.4 91.4L67.0 91.5L65.6 91.7L64.2 92.0L62.8 92.4L61.4 92.9L60.0 93.4L58.6 93.9L57.2 94.4L55.8 94.9L54.4 95.3L53.0 95.6L51.6 95.7L50.2 95.8L48.8 95.7L47.4 95.5L46.0 95.3L44.6 94.9L43.2 94.4L41.8 93.9L40.4 93.4L39.0 92.9L37.6 92.4L36.2 92.0L34.8 91.7L33.4 91.5L32.0 91.4L30.6 91.4L29.2 91.6L27.8 91.9L26.4 92.2L25.0 92.7L23.6 93.2L22.2 93.7L20.8 94.2L19.4 94.7L18.0 95.1L16.6 95.5L15.2 95.7L13.8 95.8L12.4 95.8L11.0 95.6L9.6 95.4L8.2 95.0L6.8 94.6L5.4 94.1L4.0 93.6ZM4.0 97.5L5.4 98.0L6.8 98.5L8.2 98.9L9.6 99.3L11.0 99.5L12.4 99.7L13.8 99.7L15.2 99.6L16.6 99.4L18.0 99.0L19.4 98.6L20.8 98.1L22.2 97.6L23.6 97.1L25.0 96.6L26.4 96.1L27.8 95.8L29.2 95.5L30.6 95.3L32.0 95.3L33.4 95.4L34.8 95.6L36.2 95.9L37.6 96.3L39.0 96.8L40.4 97.3L41.8 97.8L43.2 98.3L44.6 98.8L46.0 99.2L47.4 99.4L48.8 99.6L50.2 99.7L51.6 99.6L53.0 99.5L54.4 99.2L55.8 98.8L57.2 98.3L58.6 97.8L60.0 97.3L61.4 96.8L62.8 96.3L64.2 95.9L65.6 95.6L67.0 95.4L68.4 95.3L69.8 95.3L71.2 95.5L72.6 95.8L74.0 96.1L75.4 96.6L76.8 97.1L78.2 97.6L79.6 98.1L81.0 98.6L82.4 99.0L83.8 99.3L85.2 99.6L86.6 99.7L88.0 99.7L89.4 99.6L90.8 99.3L92.2 99.0L93.6 98.5L95.0 98.1L96.4 97.5L97.8 97.0L99.2 96.5L100.6 96.1L102.0 95.7L103.4 95.5L104.8 95.3L106.2 95.3L107.6 95.4L109.0 95.6L110.4 96.0L111.8 96.4L113.2 96.8L114.6 97.4L116.0 97.9L116.0 99.5L114.6 99.0L113.2 98.4L111.8 98.0L110.4 97.6L109.0 97.2L107.6 97.0L106.2 96.9L104.8 96.9L103.4 97.1L102.0 97.3L100.6 97.7L99.2 98.1L97.8 98.6L96.4 99.1L95.0 99.7L93.6 100.1L92.2 100.6L90.8 100.9L89.4 101.2L88.0 101.3L86.6 101.3L85.2 101.2L83.8 100.9L82.4 100.6L81.0 100.2L79.6 99.7L78.2 99.2L76.8 98.7L75.4 98.2L74.0 97.7L72.6 97.4L71.2 97.1L69.8 96.9L68.4 96.9L67.0 97.0L65.6 97.2L64.2 97.5L62.8 97.9L61.4 98.4L60.0 98.9L58.6 99.4L57.2 99.9L55.8 100.4L54.4 100.8L53.0 101.1L51.6 101.2L50.2 101.3L48.8 101.2L47.4 101.0L46.0 100.8L44.6 100.4L43.2 99.9L41.8 99.4L40.4 98.9L39.0 98.4L37.6 97.9L36.2 97.5L34.8 97.2L33.4 97.0L32.0 96.9L30.6 96.9L29.2 97.1L27.8 97.4L26.4 97.7L25.0 98.2L23.6 98.7L22.2 99.2L20.8 99.7L19.4 100.2L18.0 100.6L16.6 101.0L15.2 101.2L13.8 101.3L12.4 101.3L11.0 101.1L9.6 100.9L8.2 100.5L6.8 100.1L5.4 99.6L4.0 99.1ZM4.0 103.0L5.4 103.5L6.8 104.0L8.2 104.4L9.6 104.8L11.0 105.0L12.4 105.2L13.8 105.2L15.2 105.1L16.6 104.9L18.0 104.5L19.4 104.1L20.8 103.6L22.2 103.1L23.6 102.6L25.0 102.1L26.4 101.6L27.8 101.3L29.2 101.0L30.6 100.8L32.0 100.8L33.4 100.9L34.8 101.1L36.2 101.4L37.6 101.8L39.0 102.3L40.4 102.8L41.8 103.3L43.2 103.8L44.6 104.3L46.0 104.7L47.4 104.9L48.8 105.1L50.2 105.2L51.6 105.1L53.0 105.0L54.4 104.7L55.8 104.3L57.2 103.8L58.6 103.3L60.0 102.8L61.4 102.3L62.8 101.8L64.2 101.4L65.6 101.1L67.0 100.9L68.4 100.8L69.8 100.8L71.2 101.0L72.6 101.3L74.0 101.6L75.4 102.1L76.8 102.6L78.2 103.1L79.6 103.6L81.0 104.1L82.4 104.5L83.8 104.8L85.2 105.1L86.6 105.2L88.0 105.2L89.4 105.1L90.8 104.8L92.2 104.5L93.6 104.0L95.0 103.6L96.4 103.0L97.8 102.5L99.2 102.0L100.6 101.6L102.0 101.2L103.4 101.0L104.8 100.8L106.2 100.8L107.6 100.9L109.0 101.1L110.4 101.5L111.8 101.9L113.2 102.3L114.6 102.9L116.0 103.4L116.0 105.0L114.6 104.5L113.2 103.9L111.8 103.5L110.4 103.1L109.0 102.7L107.6 102.5L106.2 102.4L104.8 102.4L103.4 102.6L102.0 102.8L100.6 103.2L99.2 103.6L97.8 104.1L96.4 104.6L95.0 105.2L93.6 105.6L92.2 106.1L90.8 106.4L89.4 106.7L88.0 106.8L86.6 106.8L85.2 106.7L83.8 106.4L82.4 106.1L81.0 105.7L79.6 105.2L78.2 104.7L76.8 104.2L75.4 103.7L74.0 103.2L72.6 102.9L71.2 102.6L69.8 102.4L68.4 102.4L67.0 102.5L65.6 102.7L64.2 103.0L62.8 103.4L61.4 103.9L60.0 104.4L58.6 104.9L57.2 105.4L55.8 105.9L54.4 106.3L53.0 106.6L51.6 106.7L50.2 106.8L48.8 106.7L47.4 106.5L46.0 106.3L44.6 105.9L43.2 105.4L41.8 104.9L40.4 104.4L39.0 103.9L37.6 103.4L36.2 103.0L34.8 102.7L33.4 102.5L32.0 102.4L30.6 102.4L29.2 102.6L27.8 102.9L26.4 103.2L25.0 103.7L23.6 104.2L22.2 104.7L20.8 105.2L19.4 105.7L18.0 106.1L16.6 106.5L15.2 106.7L13.8 106.8L12.4 106.8L11.0 106.6L9.6 106.4L8.2 106.0L6.8 105.6L5.4 105.1L4.0 104.6Z"/>
+    </symbol>
+  </svg>
   <main data-entry-page="about">
     <section class="about section" id="about" aria-label="About" tabindex="-1">
       <header class="about-topbar glass-panel">
@@ -91,7 +110,7 @@
           <div class="core-stage">
           <div class="about-block-head">
             <p class="about-eyebrow"><span>My Career</span><span class="about-rule" aria-hidden="true"></span></p>
-            <h2 class="about-heading" id="core-title">Experience</h2>
+            <h2 class="about-heading" id="core-title"><span class="about-title-line"><span class="about-title-outline">Experience</span><span class="about-title-fill" aria-hidden="true">Experience</span></span></h2>
           </div>
           <div class="core" data-core>
             <div class="core-subjects" role="tablist" aria-label="My Career" aria-orientation="vertical" hidden>
@@ -103,6 +122,7 @@
             </div>
             <div class="core-reading">
               <article class="core-panel" id="core-current" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 656 286"><use href="#logo-asu"/></svg><span class="core-logo-fill"><svg viewBox="0 0 656 286"><use href="#logo-asu"/></svg></span></span>
                 <h3 class="core-title">Lead Tech Hub Consultant</h3>
                 <p class="core-org">Arizona State University Tech Hub</p>
                 <p class="core-desc">I run walk-in support across Polytechnic and Tempe, coach junior consultants, and write the SOPs that close our repeat cases. I also tune the department’s AI support bot and keep our docs current as services change.</p>
@@ -114,6 +134,7 @@
                 </ul>
               </article>
               <article class="core-panel" id="core-consultant" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 656 286"><use href="#logo-asu"/></svg><span class="core-logo-fill"><svg viewBox="0 0 656 286"><use href="#logo-asu"/></svg></span></span>
                 <h3 class="core-title">Tech Hub Consultant</h3>
                 <p class="core-org">Arizona State University Tech Hub</p>
                 <ul class="core-meta" aria-label="Role details">
@@ -124,6 +145,7 @@
                 </ul>
               </article>
               <article class="core-panel" id="core-kisaka" role="tabpanel" aria-labelledby="core-tab-kisaka" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 1.0172" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 118 116"><use href="#logo-kisaka"/></svg><span class="core-logo-fill"><svg viewBox="0 0 118 116"><use href="#logo-kisaka"/></svg></span></span>
                 <h3 class="core-title">Information Technology Manager</h3>
                 <p class="core-org">Kisaka and Company, Certified Public Accountants</p>
                 <ul class="core-meta" aria-label="Role details">
@@ -134,6 +156,7 @@
                 </ul>
               </article>
               <article class="core-panel" id="core-intern" role="tabpanel" aria-labelledby="core-tab-intern" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 1.1111" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 120 108"><use href="#logo-pearl"/></svg><span class="core-logo-fill"><svg viewBox="0 0 120 108"><use href="#logo-pearl"/></svg></span></span>
                 <h3 class="core-title">Software Engineer</h3>
                 <p class="core-org">Pearl Accounting Solutions</p>
                 <ul class="core-meta" aria-label="Role details">
@@ -144,6 +167,7 @@
                 </ul>
               </article>
               <article class="core-panel" id="core-tellistic" role="tabpanel" aria-labelledby="core-tab-tellistic" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 1.24" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 620 500"><use href="#logo-tellistic"/></svg><span class="core-logo-fill"><svg viewBox="0 0 620 500"><use href="#logo-tellistic"/></svg></span></span>
                 <h3 class="core-title">Software Engineer</h3>
                 <p class="core-org">Tellistic Technology Services</p>
                 <ul class="core-meta" aria-label="Role details">
@@ -154,6 +178,7 @@
                 </ul>
               </article>
               <article class="core-panel" id="core-gce" role="tabpanel" aria-labelledby="core-tab-gce" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 2.2864" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 942 412"><use href="#logo-gce"/></svg><span class="core-logo-fill"><svg viewBox="0 0 942 412"><use href="#logo-gce"/></svg></span></span>
                 <h3 class="core-title">Information Technology Support Analyst</h3>
                 <p class="core-org">Grand Canyon Education, Inc.</p>
                 <ul class="core-meta" aria-label="Role details">

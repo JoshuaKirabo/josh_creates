@@ -1226,9 +1226,216 @@ function initAboutContent() {
   // cards are selected by their own index and light up the tab that owns them.
   const panels = [...core.querySelectorAll('[role="tabpanel"]')];
   const owner = panels.map(panel => tabs.findIndex(tab => tab.getAttribute('aria-controls').split(' ').includes(panel.id)));
+  const reading = core.querySelector('.core-reading');
   let shown = -1;
 
+  // One marker on a rail beside the list slides to the job being read and
+  // stretches to its height. It snaps into place the first time.
+  const rail = document.createElement('span');
+  rail.className = 'core-rail';
+  rail.setAttribute('aria-hidden', 'true');
+  rail.innerHTML = '<span class="core-rail-fill"></span><span class="core-rail-marker"></span>';
+  const marker = rail.lastChild;
+  list.prepend(rail);
+  function placeMarker() {
+    const tab = tabs[owner[shown]];
+    if (!tab) return;
+    marker.style.setProperty('--marker-y', `${tab.offsetTop + 12}px`);
+    marker.style.setProperty('--marker-h', Math.max(0, tab.offsetHeight - 24));
+  }
+
+  // Titles sweep in on the site's 100° edge. The details along the bottom
+  // keep their icons planted while the words decode in place; the decode
+  // plays on an aria-hidden copy laid over the real words, so assistive
+  // tech only ever reads the words themselves.
+  core.querySelectorAll('.core-title').forEach((title) => {
+    const text = document.createElement('span');
+    text.className = 'core-title-text';
+    text.append(...title.childNodes);
+    title.append(text);
+  });
+  // Each word of a workplace carries a zero-size mark on its baseline, so
+  // the drawn copy can set every word exactly where the real one sits.
+  core.querySelectorAll('.core-org').forEach((org) => {
+    const words = org.textContent.trim().split(/\s+/);
+    org.textContent = '';
+    words.forEach((text, i) => {
+      if (i) org.append(' ');
+      const word = document.createElement('span');
+      word.className = 'core-org-word';
+      const mark = document.createElement('span');
+      mark.className = 'core-org-mark';
+      word.append(mark, text);
+      org.append(word);
+    });
+  });
+  core.querySelectorAll('.core-meta li > span').forEach((words) => {
+    const text = document.createElement('span');
+    text.className = 'core-decode-text';
+    text.append(...words.childNodes);
+    const code = document.createElement('span');
+    code.className = 'core-decode-code';
+    code.setAttribute('aria-hidden', 'true');
+    words.classList.add('core-decode');
+    words.append(text, code);
+  });
+  const easeOut = 'cubic-bezier(.23, 1, .32, 1)';
+  const easeOutQuart = 'cubic-bezier(.25, 1, .5, 1)';
+  let running = [];
+  let turning = 0;
+  const play = (element, keyframes, options) => {
+    if (element) running.push(element.animate(keyframes, { easing: easeOut, fill: 'backwards', ...options }));
+  };
+  const partsOf = panel => ({
+    title: panel.querySelector('.core-title-text'),
+    logo: panel.querySelector('.core-logo-fill'),
+    outline: panel.querySelector('.core-logo-outline'),
+    org: panel.querySelector('.core-org'),
+    desc: [...panel.querySelectorAll('.core-desc')],
+    meta: [...panel.querySelectorAll('.core-meta li')],
+  });
+  // Scrolling back runs the sweep from the right.
+  const sweep = (element, dir, options) => {
+    if (!element) return;
+    element.style.setProperty('--sweep', dir < 0 ? '280deg' : '100deg');
+    play(element, [{ '--core-reveal': 0 }, { '--core-reveal': 1 }], { duration: 480, easing: easeOutQuart, ...options });
+  };
+  // The same edge carries on past the old title and wipes it away.
+  const erase = (element, dir) => {
+    if (!element) return;
+    element.style.setProperty('--sweep', dir < 0 ? '280deg' : '100deg');
+    element.classList.add('is-erasing');
+    play(element, [{ '--core-reveal': 0 }, { '--core-reveal': 1 }], { duration: 280, easing: easeOut, fill: 'forwards' });
+    running.push({ cancel: () => element.classList.remove('is-erasing') });
+  };
+  // Letters and digits cycle through random glyphs and settle left to right;
+  // spaces and punctuation hold, so the line keeps its shape. Monospace keeps
+  // every glyph the same width, so nothing shifts while it runs.
+  // The workplace draws the way the footer icons do: each word traces its
+  // letter outlines 60ms after the last, fills, and hands back to the text.
+  const ink = (org, delay) => {
+    if (!org) return;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'core-org-ink');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('width', org.clientWidth);
+    svg.setAttribute('height', org.clientHeight);
+    const box = org.getBoundingClientRect();
+    const strokes = [...org.querySelectorAll('.core-org-word')].map((word, i) => {
+      const mark = word.firstChild.getBoundingClientRect();
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', mark.left - box.left);
+      text.setAttribute('y', mark.top - box.top);
+      text.textContent = word.textContent.toUpperCase();
+      svg.append(text);
+      return text.animate([
+        { strokeDasharray: '80 80', strokeDashoffset: 80, strokeOpacity: 1, fillOpacity: 0 },
+        { strokeDasharray: '80 80', strokeDashoffset: 0, strokeOpacity: 1, fillOpacity: 0, offset: .7 },
+        { strokeDasharray: '80 80', strokeDashoffset: 0, strokeOpacity: 0, fillOpacity: 1 },
+      ], { duration: 640, delay: delay + i * 60, easing: easeOut, fill: 'backwards' });
+    });
+    const done = () => {
+      svg.remove();
+      org.classList.remove('is-inking');
+    };
+    org.append(svg);
+    org.classList.add('is-inking');
+    running.push(...strokes, { cancel: done });
+    Promise.all(strokes.map(stroke => stroke.finished)).then(done, () => {});
+  };
+  const glyphs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const decode = (words, delay) => {
+    const code = words?.querySelector('.core-decode-code');
+    if (!code) return;
+    const letters = [...words.querySelector('.core-decode-text').textContent];
+    const step = Math.min(24, 320 / letters.length);
+    const start = performance.now() + delay;
+    let frame = 0, drawn = -Infinity;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      words.classList.remove('is-decoding');
+      code.textContent = '';
+    };
+    const tick = (now) => {
+      const settled = Math.max(0, Math.floor((now - start) / step));
+      if (settled >= letters.length) return stop();
+      // Fresh glyphs every 45ms read as churn rather than flicker.
+      if (now - drawn >= 45) {
+        drawn = now;
+        code.textContent = letters.map((letter, i) => i < settled || !/[a-z0-9]/i.test(letter) ? letter : glyphs[Math.floor(Math.random() * glyphs.length)]).join('');
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    words.classList.add('is-decoding');
+    tick(performance.now());
+    running.push({ cancel: stop });
+  };
+  // The leaving card stays on screen while its contents hand over.
+  const hold = panel => play(panel, [{ visibility: 'visible', opacity: 1 }, { visibility: 'visible', opacity: 1 }], { duration: 480, fill: 'none' });
+  const fade = (element, delay) => play(element, [{ opacity: 0 }, { opacity: 1 }], { duration: 240, delay });
+
+  // A card's contents change in place: the title and the workplace's mark
+  // sweep in, the workplace draws its letters, the description fades up in its spot, and each
+  // detail's words decode 40ms after the last.
+  function reveal(panel, dir, delay) {
+    const { title, logo, outline, org, desc, meta } = partsOf(panel);
+    sweep(title, dir, { delay });
+    fade(outline, delay);
+    sweep(logo, dir, { delay: delay + 40, duration: 640 });
+    ink(org, delay + 80);
+    desc.forEach((element, i) => fade(element, delay + 80 + i * 40));
+    meta.forEach((item, i) => decode(item.querySelector('.core-decode'), delay + 120 + i * 40));
+  }
+
+  // Cards change in place; the scroll direction only sets which way the
+  // title sweeps. The marker in the list already shows where the page went.
+  // The card itself never fades: the old job's contents wipe and fade out
+  // while the new one's step in over them, so it is never left blank.
+  function turn(from, to) {
+    running.forEach(animation => animation.cancel());
+    running = [];
+    clearTimeout(turning);
+    reading.classList.remove('is-turning');
+    if (reducedMotion.matches) return;
+    const dir = to > from ? 1 : -1;
+    reading.classList.add('is-turning');
+    turning = setTimeout(() => reading.classList.remove('is-turning'), 480);
+    if (owner[from] === owner[to]) {
+      promote(panels[from], panels[to], dir);
+      return;
+    }
+    hold(panels[from]);
+    const was = partsOf(panels[from]);
+    erase(was.title, dir);
+    erase(was.logo, dir);
+    [was.org, was.outline, ...was.desc, ...was.meta].forEach(element => play(element, [{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+    reveal(panels[to], dir, 100);
+  }
+
+  // A promotion keeps the same job, so the card holds still: whatever reads
+  // the same stays put, the title wipes over, and details that changed
+  // decode in place.
+  function promote(leaving, entering, dir) {
+    hold(leaving);
+    const was = partsOf(leaving), now = partsOf(entering);
+    erase(was.title, dir);
+    sweep(now.title, dir, { delay: 200 });
+    // Both cards carry the same mark; hide the leaving one so the two faint
+    // fills don't stack while the old card is held.
+    play(leaving.querySelector('.core-logo'), [{ opacity: 0 }, { opacity: 0 }], { duration: 480, fill: 'none' });
+    was.desc.forEach(desc => play(desc, [{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+    now.desc.forEach((desc, i) => fade(desc, 160 + i * 40));
+    const pairs = [[was.org, now.org], ...now.meta.map((item, i) => [was.meta[i], item])];
+    was.meta.slice(now.meta.length).forEach(item => play(item, [{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+    pairs.forEach(([before, after]) => {
+      if (before) play(before, [{ opacity: 0 }, { opacity: 0 }], { duration: 480, fill: 'none' });
+      if (!after || before?.textContent === after.textContent) return;
+      decode(after.querySelector('.core-decode'), 120);
+    });
+  }
+
   function select(index) {
+    const previous = shown;
     shown = index;
     tabs.forEach((tab, i) => {
       const selected = i === owner[index];
@@ -1239,6 +1446,9 @@ function initAboutContent() {
       panel.setAttribute('aria-hidden', String(i !== index));
       panel.inert = i !== index;
     });
+    placeMarker();
+    core.style.setProperty('--core-progress', panels.length > 1 ? index / (panels.length - 1) : 0);
+    if (previous >= 0 && previous !== index) turn(previous, index);
   }
 
   // While pinned, the scroll position is the selection: choosing a job
@@ -1281,6 +1491,30 @@ function initAboutContent() {
   list.hidden = false;
   core.classList.add('core-ready');
   select(Math.max(0, owner.indexOf(tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true'))));
+  new ResizeObserver(placeMarker).observe(list);
+  requestAnimationFrame(() => requestAnimationFrame(() => rail.classList.add('is-placed')));
+
+  // Experience arrives every time the page turns to it. Its card wipes up,
+  // then the open job's contents step in behind it. Once it has left the
+  // screen entirely it resets out of sight, ready to arrive again.
+  const section = core.closest('.core-section');
+  if (section && !reducedMotion.matches && 'IntersectionObserver' in window) {
+    tabs.forEach((tab, i) => tab.style.setProperty('--i', i));
+    section.classList.add('core-motion');
+    const arrival = new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      const entered = section.classList.contains('is-entered');
+      if (!entered && entry.intersectionRatio >= .35) {
+        section.classList.add('is-entered');
+        reveal(panels[shown], 1, 650);
+      } else if (entered && !entry.isIntersecting) {
+        running.forEach(animation => animation.cancel());
+        running = [];
+        section.classList.remove('is-entered');
+      }
+    }, { threshold: [0, .35] });
+    arrival.observe(section.querySelector('.core-stage') || section);
+  }
 
   // A title keeps to one line: one that runs past the panel scales its type
   // down until it fits, and grows back when the panel widens again.
@@ -1291,8 +1525,18 @@ function initAboutContent() {
     const size = parseFloat(getComputedStyle(title).fontSize);
     title.style.fontSize = `${Math.floor(size * title.clientWidth / title.scrollWidth * 2) / 2}px`;
   });
-  new ResizeObserver(fitTitles).observe(core.querySelector('.core-reading'));
-  document.fonts.ready.then(fitTitles);
+  // Each detail keeps one slot, as wide as its longest value across every
+  // job, so the icons sit in the same place on every card.
+  const details = panels.map(panel => [...panel.querySelectorAll('.core-meta li > span')]);
+  const fitDetails = () => {
+    details.flat().forEach((words) => { words.style.minWidth = ''; });
+    const widest = [];
+    details.forEach(row => row.forEach((words, i) => { widest[i] = Math.max(widest[i] || 0, words.getBoundingClientRect().width); }));
+    details.forEach(row => row.forEach((words, i) => { words.style.minWidth = `${Math.ceil(widest[i])}px`; }));
+  };
+  const fitCard = () => { fitTitles(); fitDetails(); };
+  new ResizeObserver(fitCard).observe(core.querySelector('.core-reading'));
+  document.fonts.ready.then(fitCard);
 }
 
 // About turns a page at a time: Home, Meet Josh, The Core, then the page end.
