@@ -1211,8 +1211,10 @@ const pageStops = () => [...document.querySelectorAll('.page-snap')].map(marker 
 // than carried on into the next page. Keys stay native. `target` returns
 // where a turn in that direction goes, or nothing when this section does not
 // own it; `leave` starts the exit. With `fresh`, only a gesture that started
-// at the resting place can turn it.
-function holdPageTurns(target, leave, { fresh = false } = {}) {
+// at the resting place can turn it. `still` names the gestures that may not
+// turn the page but must not scroll it either, so a page that only ever cuts
+// is never seen gliding to its neighbour.
+function holdPageTurns(target, leave, { fresh = false, still = () => false } = {}) {
   const gesture = { time: -Infinity, direction: 0, distance: 0, owned: false, eligible: true };
   // Returns true when this movement belongs to the exit and must not scroll.
   const claim = (direction, distance, now) => {
@@ -1230,7 +1232,7 @@ function holdPageTurns(target, leave, { fresh = false } = {}) {
       // own (the fold's momentum, a snap in flight) never turns into an
       // exit when it reaches it; the next flick does.
       if (fresh) gesture.eligible = false;
-      return false;
+      return still(direction);
     }
     gesture.distance += distance;
     if (gesture.distance >= 12) {
@@ -1261,19 +1263,84 @@ function holdPageTurns(target, leave, { fresh = false } = {}) {
 
 // The Spline workspace in Meet Josh. Its runtime is fetched only once the page
 // has settled, so it never competes with the entrance, and it renders only
-// while Meet Josh is on screen and About is the page in front.
+// while Meet Josh is on screen, About is the page in front and nothing else on
+// it is moving: the fold, Meet Josh's entrance and its exit all run on the
+// same thread as the scene, so it holds its last frame until they finish.
+// Phones get none of it; the scene is not loaded below the tablet width.
 const SPLINE_RUNTIME = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.55/build/runtime.js';
+// The scene is soft enough that a retina screen gains little from drawing it
+// at full density, and every extra pixel is drawn every frame.
+const SCENE_PIXEL_RATIO = 1.25;
 function initAboutScene(about) {
   const canvas = about.querySelector('.about-scene-canvas');
   if (!canvas) return;
+  const root = document.documentElement;
+  const meet = canvas.closest('.about-hero');
+  const wide = window.matchMedia('(min-width: 701px)');
   let app = null;
   let onScreen = false;
+  // The entrance runs for about 1.7s after About lands.
+  let entering = false;
+  let enterTimer = 0;
+  const moving = () => entering
+    || root.classList.contains('section-folding')
+    || (about.classList.contains('about-motion') && !about.classList.contains('is-arrived'))
+    || !!meet?.matches('.is-away, .is-leaving, .is-returning');
+  // The runtime reports itself stopped before its first play while its loop
+  // is already running, so its isStopped cannot be trusted; this tracks it.
+  let playing = null;
+  // The scene's script poses him on its own animation frame, apart from the
+  // runtime's render loop, so it is held here while the scene is stopped.
+  let sceneTick = null;
+  let heldTick = null;
   const sync = () => {
     if (!app) return;
-    const showing = onScreen && !about.inert && !document.hidden;
-    if (showing === !app.isStopped) return;
-    if (showing) app.play();
-    else app.stop();
+    const showing = wide.matches && onScreen && !about.inert && !document.hidden && !moving();
+    if (showing === playing) return;
+    playing = showing;
+    if (showing) {
+      app.play();
+      if (heldTick) {
+        const tick = heldTick;
+        heldTick = null;
+        requestAnimationFrame(tick);
+      }
+    } else app.stop();
+  };
+  // The tick is found by a name only its source holds, while the scene loads.
+  const gateSceneFrames = () => {
+    const request = window.requestAnimationFrame;
+    let looking = true;
+    window.requestAnimationFrame = function (callback) {
+      if (looking && typeof callback === 'function' && String(callback).includes('GAZE_DIR')) {
+        sceneTick = callback;
+        looking = false;
+      }
+      if (callback === sceneTick && playing === false) {
+        heldTick = callback;
+        return 0;
+      }
+      return request.call(this, callback);
+    };
+    // Found or not, it stops looking once the scene has had time to start.
+    setTimeout(() => {
+      looking = false;
+      if (!sceneTick && window.requestAnimationFrame !== request) window.requestAnimationFrame = request;
+    }, 15000);
+  };
+  let arrived = about.classList.contains('is-arrived');
+  const onClassChange = () => {
+    const now = about.classList.contains('is-arrived');
+    if (now && !arrived && !reducedMotion.matches) {
+      entering = true;
+      clearTimeout(enterTimer);
+      enterTimer = setTimeout(() => {
+        entering = false;
+        sync();
+      }, 1700);
+    }
+    arrived = now;
+    sync();
   };
   // His gaze follows the cursor only while it is over the scene, not on Meet
   // Josh's copy. The scene's script listens for moves across the whole
@@ -1315,6 +1382,7 @@ function initAboutScene(about) {
   };
   const load = async () => {
     const restore = gateSceneMoves();
+    gateSceneFrames();
     try {
       const { Application } = await import(SPLINE_RUNTIME);
       // The scene's own script drives everything that moves: the typing and
@@ -1327,6 +1395,17 @@ function initAboutScene(about) {
       scene.setBackgroundColor('transparent');
       const floor = scene.findObjectByName('Studio floor');
       if (floor) floor.visible = false;
+      // The pixel ratio comes from the scene's publish settings, which default
+      // to the device's; the renderer is private, so this is best effort.
+      const ratio = Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO);
+      try { scene._renderer?.setPixelRatio?.(ratio); } catch {}
+      // Load starts the render loop a task after it resolves, without marking
+      // the runtime as playing, and its stop does nothing while it believes it
+      // is stopped. Waiting out that task and playing brings the two in line,
+      // so a stop from here on holds.
+      await new Promise(resolve => setTimeout(resolve));
+      scene.play();
+      playing = true;
       app = scene;
       canvas.classList.add('is-loaded');
       sync();
@@ -1335,8 +1414,18 @@ function initAboutScene(about) {
       restore();
     }
   };
-  const start = () => ('requestIdleCallback' in window
-    ? requestIdleCallback(load, { timeout: 2000 }) : setTimeout(load, 200));
+  let requested = false;
+  const start = () => {
+    if (requested || !wide.matches) return;
+    requested = true;
+    if ('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 2000 });
+    else setTimeout(load, 200);
+  };
+  // A window widened past a phone's loads the scene then; narrowed, it stops.
+  wide.addEventListener('change', () => {
+    if (document.readyState === 'complete') start();
+    sync();
+  });
   if (document.readyState === 'complete') start();
   else window.addEventListener('load', start, { once: true });
   if ('IntersectionObserver' in window) {
@@ -1345,8 +1434,12 @@ function initAboutScene(about) {
       sync();
     }).observe(canvas);
   } else onScreen = true;
-  // The fold hands About in and out by making it inert.
-  new MutationObserver(sync).observe(about, { attributes: true, attributeFilter: ['inert'] });
+  // The fold hands About in and out by making it inert, and marks the landing
+  // and its own run with classes.
+  new MutationObserver(onClassChange).observe(about, { attributes: true, attributeFilter: ['inert', 'class'] });
+  const classes = new MutationObserver(sync);
+  classes.observe(root, { attributes: true, attributeFilter: ['class'] });
+  if (meet) classes.observe(meet, { attributes: true, attributeFilter: ['class'] });
   document.addEventListener('visibilitychange', sync);
 }
 
@@ -1407,9 +1500,8 @@ function initAboutContent() {
       }
     }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) }).observe(meet);
 
-    // The turn to Experience is a snap too quick for the exit to be seen, so
-    // it holds the page for the exit first, as Experience does. Turning up
-    // stays with the fold.
+    // The turn to Experience holds the page for the exit first, as Experience
+    // does, then cuts to it. Turning up stays with the fold.
     let exitTimer = 0;
     holdPageTurns((direction) => {
       const y = window.scrollY;
@@ -1423,27 +1515,90 @@ function initAboutContent() {
       meet.classList.add('is-leaving');
       clearTimeout(exitTimer);
       exitTimer = setTimeout(() => {
-        window.scrollTo({ top: to, behavior: 'smooth' });
+        // The turn cuts rather than travels: the exit has cleared the page, so
+        // Experience takes its place without the two sliding past each other.
+        window.scrollTo({ top: to, behavior: 'instant' });
         // A turn that never got away hands Meet Josh back.
         exitTimer = setTimeout(() => {
           if (Math.abs(window.scrollY - edge) > 2) return;
           turning = false;
           meet.classList.remove('is-leaving');
         }, 1200);
-      }, 320);
-    }, { fresh: true });
+      }, 360);
+      // Down from Meet Josh only ever cuts: a flick that cannot turn it yet
+      // (the fold's momentum, one mid-exit) is spent here rather than scrolled.
+    }, { fresh: true, still: direction => direction > 0 && Math.abs(window.scrollY - aboutStop) <= 2 });
   }
 
   // Education arrives each time the page turns to it and resets once it has
-  // left the screen entirely.
+  // left the screen entirely, or once a held turn has landed, ready to settle from the side it will come
+  // back from. Leaving plays its exit the way Experience's does.
   const education = content.querySelector('.edu-section');
   if (education && !reducedMotion.matches && 'IntersectionObserver' in window) {
     education.classList.add('edu-motion');
+    // Sheets leave with the page: up on the way to Projects, down to Experience.
+    const exitToward = (direction) => education.style.setProperty('--edu-exit', direction > 0 ? '-12px' : '12px');
+    let lastShown = 0;
+    // A held turn owns the exit until Education is off screen or handed back.
+    let turning = false;
+    // Gone: ready to arrive again from the side it will come back from.
+    const reset = (above) => {
+      turning = false;
+      education.classList.remove('is-entered', 'is-leaving', 'is-resuming');
+      education.style.setProperty('--edu-from', above ? '-16px' : '16px');
+    };
     new IntersectionObserver((entries) => {
       const entry = entries[entries.length - 1];
-      if (!entry.isIntersecting) education.classList.remove('is-entered');
-      else if (entry.intersectionRatio >= .35) education.classList.add('is-entered');
-    }, { threshold: [0, .35] }).observe(education);
+      const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
+      const now = whole ? entry.intersectionRect.height / whole : 0;
+      const rising = now > lastShown;
+      lastShown = now;
+      const entered = education.classList.contains('is-entered');
+      const leaving = education.classList.contains('is-leaving');
+      if (!entry.isIntersecting) {
+        reset(entry.boundingClientRect.top < 0);
+      } else if (!entered && entry.intersectionRatio >= .35) {
+        education.classList.add('is-entered');
+      } else if (entered && !leaving && !rising && now < .9) {
+        exitToward(entry.boundingClientRect.top < 0 ? 1 : -1);
+        education.classList.add('is-leaving');
+      } else if (leaving && rising && !turning) {
+        education.classList.replace('is-leaving', 'is-resuming');
+      }
+    }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) }).observe(education);
+
+    // Both neighbours are snap turns too quick for the exit to be seen, so
+    // Education holds the page for it first. Only from its own resting place,
+    // and only while it fits one screen; a taller one scrolls on as before.
+    const nextStop = (y) => {
+      const cards = [...document.querySelectorAll('.projects-snap')].map(snap => snap.getBoundingClientRect().top + y);
+      return [...pageStops(), ...cards].filter(top => top > y + 2).sort((a, b) => a - b)[0];
+    };
+    let exitTimer = 0;
+    holdPageTurns((direction) => {
+      if (!education.classList.contains('is-entered') || education.classList.contains('is-leaving') ||
+        Math.abs(education.getBoundingClientRect().top) > 2 || education.offsetHeight > window.innerHeight + 1) return;
+      const y = window.scrollY;
+      return direction < 0 ? pageStops().filter(top => top < y - 2).pop() : nextStop(y);
+    }, (to, edge) => {
+      turning = true;
+      exitToward(to > edge ? 1 : -1);
+      education.classList.add('is-leaving');
+      clearTimeout(exitTimer);
+      exitTimer = setTimeout(() => {
+        window.scrollTo({ top: to, behavior: 'smooth' });
+        exitTimer = setTimeout(() => {
+          // Landed on the next page: a strip of Education can still show
+          // there, so it resets now rather than waiting to leave the screen.
+          if (Math.abs(window.scrollY - to) <= 2) reset(to > edge);
+          // A turn that never got away hands Education back.
+          else if (Math.abs(window.scrollY - edge) <= 2) {
+            turning = false;
+            education.classList.replace('is-leaving', 'is-resuming');
+          } else turning = false;
+        }, 1200);
+      }, 320);
+    }, { fresh: true });
   }
 
   const core = content.querySelector('[data-core]');
@@ -1771,17 +1926,23 @@ function initAboutContent() {
       return direction < 0 ? pageStops().filter(top => top < y - 2).pop() : pageStops().find(top => top > y + 2);
     };
     let exitTimer = 0;
+    // Up from the first job only ever cuts to Meet Josh, so a flick that
+    // cannot turn it yet (the cut's own momentum, one mid-exit) is spent here.
+    const still = direction => direction < 0 && coreJobStops.length > 0 && Math.abs(window.scrollY - coreJobStops[0]) <= 2;
     holdPageTurns(leaveTarget, (to, edge) => {
       section.classList.add('is-leaving');
       clearTimeout(exitTimer);
+      // Back up to Meet Josh cuts once the exit has cleared, the way Meet Josh
+      // cuts down to it; on to Education still scrolls.
+      const cut = Math.abs(to - aboutStop) <= 2;
       exitTimer = setTimeout(() => {
-        window.scrollTo({ top: to, behavior: 'smooth' });
+        window.scrollTo({ top: to, behavior: cut ? 'instant' : 'smooth' });
         // A turn that never got away hands the section back.
         exitTimer = setTimeout(() => {
           if (Math.abs(window.scrollY - edge) <= 2) section.classList.remove('is-leaving');
         }, 1200);
-      }, 320);
-    });
+      }, cut ? 360 : 320);
+    }, { still });
   }
 
   // A title keeps to one line: one that runs past the panel scales its type
@@ -1886,8 +2047,19 @@ function initProjectsNav() {
   const frame = runway.querySelector('.projects-frame') || runway;
   let shown = aboutLink;
   let glide = null;
-  let animation = null;
+  let glideY = 0;
   let frameId = 0;
+  // The rule's two ends ride one critically damped spring (x: left, y: right),
+  // so a reversal mid-glide keeps its speed instead of restarting from rest.
+  const spring = createSpring2D(.4, ({ x, y }, settled) => {
+    if (!glide) return;
+    glide.style.transform = pose({ x, y: glideY, width: Math.max(y - x, 0) });
+    if (!settled) return;
+    glide.remove();
+    glide = null;
+    nav.classList.remove('is-gliding');
+  }, { restDistance: .25, restSpeed: 4 });
+  spring.setActive(true);
 
   // Where a link's underline is drawn, in the row's own scrolling coordinates.
   function rule(link) {
@@ -1911,32 +2083,31 @@ function initProjectsNav() {
     // About's underline can carry the fold's inline --pill, so it is hidden
     // outright while Projects is current.
     nav.classList.toggle('is-projects', link === projectsLink);
-    if (instant || reducedMotion.matches) return;
-    // A reversal mid-glide leaves from wherever the rule is now.
-    let start = rule(from);
-    if (glide) {
-      const m = new DOMMatrix(getComputedStyle(glide).transform);
-      start = { x: m.e, y: m.f, width: m.a };
-      animation?.cancel();
-    } else {
+    if (instant || reducedMotion.matches) {
+      if (glide) {
+        spring.stop();
+        glide.remove();
+        glide = null;
+        nav.classList.remove('is-gliding');
+      }
+      return;
+    }
+    // A reversal mid-glide simply retargets; the spring leaves from wherever
+    // the rule is now, at the speed it already has.
+    if (!glide) {
+      const start = rule(from);
+      glideY = start.y;
       glide = document.createElement('span');
       glide.className = 'section-nav-glide';
       glide.setAttribute('aria-hidden', 'true');
+      glide.style.transform = pose(start);
       nav.append(glide);
       nav.classList.add('is-gliding');
+      spring.jumpTo(start.x, start.x + start.width);
     }
-    const current = animation = glide.animate([{ transform: pose(start) }, { transform: pose(rule(link)) }], {
-      duration: 420,
-      easing: 'cubic-bezier(.65, 0, .35, 1)',
-      fill: 'forwards'
-    });
-    current.finished.then(() => {
-      if (animation !== current) return;
-      glide.remove();
-      glide = null;
-      animation = null;
-      nav.classList.remove('is-gliding');
-    }, () => {});
+    const end = rule(link);
+    glideY = end.y;
+    spring.setTarget(end.x, end.x + end.width);
   }
 
   // Projects is current once its frame fills the lower half of the screen.

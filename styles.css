@@ -586,13 +586,15 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 }
 
 /* One bar across the top of About and Projects: JOSH on the left, the site's
-   links on the right. The content column runs the full width beneath it. */
+   links on the right. The content column runs the full width beneath it.
+   Nothing sits above the bar, so it is flush with the top on every screen
+   and never shifts up when it starts to stick. */
 .about {
   --page-gutter: clamp(1rem, 2.8vw, 3.5rem);
   display: flex;
   flex-direction: column;
   gap: clamp(1.5rem, 4svh, 3rem);
-  padding: .75rem var(--page-gutter) 1rem;
+  padding: 0 var(--page-gutter) 1rem;
 }
 /* Home's header, settled at the top: no panel, the name and the two link
    groups straight on the grain. Content can scroll under it and backdrop blur
@@ -897,7 +899,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
    its sky and floor, so the furniture stands straight on the grain with no
    frame to fade; it sits behind the copy in case the two meet. */
 .about-hero { position: relative; isolation: isolate; }
-.about-scene { position: absolute; z-index: -1; top: 50%; left: calc(-1 * var(--page-gutter)); width: min(58%, 132svh); margin: 0; translate: 0 -58%; pointer-events: none; user-select: none; }
+.about-scene { position: absolute; z-index: -1; top: 50%; left: calc(-1 * var(--page-gutter)); width: min(66%, 150svh); margin: 0; translate: 0 -58%; pointer-events: none; user-select: none; }
 .about-scene-canvas { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; opacity: 0; transition: opacity .8s var(--ease-out); }
 /* The canvas stays clear until the scene has loaded. Its camera is fixed, so
    clicks and taps reach the scene's own effects (the lamp and the rest) while
@@ -908,11 +910,11 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-hero:is(.is-away, .is-leaving) .about-scene-canvas { pointer-events: none; }
 /* Narrower screens bring the copy across the middle, so the scene steps
    further off the left edge and lets its far plant fall under the fade. */
-@media (max-width: 1100px) { .about-scene { width: 54%; left: calc(-1 * var(--page-gutter) - 7%); } }
+@media (max-width: 1100px) { .about-scene { width: 60%; left: calc(-1 * var(--page-gutter) - 7%); } }
 /* An upright tablet has its room above the copy instead, so the scene
    joins the column and leads it. */
 @media (min-width: 701px) and (max-width: 1100px) and (orientation: portrait) {
-  .about-scene { position: relative; top: auto; left: auto; align-self: center; width: min(62%, 38svh * 1.5); margin: 0 0 -2.5rem; translate: none; }
+  .about-scene { position: relative; top: auto; left: auto; align-self: center; width: min(70%, 44svh * 1.5); margin: 0 0 -2.5rem; translate: none; }
 }
 .about-title { display: block; justify-items: start; margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.75rem, 9.5vw, 8.5rem); font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
 .about-title-line { --about-fill: 1; position: relative; display: block; width: fit-content; }
@@ -942,23 +944,26 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-motion .about-hero.is-away .about-rule::after { transform: scaleX(0); transition: none; }
 .about-motion .about-hero.is-away :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(-12px); transition: none; }
 .about-hero.is-returning { --about-sweep: 280deg; }
-/* Leaving for Experience runs the entrance backwards and quicker, the way
-   Experience leaves: the buttons and lead lift away first, the title empties
-   last line first, the rule draws back in and the scene fades. The copy exits
-   to the resting offset above, so handing over to it is never seen. The scene
-   drops its blur here: a filter on it mid-scroll is paint the fold removed. */
+/* Leaving for Experience runs the entrance backwards and quicker, and has
+   cleared by the time the page cuts to Experience: the buttons and lead
+   lift away first, the title empties last line first, the rule draws back
+   in and the scene fades. */
 .about-motion.is-arrived .about-hero.is-leaving :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(-12px); }
 .about-motion.is-arrived .about-hero.is-leaving .about-resume { transition: opacity .25s var(--ease-out), transform .25s var(--ease-out); }
 .about-motion.is-arrived .about-hero.is-leaving .about-lead { transition: opacity .25s var(--ease-out) .05s, transform .25s var(--ease-out) .05s; }
-.about-motion.is-arrived .about-hero.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .14s; }
-.about-motion.is-arrived .about-hero.is-leaving .about-title-strong { transition-delay: .08s; }
-.about-motion.is-arrived .about-hero.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
-.about-motion.is-arrived .about-hero.is-leaving .about-scene { opacity: 0; scale: 1.02; transition: opacity .4s var(--ease-out) .1s, scale .4s var(--ease-out) .1s; }
-/* The scene materialises rather than fades: it comes into focus as it
-   settles back to its size, a beat before the title fills. */
-.about-motion:not(.is-arrived) .about-scene, .about-motion .about-hero.is-away .about-scene { opacity: 0; scale: 1.04; filter: blur(12px); }
+.about-motion.is-arrived .about-hero.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-title-strong { transition-delay: 0s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-scene { opacity: 0; scale: 1.02; transition: opacity .3s var(--ease-out) .04s, scale .3s var(--ease-out) .04s; }
+.about-motion.is-arrived .about-hero:not(.is-away, .is-leaving) :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
+.about-motion.is-arrived .about-hero.is-leaving :is(.about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
+.about-motion .about-hero.is-away :is(.about-eyebrow, .about-title-outline) { opacity: 0; transition: none; }
+/* The scene fades in as it settles back to its size, a beat before the
+   title fills. It never blurs: a filter over a live WebGL canvas is redrawn
+   every frame the scene draws. */
+.about-motion:not(.is-arrived) .about-scene, .about-motion .about-hero.is-away .about-scene { opacity: 0; scale: 1.04; }
 .about-motion .about-hero.is-away .about-scene { transition: none; }
-.about-motion.is-arrived .about-scene { transition: opacity 1s var(--ease-out), scale 1.6s var(--ease-out), filter 1.1s var(--ease-out); }
+.about-motion.is-arrived .about-scene { transition: opacity 1s var(--ease-out), scale 1.6s var(--ease-out); }
 
 .about-block-head { display: flex; flex-direction: column; gap: clamp(1rem, 1.6vw, 1.25rem); margin-bottom: clamp(2.5rem, 4vw, 3.5rem); }
 .about-heading { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.1rem, 4.6vw, 4.25rem); font-weight: 300; line-height: .95; letter-spacing: -.045em; }
@@ -1165,43 +1170,46 @@ html.about-paging { scroll-snap-type: y mandatory; }
   .core-section, .edu-section { padding-top: 4rem; }
   .about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 5rem); padding-bottom: 0; }
   .about-title { font-size: clamp(2.75rem, 17vw, 5rem); }
-  /* A phone has no empty half and its first screen is already full, so the
-     scene becomes the room the copy sits in: full bleed across the top,
-     dimmed, and faded out under the title. */
-  .about-scene { top: 0; left: calc(-1 * var(--page-gutter)); width: calc(100% + 2 * var(--page-gutter)); translate: none; }
-  .about-scene-canvas.is-loaded { opacity: .55; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); }
+  /* Phones leave the 3D scene out; script does not load it at this width. */
+  .about-scene { display: none; }
 }
 /* Experience arrives once, the first time the page turns to it: the rule
    draws, the heading fills, the jobs fade in one after another and the card
-   wipes up from the bottom. Script adds .core-motion only when motion is
-   allowed, so without it everything is already in place. */
+   wipes up from the bottom. Its eyebrow and outline fade up from nothing
+   too, so the page it replaces never shows through. Script adds .core-motion
+   only when motion is allowed, so without it everything is already in place. */
 .core-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
 .core-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
 .core-motion:not(.is-entered) .core-subject { opacity: 0; }
 .core-motion:not(.is-entered) .core-rail { opacity: 0; }
 .core-motion:not(.is-entered) .core-reading { clip-path: inset(100% 0 0 0); }
+.core-motion:not(.is-entered) :is(.about-eyebrow, .about-title-outline) { opacity: 0; }
 .core-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
 .core-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
 .core-motion.is-entered .core-subject { transition: color var(--press-out) var(--ease-out), opacity .6s var(--ease-out) calc(.35s + var(--i, 0) * 60ms); }
 .core-motion.is-entered .core-subject.is-touch-pressed { transition-duration: var(--press-in); }
 .core-motion.is-entered .core-rail { transition: opacity .6s var(--ease-out) .35s; }
 .core-motion.is-entered .core-reading { clip-path: inset(0); transition: clip-path .9s var(--ease-out-quart) .5s; }
+.core-motion.is-entered:not(.is-leaving) :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
 /* Leaving, in either direction, runs the entrance backwards and quicker, so
-   it clears while the page is still turning: the card wipes back down, the
-   jobs fade last one first, the heading empties and the rule draws back in.
+   the page is empty before it turns: the card wipes back down, the jobs
+   fade last one first, the heading empties and the rule draws back in.
    These are transitions, so scrolling back mid-exit simply returns them. */
-.core-motion.is-entered.is-leaving .core-reading { clip-path: inset(100% 0 0 0); transition: clip-path .4s var(--ease-out); }
-.core-motion.is-entered.is-leaving .core-subject { opacity: 0; transition: color var(--press-out) var(--ease-out), opacity .25s var(--ease-out) calc(.05s + (var(--n, 1) - 1 - var(--i, 0)) * 30ms); }
-.core-motion.is-entered.is-leaving .core-rail { opacity: 0; transition: opacity .25s var(--ease-out) .1s; }
-.core-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .12s; }
-.core-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
+.core-motion.is-entered.is-leaving .core-reading { clip-path: inset(100% 0 0 0); transition: clip-path .3s var(--ease-out); }
+.core-motion.is-entered.is-leaving .core-subject { opacity: 0; transition: color var(--press-out) var(--ease-out), opacity .2s var(--ease-out) calc(.05s + (var(--n, 1) - 1 - var(--i, 0)) * 20ms); }
+.core-motion.is-entered.is-leaving .core-rail { opacity: 0; transition: opacity .2s var(--ease-out) .08s; }
+.core-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
+.core-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
+.core-motion.is-entered.is-leaving :is(.about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
 /* Education arrives each time the page turns to it: the rule draws, the
    heading fills, the sheets settle in one after the other, then the
    finished degree's title inks in from the left. Once it is off screen it resets out of sight.
-   Script adds .edu-motion only when motion is allowed. */
+   Script adds .edu-motion only when motion is allowed. The sheets settle
+   from the side the page turns in from: below from Experience, above from
+   Projects. */
 .edu-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
 .edu-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
-.edu-motion:not(.is-entered) .edu-sheet { opacity: 0; transform: translateY(16px); }
+.edu-motion:not(.is-entered) .edu-sheet { opacity: 0; transform: translateY(var(--edu-from, 16px)); }
 .edu-motion:not(.is-entered) .edu-title-ink { clip-path: inset(0 100% 0 0); }
 .edu-motion:not(.is-entered) .edu-logo-fill { clip-path: inset(0 100% 0 0); }
 .edu-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
@@ -1210,13 +1218,25 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .edu-motion.is-entered .edu-sheet + .edu-sheet { transition-delay: .5s; }
 .edu-motion.is-entered .edu-title-ink { transition: clip-path 1.4s var(--ease-out-quart) .95s; }
 .edu-motion.is-entered .edu-logo-fill { transition: clip-path 1.6s var(--ease-out-quart) 1.1s; }
+/* Leaving, in either direction, runs the entrance backwards and quicker, as
+   Experience does: the sheets drift off with the page, last one first, the
+   heading empties and the rule draws back in. The ink stays put; it goes
+   with its sheet and resets out of sight. */
+.edu-motion.is-entered.is-leaving .edu-sheet { opacity: 0; transform: translateY(var(--edu-exit, 12px)); transition: opacity .25s var(--ease-out) .05s, transform .25s var(--ease-out) .05s; }
+.edu-motion.is-entered.is-leaving .edu-sheet + .edu-sheet { transition-delay: 0s; }
+.edu-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .12s; }
+.edu-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
+/* An exit taken back returns at the exit's pace, not the first arrival's. */
+.edu-motion.is-entered.is-resuming:not(.is-leaving) .edu-sheet { transition: opacity .3s var(--ease-out), transform .3s var(--ease-out); }
+.edu-motion.is-entered.is-resuming:not(.is-leaving) .about-title-line { transition: --about-fill .5s var(--ease-out); }
+.edu-motion.is-entered.is-resuming:not(.is-leaving) .about-rule::after { transition: transform .4s var(--ease-out); }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
 @media (prefers-reduced-motion: reduce) {
   .about-motion:not(.is-arrived) .about-hero .about-title-line { --about-fill: 1; }
   .about-motion:not(.is-arrived) .about-hero .about-rule::after { transform: none; }
   .about-motion:not(.is-arrived) :is(.about-lead, .about-resume) { opacity: 1; transform: none; }
-  .about-motion:not(.is-arrived) .about-scene, .about-motion .about-hero.is-away .about-scene { opacity: 1; scale: none; filter: none; }
+  .about-motion:not(.is-arrived) .about-scene, .about-motion .about-hero.is-away .about-scene { opacity: 1; scale: none; }
 }
 @media (forced-colors: active) {
   .core-reading { forced-color-adjust: auto; border: 1px solid CanvasText; }
