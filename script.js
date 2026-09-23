@@ -1259,6 +1259,97 @@ function holdPageTurns(target, leave, { fresh = false } = {}) {
   }, { passive: false, capture: true });
 }
 
+// The Spline workspace in Meet Josh. Its runtime is fetched only once the page
+// has settled, so it never competes with the entrance, and it renders only
+// while Meet Josh is on screen and About is the page in front.
+const SPLINE_RUNTIME = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.55/build/runtime.js';
+function initAboutScene(about) {
+  const canvas = about.querySelector('.about-scene-canvas');
+  if (!canvas) return;
+  let app = null;
+  let onScreen = false;
+  const sync = () => {
+    if (!app) return;
+    const showing = onScreen && !about.inert && !document.hidden;
+    if (showing === !app.isStopped) return;
+    if (showing) app.play();
+    else app.stop();
+  };
+  // His gaze follows the cursor only while it is over the scene, not on Meet
+  // Josh's copy. The scene's script listens for moves across the whole
+  // window, so its listeners are wrapped as it adds them; moving away tells
+  // it the pointer has left, and he turns back to his laptop.
+  const copy = '.about-eyebrow, .about-title, .about-lead, .about-resume';
+  let watching = false;
+  const near = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    return event.clientX >= rect.left && event.clientX <= rect.right
+      && event.clientY >= rect.top && event.clientY <= rect.bottom
+      && !event.target?.closest?.(copy);
+  };
+  const gate = (listener) => function (event) {
+    if (near(event)) {
+      watching = true;
+      listener.call(this, event);
+    } else if (watching) {
+      watching = false;
+      window.dispatchEvent(new MessageEvent('message', { data: { type: 'josh-gaze-leave' } }));
+    }
+  };
+  const gateSceneMoves = () => {
+    const add = window.addEventListener;
+    let gated = 0;
+    const restore = () => {
+      if (window.addEventListener !== add) delete window.addEventListener;
+    };
+    window.addEventListener = function (type, listener, options) {
+      if ((type === 'pointermove' || type === 'mousemove') && typeof listener === 'function') {
+        listener = gate(listener);
+        if (++gated === 2) restore();
+      }
+      return add.call(this, type, listener, options);
+    };
+    // The script adds both listeners soon after the scene loads.
+    setTimeout(restore, 15000);
+    return restore;
+  };
+  const load = async () => {
+    const restore = gateSceneMoves();
+    try {
+      const { Application } = await import(SPLINE_RUNTIME);
+      // The scene's own script drives everything that moves: the typing and
+      // sway, his gaze, and the lamp switching on a click. Inline runs it in
+      // this page; the default sandbox would lay an iframe over the canvas
+      // and take the pointer.
+      const scene = new Application(canvas, { htmlContentMode: 'inline' });
+      await scene.load(new URL(canvas.dataset.scene, document.baseURI).href);
+      // The sky and the studio floor give way to the grain behind them.
+      scene.setBackgroundColor('transparent');
+      const floor = scene.findObjectByName('Studio floor');
+      if (floor) floor.visible = false;
+      app = scene;
+      canvas.classList.add('is-loaded');
+      sync();
+    } catch {
+      // Offline or blocked: Meet Josh reads the same without its scene.
+      restore();
+    }
+  };
+  const start = () => ('requestIdleCallback' in window
+    ? requestIdleCallback(load, { timeout: 2000 }) : setTimeout(load, 200));
+  if (document.readyState === 'complete') start();
+  else window.addEventListener('load', start, { once: true });
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      sync();
+    }).observe(canvas);
+  } else onScreen = true;
+  // The fold hands About in and out by making it inert.
+  new MutationObserver(sync).observe(about, { attributes: true, attributeFilter: ['inert'] });
+  document.addEventListener('visibilitychange', sync);
+}
+
 // The About title fills in when the page lands: the fold marks the landing
 // with .is-arrived, and a page without the fold arrives as soon as it paints.
 // The Core is a vertical tab list; its panels share one cell, so switching
@@ -1267,6 +1358,7 @@ function initAboutContent() {
   const about = document.querySelector('#about');
   const content = about?.querySelector('.about-content');
   if (!content) return;
+  initAboutScene(about);
   const root = document.documentElement;
   const arrive = () => requestAnimationFrame(() => requestAnimationFrame(() => about.classList.add('is-arrived')));
   if (!reducedMotion.matches) {

@@ -36,9 +36,9 @@
   <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin media="(min-width: 701px)">
   <link rel="preload" href="assets/fonts/unbounded-latin-700-merged.woff2" as="font" type="font/woff2" crossorigin media="(max-width: 700px)">
   <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=about36">
+  <link rel="stylesheet" href="styles.css?v=about37">
   <script src="page-shell.js?v=projects1" defer></script>
-  <script src="script.js?v=about22" defer></script>
+  <script src="script.js?v=about23" defer></script>
 </head>
 <body>
   <div class="site-backdrop" aria-hidden="true">
@@ -78,9 +78,10 @@
            without it the title is filled and every panel is listed. -->
       <div class="about-main about-content" id="about-main">
         <section class="about-hero" id="meet-josh" aria-label="Meet Josh">
-          <!-- Stands in for the 3D scene until it is ready. -->
+          <!-- The Spline workspace. A mouse can turn it; on touch it only plays,
+               so a swipe across it still scrolls the page. -->
           <figure class="about-scene">
-            <img src="assets/josh_workspace.webp" srcset="assets/josh_workspace_900.webp 900w, assets/josh_workspace.webp 1536w" sizes="(max-width: 700px) 100vw, 58vw" width="1536" height="1024" alt="Illustration of Josh on a beanbag with headphones on, working on a laptop beside a mug that reads Good Code, Better Coffee." decoding="async">
+            <canvas class="about-scene-canvas" role="img" aria-label="3D scene of Josh working on a laptop on a couch, beside a floor lamp, a plant and a guitar" data-scene="assets/spline/developer-working-scene.splinecode?v=2"></canvas>
           </figure>
           <p class="about-eyebrow"><span>02 / About me</span><span class="about-rule" aria-hidden="true"></span></p>
           <h1 class="about-title">

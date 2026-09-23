@@ -893,12 +893,19 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-resume { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; margin: clamp(1.75rem, 4svh, 2.5rem) 0 0; }
 .about-resume .button { font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: .9375rem; font-weight: 400; letter-spacing: .01em; }
 .about-resume .button-arrow svg { width: 18px; height: 18px; }
-/* The workspace scene holds the empty half opposite the copy. It has its own
-   dusk-purple room, so a mask dissolves the frame into the grain instead of
-   leaving a picture edge; it sits behind the copy in case the two meet. */
+/* The workspace scene holds the empty half opposite the copy. Script clears
+   its sky and floor, so the furniture stands straight on the grain with no
+   frame to fade; it sits behind the copy in case the two meet. */
 .about-hero { position: relative; isolation: isolate; }
 .about-scene { position: absolute; z-index: -1; top: 50%; left: calc(-1 * var(--page-gutter)); width: min(58%, 132svh); margin: 0; translate: 0 -58%; pointer-events: none; user-select: none; }
-.about-scene img { display: block; width: 100%; height: auto; -webkit-mask-image: radial-gradient(closest-side, #000 40%, rgba(0, 0, 0, .55) 72%, transparent); mask-image: radial-gradient(closest-side, #000 40%, rgba(0, 0, 0, .55) 72%, transparent); }
+.about-scene-canvas { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; opacity: 0; transition: opacity .8s var(--ease-out); }
+/* The canvas stays clear until the scene has loaded. Its camera is fixed, so
+   clicks and taps reach the scene's own effects (the lamp and the rest) while
+   Meet Josh is on screen, and a vertical swipe over it still scrolls. */
+.about-scene-canvas.is-loaded { opacity: 1; pointer-events: auto; touch-action: pan-y !important; }
+.about[inert] .about-scene-canvas,
+.about-motion:not(.is-arrived) .about-scene-canvas,
+.about-hero:is(.is-away, .is-leaving) .about-scene-canvas { pointer-events: none; }
 /* Narrower screens bring the copy across the middle, so the scene steps
    further off the left edge and lets its far plant fall under the fade. */
 @media (max-width: 1100px) { .about-scene { width: 54%; left: calc(-1 * var(--page-gutter) - 7%); } }
@@ -1162,7 +1169,7 @@ html.about-paging { scroll-snap-type: y mandatory; }
      scene becomes the room the copy sits in: full bleed across the top,
      dimmed, and faded out under the title. */
   .about-scene { top: 0; left: calc(-1 * var(--page-gutter)); width: calc(100% + 2 * var(--page-gutter)); translate: none; }
-  .about-scene img { opacity: .55; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); }
+  .about-scene-canvas.is-loaded { opacity: .55; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 55%, transparent); }
 }
 /* Experience arrives once, the first time the page turns to it: the rule
    draws, the heading fills, the jobs fade in one after another and the card
