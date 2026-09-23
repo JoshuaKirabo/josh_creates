@@ -1217,6 +1217,25 @@ function initAboutContent() {
     if (landed) arrive();
   }
   if (!root.classList.contains('section-scroll-ready')) arrive();
+  // Meet Josh arrives again each time the page turns back up to it, the way
+  // Experience does on the way down. Once it has left over the top of the
+  // screen it resets out of sight; coming back into view plays it in again.
+  const meet = content.querySelector('.about-hero');
+  if (meet && !reducedMotion.matches && 'IntersectionObserver' in window) {
+    let settled = 0;
+    new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      const away = meet.classList.contains('is-away');
+      if (!away && !entry.isIntersecting && entry.boundingClientRect.top < 0) {
+        clearTimeout(settled);
+        meet.classList.add('is-away', 'is-returning');
+      } else if (away && entry.intersectionRatio >= .35) {
+        meet.classList.remove('is-away');
+        // The sweep holds its reversed angle until the fill has finished.
+        settled = setTimeout(() => meet.classList.remove('is-returning'), 2000);
+      }
+    }, { threshold: [0, .35] }).observe(meet);
+  }
 
   const core = content.querySelector('[data-core]');
   const list = core?.querySelector('[role="tablist"]');
@@ -1495,25 +1514,105 @@ function initAboutContent() {
   requestAnimationFrame(() => requestAnimationFrame(() => rail.classList.add('is-placed')));
 
   // Experience arrives every time the page turns to it. Its card wipes up,
-  // then the open job's contents step in behind it. Once it has left the
-  // screen entirely it resets out of sight, ready to arrive again.
+  // then the open job's contents step in behind it. As soon as the page
+  // starts to turn away, up or down, the entrance plays back out; turning
+  // back mid-exit returns it. Once it has left the screen entirely it resets
+  // out of sight, ready to arrive again.
   const section = core.closest('.core-section');
   if (section && !reducedMotion.matches && 'IntersectionObserver' in window) {
     tabs.forEach((tab, i) => tab.style.setProperty('--i', i));
+    section.style.setProperty('--n', tabs.length);
     section.classList.add('core-motion');
+    // How much of the stage is on screen, against as much as ever can be:
+    // a stage taller than the window never shows all of itself.
+    const shownOf = (entry) => {
+      const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
+      return whole ? entry.intersectionRect.height / whole : 0;
+    };
+    let lastShown = 0;
     const arrival = new IntersectionObserver((entries) => {
       const entry = entries[entries.length - 1];
+      const now = shownOf(entry);
+      const rising = now > lastShown;
+      lastShown = now;
       const entered = section.classList.contains('is-entered');
-      if (!entered && entry.intersectionRatio >= .35) {
-        section.classList.add('is-entered');
-        reveal(panels[shown], 1, 650);
-      } else if (entered && !entry.isIntersecting) {
+      const leaving = section.classList.contains('is-leaving');
+      if (entered && !entry.isIntersecting) {
         running.forEach(animation => animation.cancel());
         running = [];
-        section.classList.remove('is-entered');
+        section.classList.remove('is-entered', 'is-leaving');
+      } else if (!entered && entry.intersectionRatio >= .35) {
+        section.classList.add('is-entered');
+        reveal(panels[shown], 1, 650);
+      } else if (entered && !leaving && !rising && now < .9) {
+        section.classList.add('is-leaving');
+      } else if (leaving && rising) {
+        section.classList.remove('is-leaving');
       }
-    }, { threshold: [0, .35] });
+    }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
     arrival.observe(section.querySelector('.core-stage') || section);
+
+    // Scrolling on past the first job, or the last, holds the page long
+    // enough for the exit to be seen, then turns it. Like the fold, the flick
+    // that asked for the turn is spent on it: its momentum is swallowed
+    // rather than carried on into the next page. Keys stay native.
+    const pageStops = () => [...document.querySelectorAll('.page-snap')].map(marker => parseFloat(marker.style.top)).sort((a, b) => a - b);
+    const leaveTarget = (direction) => {
+      if (!coreJobStops.length || !section.classList.contains('is-entered') || section.classList.contains('is-leaving')) return;
+      const y = window.scrollY;
+      const edge = direction < 0 ? coreJobStops[0] : coreJobStops[coreJobStops.length - 1];
+      if (Math.abs(y - edge) > 2) return;
+      return direction < 0 ? pageStops().filter(top => top < y - 2).pop() : pageStops().find(top => top > y + 2);
+    };
+    let exitTimer = 0;
+    const leave = (to, edge) => {
+      section.classList.add('is-leaving');
+      clearTimeout(exitTimer);
+      exitTimer = setTimeout(() => {
+        window.scrollTo({ top: to, behavior: 'smooth' });
+        // A turn that never got away hands the section back.
+        exitTimer = setTimeout(() => {
+          if (Math.abs(window.scrollY - edge) <= 2) section.classList.remove('is-leaving');
+        }, 1200);
+      }, 320);
+    };
+    const gesture = { time: -Infinity, direction: 0, distance: 0, owned: false };
+    // Returns true when this movement belongs to the exit and must not scroll.
+    const claim = (direction, distance, now) => {
+      if (now - gesture.time > 180 || direction !== gesture.direction) {
+        gesture.owned = gesture.owned && now - gesture.time <= 180;
+        gesture.distance = 0;
+      }
+      gesture.time = now;
+      gesture.direction = direction;
+      if (gesture.owned) return true;
+      const to = leaveTarget(direction);
+      if (to === undefined) return false;
+      gesture.distance += distance;
+      if (gesture.distance >= 12) {
+        gesture.owned = true;
+        leave(to, window.scrollY);
+      }
+      return true;
+    };
+    const ownable = event => event.cancelable && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !mobileMenu?.open;
+    // Capture runs ahead of the fold's own listener, which would otherwise
+    // read the swallowed momentum as a turn to Home.
+    window.addEventListener('wheel', (event) => {
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY) || !ownable(event)) return;
+      const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+      if (claim(Math.sign(event.deltaY), distance, performance.now())) event.preventDefault();
+    }, { passive: false, capture: true });
+    let touchY = null;
+    window.addEventListener('touchstart', (event) => {
+      touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
+    }, { passive: true, capture: true });
+    window.addEventListener('touchmove', (event) => {
+      if (touchY === null || event.touches.length !== 1 || !ownable(event)) return;
+      const dy = touchY - event.touches[0].clientY;
+      touchY = event.touches[0].clientY;
+      if (dy && claim(Math.sign(dy), Math.abs(dy), performance.now())) event.preventDefault();
+    }, { passive: false, capture: true });
   }
 
   // A title keeps to one line: one that runs past the panel scales its type

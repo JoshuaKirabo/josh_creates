@@ -11,6 +11,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
+- `assets/workplace-logos/` — employer marks on the About Experience cards (see `assets/workplace-logos-source.txt`)
 
 The homepage uses the stable small viewport height and safe areas, so browser toolbar movement cannot resize its contents. The navigation, heading, button, and hero footer fit within the first screen. The large portrait is intentionally cropped within the composition. Short landscape screens use a side-by-side layout.
 
@@ -20,7 +21,7 @@ Home, About me, and Meet Josh now navigate between the two sections, and Project
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
-For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `page-shell.js`, `styles.css`, `script.js`, and the referenced assets into `dist/`. No compilation is needed.
+For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `page-shell.js`, `styles.css`, `script.js`, `assets/workplace-logos/`, and the other referenced assets into `dist/`. No compilation is needed.
 
 ## Opening animation
 

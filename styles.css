@@ -887,7 +887,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
    keeps it inside the box the mask covers. */
 .about-title-outline, .about-title-fill { padding-right: .12em; }
 .about-title-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .32); }
-.about-title-fill { position: absolute; inset: 0; display: block; color: var(--white); --edge-at: calc(var(--about-fill) * 124% - 12%); -webkit-mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
+.about-title-fill { position: absolute; inset: 0; display: block; color: var(--white); --edge-at: calc(var(--about-fill) * 124% - 12%); -webkit-mask-image: linear-gradient(var(--about-sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(var(--about-sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
 .about-lead { max-width: 44ch; margin: clamp(2rem, 4svh, 2.5rem) 0 0; color: rgba(255, 255, 255, .55); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(1.05rem, 2vw, 1.4rem); font-weight: 400; line-height: 1.6; text-wrap: pretty; }
 
 .about-motion:not(.is-arrived) .about-hero .about-title-line { --about-fill: 0; }
@@ -898,6 +898,14 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-motion.is-arrived .about-hero .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
 .about-motion.is-arrived .about-lead { transition: opacity .9s var(--ease-out) .5s, transform .9s var(--ease-out) .5s; }
 .about-motion.is-arrived .about-resume { transition: opacity .9s var(--ease-out) .65s, transform .9s var(--ease-out) .65s; }
+/* Meet Josh arrives again when the page turns back up to it. Once Experience
+   has carried it off the top of the screen it resets out of sight, set to
+   come in the way the page is travelling: the fill sweeps from the right and
+   the copy settles down into place. */
+.about-motion .about-hero.is-away .about-title-line { --about-fill: 0; transition: none; }
+.about-motion .about-hero.is-away .about-rule::after { transform: scaleX(0); transition: none; }
+.about-motion .about-hero.is-away :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(-12px); transition: none; }
+.about-hero.is-returning { --about-sweep: 280deg; }
 
 .about-block-head { display: flex; flex-direction: column; gap: clamp(1rem, 1.6vw, 1.25rem); margin-bottom: clamp(2.5rem, 4vw, 3.5rem); }
 .about-heading { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.1rem, 4.6vw, 4.25rem); font-weight: 300; line-height: .95; letter-spacing: -.045em; }
@@ -963,7 +971,6 @@ html.about-paging { scroll-snap-type: y mandatory; }
    bottom-right corner: a faint outline always, with an ink fill that sweeps
    in with the title. Same build as the project logos, inked for paper. */
 .core-panel { position: relative; isolation: isolate; }
-.core-logo-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 /* Each mark sets --logo-ratio (width over height) and is sized to whichever
    runs out first, the card's height or 60% of its width, so wide wordmarks
    don't overrun a phone. The corner crops a fixed share of the mark itself. */
@@ -1070,6 +1077,15 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .core-motion.is-entered .core-subject.is-touch-pressed { transition-duration: var(--press-in); }
 .core-motion.is-entered .core-rail { transition: opacity .6s var(--ease-out) .35s; }
 .core-motion.is-entered .core-reading { clip-path: inset(0); transition: clip-path .9s var(--ease-out-quart) .5s; }
+/* Leaving, in either direction, runs the entrance backwards and quicker, so
+   it clears while the page is still turning: the card wipes back down, the
+   jobs fade last one first, the heading empties and the rule draws back in.
+   These are transitions, so scrolling back mid-exit simply returns them. */
+.core-motion.is-entered.is-leaving .core-reading { clip-path: inset(100% 0 0 0); transition: clip-path .4s var(--ease-out); }
+.core-motion.is-entered.is-leaving .core-subject { opacity: 0; transition: color var(--press-out) var(--ease-out), opacity .25s var(--ease-out) calc(.05s + (var(--n, 1) - 1 - var(--i, 0)) * 30ms); }
+.core-motion.is-entered.is-leaving .core-rail { opacity: 0; transition: opacity .25s var(--ease-out) .1s; }
+.core-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .12s; }
+.core-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
 @media (prefers-reduced-motion: reduce) {

@@ -1,0 +1,11 @@
+Workplace marks for the Experience cards on About (and the Kisaka project numeral on Projects).
+
+Files in assets/workplace-logos/ are single-symbol SVGs referenced with <use href="…#logo-…">. Edit the paths there, not copies in HTML.
+
+asu.svg — Arizona State University wordmark (employer).
+kisaka.svg — Kisaka and Company mark (employer and Kisaka ATS project).
+pearl.svg — Pearl Accounting Solutions mark (employer).
+tellistic.svg — Tellistic Technology Services mark (employer).
+gce.svg — Grand Canyon Education mark (employer).
+
+Use only in ways permitted by each organization’s brand guidelines. Replace or remove a mark if usage is not authorized.
