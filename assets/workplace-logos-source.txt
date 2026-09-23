@@ -7,5 +7,7 @@ kisaka.svg — Kisaka and Company mark (employer and Kisaka ATS project).
 pearl.svg — Pearl Accounting Solutions mark (employer).
 tellistic.svg — Tellistic Technology Services mark (employer).
 gce.svg — Grand Canyon Education mark (employer).
+gcu.svg — Grand Canyon University wordmark (Education).
+asu-trident.svg — Arizona State University trident (Education, in progress).
 
 Use only in ways permitted by each organization’s brand guidelines. Replace or remove a mark if usage is not authorized.

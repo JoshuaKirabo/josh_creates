@@ -1049,6 +1049,57 @@ html.about-paging { scroll-snap-type: y mandatory; }
   .core-desc { margin-top: clamp(24px, 4.5svh, 44px); }
 }
 
+/* Education, after the "Evolution of AI" diptych on
+   daqconsulting.com/ai-engineering: two sheets side by side. A finished
+   degree is solid, its outlined title inked over; one still under way is a
+   dashed draft. It is the
+   last screen, so it reserves the footer's room like Experience does. */
+.edu-section { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; min-height: 100svh; padding-block: 5rem var(--footer-room); }
+.edu-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+.edu-sheets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.edu-sheet { position: relative; display: grid; grid-template-rows: auto auto auto; align-items: start; gap: 20px; min-width: 0; padding: 24px; border: 1px solid rgba(255, 255, 255, .3); }
+.edu-sheet-draft { border-style: dashed; border-color: rgba(255, 255, 255, .15); color: #a5a5a0; }
+.edu-sheet-ink { background: rgba(255, 255, 255, .02); color: #b8b8b2; }
+.edu-label { display: flex; align-items: center; gap: 12px; margin: 0; font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .25em; line-height: 1.5; text-transform: uppercase; }
+/* Where the school is follows its status, pinned like the job locations in
+   Experience. */
+.edu-place { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
+.edu-place svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.edu-marker { flex: 0 0 6px; width: 6px; height: 6px; border: 1px solid; }
+.edu-sheet-ink .edu-marker { border-color: var(--white); background: var(--white); }
+/* A degree still under way carries the iPhone activity spinner in place of
+   the square, turning without end. Reduced motion holds it still. */
+@keyframes edu-spin { to { transform: rotate(1turn); } }
+.edu-spinner { flex: 0 0 13px; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; animation: edu-spin 1s linear infinite; will-change: transform; }
+.edu-title { position: relative; min-width: 0; margin: 0; color: var(--white); font-family: 'Instrument Serif', Georgia, serif; font-size: 30px; font-weight: 400; line-height: 1.15; letter-spacing: -.015em; }
+.edu-title-draft { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .6); }
+/* Script runs the ink's wipe; at rest it covers the draft completely. */
+.edu-title-ink { position: absolute; inset: 0; display: block; clip-path: inset(0); }
+.edu-dates { margin: 12px 0 0; color: #8a8a85; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .18em; line-height: 1.5; text-transform: uppercase; }
+.edu-desc { min-width: 0; margin: 0; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 17px; font-weight: 400; line-height: 1.6; text-wrap: pretty; }
+/* A concentration sits on its own line under the degree, set in the mono
+   of the labels so it reads as a note on the degree rather than more of it. */
+.edu-emphasis { display: block; margin-top: .7em; font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .16em; line-height: 1.6; text-transform: uppercase; opacity: .75; }
+/* Each school's mark sits behind its sheet as a watermark, cropped by the
+   bottom-right corner, built like the workplace logos in Experience but
+   inked for the dark sheet. A finished degree's mark fills in with its
+   title; one still under way stays a dashed outline, like its sheet. */
+.edu-sheet { isolation: isolate; }
+.edu-logo { position: absolute; inset: 0; z-index: -1; overflow: hidden; container-type: size; pointer-events: none; user-select: none; }
+.edu-logo-outline, .edu-logo-fill { position: absolute; right: 0; bottom: 0; height: min(82cqh, 48cqw / var(--logo-ratio, 1)); aspect-ratio: var(--logo-ratio, 1); translate: 9% 19.5%; }
+.edu-logo svg { display: block; overflow: visible; }
+.edu-logo-fill svg { width: 100%; height: 100%; fill: currentColor; }
+.edu-logo-outline { fill: none; stroke: rgba(255, 255, 255, .14); stroke-width: 1; }
+.edu-sheet-draft .edu-logo-outline { stroke: rgba(255, 255, 255, .26); stroke-dasharray: 3 3; }
+.edu-logo-fill { color: rgba(255, 255, 255, .05); clip-path: inset(0); }
+/* Side by side, the sheets share their rows so labels, titles and copy line
+   up across both. */
+@container core (min-width: 760px) {
+  .edu-sheets { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+  .edu-sheet { grid-row: span 3; grid-template-rows: subgrid; padding: 32px; }
+  .edu-title { font-size: 38px; }
+  .edu-desc { font-size: 19px; }
+}
 
 @media (hover: hover) and (pointer: fine) {
   :root:not(.touch-input) .core-subject:hover { color: var(--white); }
@@ -1058,7 +1109,7 @@ html.about-paging { scroll-snap-type: y mandatory; }
 @media (max-width: 700px) {
   .about-content { gap: 5rem; padding-top: 1.5rem; }
   .about-hero { min-height: calc(100svh - 4rem - 1.5rem); }
-  .core-section { padding-top: 4rem; }
+  .core-section, .edu-section { padding-top: 4rem; }
   .about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 5rem); padding-bottom: 0; }
   .about-title { font-size: clamp(2.75rem, 17vw, 5rem); }
 }
@@ -1086,6 +1137,21 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .core-motion.is-entered.is-leaving .core-rail { opacity: 0; transition: opacity .25s var(--ease-out) .1s; }
 .core-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .12s; }
 .core-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
+/* Education arrives each time the page turns to it: the rule draws, the
+   heading fills, the sheets settle in one after the other, then the
+   finished degree's title inks in from the left. Once it is off screen it resets out of sight.
+   Script adds .edu-motion only when motion is allowed. */
+.edu-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
+.edu-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
+.edu-motion:not(.is-entered) .edu-sheet { opacity: 0; transform: translateY(16px); }
+.edu-motion:not(.is-entered) .edu-title-ink { clip-path: inset(0 100% 0 0); }
+.edu-motion:not(.is-entered) .edu-logo-fill { clip-path: inset(0 100% 0 0); }
+.edu-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.edu-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.edu-motion.is-entered .edu-sheet { transition: opacity .8s var(--ease-out) .35s, transform .8s var(--ease-out) .35s; }
+.edu-motion.is-entered .edu-sheet + .edu-sheet { transition-delay: .5s; }
+.edu-motion.is-entered .edu-title-ink { transition: clip-path 1.4s var(--ease-out-quart) .95s; }
+.edu-motion.is-entered .edu-logo-fill { transition: clip-path 1.6s var(--ease-out-quart) 1.1s; }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
 @media (prefers-reduced-motion: reduce) {

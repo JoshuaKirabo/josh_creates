@@ -1237,6 +1237,18 @@ function initAboutContent() {
     }, { threshold: [0, .35] }).observe(meet);
   }
 
+  // Education arrives each time the page turns to it and resets once it has
+  // left the screen entirely.
+  const education = content.querySelector('.edu-section');
+  if (education && !reducedMotion.matches && 'IntersectionObserver' in window) {
+    education.classList.add('edu-motion');
+    new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      if (!entry.isIntersecting) education.classList.remove('is-entered');
+      else if (entry.intersectionRatio >= .35) education.classList.add('is-entered');
+    }, { threshold: [0, .35] }).observe(education);
+  }
+
   const core = content.querySelector('[data-core]');
   const list = core?.querySelector('[role="tablist"]');
   if (!list) return;
@@ -1638,7 +1650,8 @@ function initAboutContent() {
   document.fonts.ready.then(fitCard);
 }
 
-// About turns a page at a time: Home, Meet Josh, The Core, then the page end.
+// About turns a page at a time: Home, Meet Josh, The Core, Education, then
+// the page end.
 // Home and About are sticky, and the browser reads a sticky element's snap
 // point from wherever it is stuck, so markers at fixed document offsets stand
 // in for them. The fold still owns the turn between Home and Meet Josh, and
@@ -1647,6 +1660,7 @@ function initAboutPages() {
   const about = document.querySelector('#about');
   const core = about?.querySelector('.core-section');
   if (!core) return;
+  const education = about.querySelector('.edu-section');
   const root = document.documentElement;
   const coreIndex = core.querySelector('[data-core]');
   const jobs = core.querySelectorAll('[role="tabpanel"]').length;
@@ -1674,6 +1688,11 @@ function initAboutPages() {
     const stops = [0, aboutTop, coreTop, ...coreJobStops];
     // A Core taller than the screen also stops with its bottom edge in view.
     if (core.offsetHeight > window.innerHeight + 1 && !pinned) stops.push(coreTop + core.offsetHeight - window.innerHeight);
+    if (education) {
+      let educationTop = aboutTop;
+      for (let node = education; node && node !== about; node = node.offsetParent) educationTop += node.offsetTop;
+      stops.push(educationTop);
+    }
     stops.push(end);
     const offsets = [...new Set(stops.map(Math.round))].filter(y => y >= 0 && y <= end);
     while (markers.length < offsets.length) {
