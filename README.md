@@ -78,6 +78,14 @@ When served over HTTP, `page-shell.js` eagerly loads the other document and impo
 
 If JavaScript is disabled, a request fails, or the files are opened through `file://`, ordinary links still navigate between the standalone pages. Serve the directory to use the continuous transition. The loader times out after four seconds without hiding either page.
 
+## About content
+
+Below the top bar, About follows the layout and motion of daqconsulting.com/about, without its "How we work" and "Mission & Vision" sections. The copy is written for Josh. “Meet / Josh.” is outlined, and a white fill sweeps across it on the projects' 100° edge each time the fold lands on About (or once on a direct visit), with the eyebrow rule drawing in and the intro rising after it. During the fold the whole content column stays hidden, then fades in and rises 12px under the landing words.
+
+“The Core” is a vertical tab list of five subjects beside a light reading panel. Click or arrow keys switch subjects. The panels share one grid cell, so the page height never changes, and they crossfade in 240ms. Each panel names its tools and links to one real project. Below 640px of width the panel moves under the list. A pager at the end shows where About sits and links on to Projects. Without JavaScript the title is filled and all five panels are listed in order. Reduced motion shows the finished state.
+
+Edit the subjects in `about_me.html`: each tab's `aria-controls` must match its panel's `id`.
+
 ## Projects page
 
 `projects.html` reuses the About top bar, with Projects as the current page, and puts its own content beneath it. It does not load `page-shell.js`: that script only joins Home and About for the fold, so Projects is an ordinary page link from both. The bar sits in the same place as on About, so moving between them changes only the content below it. The backdrop grain, top bar hover scrambles and touch feedback run here as on About; the Home intro and fold do not. Home and About me links return with their fragments, so Home skips the intro and About opens at its landing.

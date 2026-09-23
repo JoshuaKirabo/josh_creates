@@ -121,7 +121,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid currentColor; outline
 .nav-group-right { margin-left: auto; }
 .nav-divider-mobile { display: none; }
 .nav-link, .small-label { font-size: .8125rem; font-weight: 700; line-height: 1.3; text-transform: uppercase; }
-.nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Bounded', Arial, sans-serif; font-size: 1.125rem; font-weight: 300; letter-spacing: -.01em; white-space: nowrap; }
+.nav-link { position: relative; display: inline-flex; align-items: center; gap: .35em; min-height: 44px; padding: 8px 0; font-family: 'Google Sans', Arial, sans-serif; font-size: 1.125rem; font-weight: 400; letter-spacing: .04em; white-space: nowrap; }
 .nav-label, .project-cta-label { position: relative; display: inline-block; overflow: hidden; vertical-align: top; }
 .scramble-layer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .scramble-char { position: absolute; top: 0; text-align: center; }
@@ -225,8 +225,7 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .nav-group { gap: clamp(3px, .8vw, 6px); }
   .nav-group-right { margin-left: 0; }
   .nav-divider-mobile { display: block; flex-shrink: 0; }
-  /* Drops to the system grotesque here; .section-nav-link follows it down. */
-  .nav-link { font-family: Arial, Helvetica, sans-serif; font-size: clamp(.75rem, 2.8vw, 1rem); letter-spacing: -.025em; }
+  .nav-link { font-size: clamp(.75rem, 2.8vw, 1rem); }
   .portrait-stage { top: calc(var(--masthead-size) * 1.06 + 56px); }
   h1 { font-size: min(8.2vw, 8svh, 3.75rem); }
   .button { min-height: 44px; }
@@ -328,11 +327,9 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
 .intro-pending .portrait-stage,
 .intro-pending .hero-heading-line,
 .intro-pending .hero-heading-rule,
-.intro-pending .hero-content .button,
 .intro-pending .site-header,
 .intro-pending .hero-footer .signature { opacity: 0; }
-.intro-pending .site-header,
-.intro-pending .hero-content .button { pointer-events: none; }
+.intro-pending .site-header { pointer-events: none; }
 .intro-pending .wordmark.is-entering,
 .intro-pending .site-header.is-entering { opacity: 1; }
 .intro-pending .hero .nav-label > .scramble-text { transform: translateY(110%); }
@@ -350,7 +347,6 @@ h2 { margin: 0; font-size: clamp(4rem, 9vw, 9rem); line-height: .92; font-weight
   .intro-pending .portrait-stage,
   .intro-pending .hero-heading-line,
   .intro-pending .hero-heading-rule,
-  .intro-pending .hero-content .button,
   .intro-pending .site-header,
   .intro-pending .hero-footer .signature { opacity: 1; pointer-events: auto; }
   .intro-pending .hero .nav-label > .scramble-text { transform: none; }
@@ -483,11 +479,11 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
   .mobile-menu .nav-link {
     min-height: 3.5rem;
     padding: .5rem 0;
-    font-family: 'Bounded', Arial, sans-serif;
+    font-family: 'Google Sans', Arial, sans-serif;
     font-size: clamp(1.4rem, 5.8vw, 2.5rem);
-    font-weight: 300;
+    font-weight: 400;
     line-height: 1.2;
-    letter-spacing: -.035em;
+    letter-spacing: .04em;
     white-space: normal;
     opacity: 0;
     transform: translateY(-24px);
@@ -616,7 +612,7 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
    .nav-link above. The fold measures line boxes and scales them uniformly, so
    line-height decides where a word lands vertically just as much as the face
    decides its shape. Size is the one thing free to differ. */
-.section-nav-link { flex-shrink: 0; display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-family: 'Bounded', Arial, sans-serif; font-size: .9375rem; line-height: 1.3; font-weight: 300; letter-spacing: -.01em; text-transform: uppercase; white-space: nowrap; transition: background-color var(--press-out) var(--ease-out), color var(--press-out) var(--ease-out); }
+.section-nav-link { flex-shrink: 0; display: flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .4rem .6rem; border-radius: .25rem; font-family: 'Google Sans', Arial, sans-serif; font-size: .9375rem; line-height: 1.3; font-weight: 400; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; transition: background-color var(--press-out) var(--ease-out), color var(--press-out) var(--ease-out); }
 /* Matches .nav-label's box model, not just its face: an inline-block takes its
    height from line-height while a bare inline takes it from the font's own
    metrics, and the fold cannot scale one into the other. */
@@ -797,10 +793,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
   /* The row runs to the screen's right edge and fades there, so a clipped
      link reads as "more this way". */
   .section-nav { gap: .25rem; }
-  /* Matching the narrow header's grotesque, so the labels keep their letterform
-     across the fold at this width too. Declared here rather than beside
-     .nav-link so it lands after the base rule above. */
-  .section-nav-link { font-family: Arial, Helvetica, sans-serif; font-size: .875rem; letter-spacing: -.025em; }
+  .section-nav-link { font-size: .875rem; }
   /* Centred and stacked like Home's phone footer: icons above the signature. */
   .about-footer { flex-direction: column; align-items: center; gap: 10px; }
   .footer-roles { order: -1; }
@@ -860,4 +853,167 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
   .portrait-scroll { bottom: calc(100svh - 100lvh); overflow: clip; }
   .portrait-stage { bottom: calc(100lvh - 100svh); }
   .portrait-stage::after { bottom: calc(100svh - 100lvh); height: calc(62% + 100lvh - 100svh); }
+}
+
+/* About content, after daqconsulting.com/about: an outlined title that fills
+   in as the page lands, then "The Core", an index of subjects beside a light
+   reading panel. Without script the title is filled and every panel is
+   listed; .about-motion holds the entrance back until .is-arrived. */
+@property --about-fill { syntax: '<number>'; inherits: true; initial-value: 1; }
+.about-content { display: flex; flex-direction: column; gap: clamp(5rem, 14svh, 10rem); padding-top: clamp(1.5rem, 7svh, 5rem); }
+.about-eyebrow { display: flex; align-items: center; gap: 1rem; margin: 0; color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+.about-rule { position: relative; flex: 1; max-width: 240px; height: 1px; background: rgba(255, 255, 255, .1); }
+.about-rule::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, .4); transform-origin: left; }
+
+/* The hero fills the first screen on its own and sits to the right; the
+   eyebrow's rule flips to lead into the label from the left. */
+.about-hero { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-height: calc(100svh - 5rem - clamp(1.5rem, 7svh, 5rem)); padding-bottom: calc(var(--footer-bottom) + 4rem); text-align: right; }
+/* Meet Josh's own footer sits on the bottom edge of the first screen, where
+   the page lands, rather than at the end of the document. */
+.about-footer-fold { top: calc(100svh - var(--footer-bottom)); bottom: auto; translate: 0 -100%; }
+.about-hero .about-eyebrow { flex-direction: row-reverse; width: 100%; margin-bottom: clamp(2rem, 5svh, 3rem); }
+.about-hero .about-rule::after { transform-origin: right; }
+.about-hero .about-title-line { margin-left: auto; }
+.about-hero .about-lead { margin-left: auto; }
+.about-resume { margin: clamp(1.75rem, 4svh, 2.5rem) 0 0; }
+.about-resume .button { font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: .9375rem; font-weight: 400; letter-spacing: .01em; }
+.about-resume .button-arrow svg { width: 18px; height: 18px; }
+.about-title { display: block; justify-items: start; margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.75rem, 9.5vw, 8.5rem); font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
+.about-title-line { --about-fill: 1; position: relative; display: block; width: fit-content; }
+.about-title-strong { font-weight: 800; }
+/* The stroke is the resting state; the fill sweeps across it on a 100° edge,
+   the same cut the project cards use. */
+/* Tight tracking lets the last glyph's ink run past its advance; the padding
+   keeps it inside the box the mask covers. */
+.about-title-outline, .about-title-fill { padding-right: .12em; }
+.about-title-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .32); }
+.about-title-fill { position: absolute; inset: 0; display: block; color: var(--white); --edge-at: calc(var(--about-fill) * 124% - 12%); -webkit-mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
+.about-lead { max-width: 44ch; margin: clamp(2rem, 4svh, 2.5rem) 0 0; color: rgba(255, 255, 255, .55); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(1.05rem, 2vw, 1.4rem); font-weight: 400; line-height: 1.6; text-wrap: pretty; }
+
+.about-motion:not(.is-arrived) .about-title-line { --about-fill: 0; }
+.about-motion:not(.is-arrived) .about-hero .about-rule::after { transform: scaleX(0); }
+.about-motion:not(.is-arrived) :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(12px); }
+.about-motion.is-arrived .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.about-motion.is-arrived .about-title-strong { transition-delay: .3s; }
+.about-motion.is-arrived .about-hero .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.about-motion.is-arrived .about-lead { transition: opacity .9s var(--ease-out) .5s, transform .9s var(--ease-out) .5s; }
+.about-motion.is-arrived .about-resume { transition: opacity .9s var(--ease-out) .65s, transform .9s var(--ease-out) .65s; }
+
+.about-block-head { display: flex; flex-direction: column; gap: clamp(1rem, 1.6vw, 1.25rem); margin-bottom: clamp(2.5rem, 4vw, 3.5rem); }
+.about-heading { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.1rem, 4.6vw, 4.25rem); font-weight: 300; line-height: .95; letter-spacing: -.045em; }
+
+/* The index and its panel respond to the width of their block rather than
+   the window. */
+.about-block { container: core / inline-size; }
+/* The Core is a screen of its own. The top padding clears the sticky bar,
+   which overlays it once the page has turned to it. */
+.core-section, .core-stage { display: flex; flex-direction: column; justify-content: center; }
+.core-section { min-height: 100vh; min-height: 100svh; padding-block: 5rem var(--footer-room); }
+/* When the screen holds the whole index, Experience pins and scrolls through
+   its cards a screen at a time; script sets --core-steps to the card count. */
+.core-pinned .core-section { display: block; height: calc(var(--core-steps) * 100svh); padding-block: 0; }
+.core-pinned .core-stage { position: sticky; top: 0; height: 100vh; height: 100svh; padding-block: 5rem var(--footer-room); }
+.core-section .about-block-head { margin-bottom: clamp(1.5rem, 4svh, 3.5rem); }
+.core-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+/* About ends with Experience, so its screen is the last one and the footer
+   sits on it; the section reserves that room instead of the page. */
+.about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 3.5rem); padding-bottom: 0; }
+/* About turns a page at a time; script places one marker per page. A hard
+   flick still turns only one. */
+html.about-paging { scroll-snap-type: y mandatory; }
+.page-snap { position: absolute; left: 0; width: 1px; height: 1px; pointer-events: none; scroll-snap-align: start; scroll-snap-stop: always; }
+.core { color: #eee; }
+.core-subjects { display: flex; flex-direction: column; min-width: 0; }
+.core-subject { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; width: 100%; min-height: 54px; padding: 13px 0; border: 0; border-top: 1px solid rgba(255, 255, 255, .14); background: none; color: rgba(255, 255, 255, .58); font-family: 'Instrument Serif', Georgia, serif; font-size: 1.125rem; font-weight: 400; line-height: 1.25; letter-spacing: -.015em; text-align: left; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: color var(--press-out) var(--ease-out); }
+/* A position can carry its terms and dates under it, set like the card's own
+   small labels. */
+.core-subject:has(.core-subject-org) { flex-direction: column; align-items: flex-start; justify-content: center; gap: .55rem; }
+.core-subject-org { color: rgba(255, 255, 255, .55); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .18em; line-height: 1.4; text-transform: uppercase; }
+.core-subject-sep { margin-inline: .5em; opacity: .6; }
+.core-subject:last-child { border-bottom: 1px solid rgba(255, 255, 255, .14); }
+.core-subject[aria-selected="true"] { color: var(--white); }
+/* The job being read carries a rule down its left edge, drawn from the top. */
+.core-subject { position: relative; }
+.core-subject::before { content: ''; position: absolute; left: -12px; top: 12px; bottom: 12px; width: 1px; background: var(--white); transform: scaleY(0); transform-origin: top; transition: transform 160ms var(--ease-out); pointer-events: none; }
+.core-subject[aria-selected="true"]::before { transform: scaleY(1); transition-duration: 300ms; }
+.core-subject:focus-visible { outline: 1px solid rgba(255, 255, 255, .9); outline-offset: -5px; }
+.core-subject.is-touch-pressed { color: rgba(255, 255, 255, .85); transition-duration: var(--press-in); }
+
+.core-reading { display: grid; min-width: 0; margin-top: 1.25rem; background: #f0f0eb; color: #171717; }
+.core-reading ::selection { background: #171717; color: #f0f0eb; }
+.core-panel { display: flex; flex-direction: column; min-width: 0; padding: 27px 24px 19px; }
+.core-panel + .core-panel { border-top: 1px solid #bdbdb7; }
+.core-panel:focus-visible { outline: 1px solid #171717; outline-offset: -7px; }
+/* With script, the panels stack in one cell inside a card of fixed height,
+   so the card never jumps as the subject changes and long copy can't grow
+   it. Copy is written to fit; anything past the card is clipped. */
+.core-ready .core-reading { grid-template-rows: minmax(0, 1fr); min-height: var(--core-card-height, 400px); overflow: hidden; }
+/* The incoming job waits for the outgoing one to clear so the two never read
+   on top of each other. */
+.core-ready .core-panel { grid-area: 1 / 1; border-top: 0; transition: opacity 240ms var(--ease-out) 100ms, transform 240ms var(--ease-out) 100ms; }
+/* The outgoing job only fades; it drops back into place once it is gone. */
+.core-ready .core-panel[aria-hidden="true"] { visibility: hidden; opacity: 0; transform: translateY(12px); pointer-events: none; transition: opacity 160ms var(--ease-out), visibility 0s linear 160ms, transform 0s linear 160ms; }
+/* Titles hold one line; the script shrinks any that would run past it. */
+.core-ready .core-title { white-space: nowrap; }
+.core-org { margin: 14px 0 0; color: #6b6b66; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 300; letter-spacing: .18em; line-height: 1.5; text-transform: uppercase; }
+.core-meta { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: auto 0 0; padding: 24px 0 0; color: #454541; font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 300; letter-spacing: .12em; line-height: 1.5; text-transform: uppercase; list-style: none; }
+.core-meta li { display: flex; align-items: center; gap: 9px; }
+.core-meta svg { flex: none; width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.core-title { margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: clamp(1.6rem, 6.4cqw, 2.25rem); font-weight: 400; line-height: 1.04; letter-spacing: -.015em; text-wrap: balance; }
+.core-desc { margin: 27px 0 0; color: #454541; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(17px, 4.6cqw, 21px); line-height: 1.55; text-wrap: pretty; }
+.core-desc + .core-desc { margin-top: 1em; }
+.core-detail { margin-top: auto; padding-top: 32px; }
+.core-tech { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 20px; padding: 0; color: #585854; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.5; list-style: none; }
+.core-tech li { display: flex; align-items: center; gap: 7px; }
+.core-tech li::before { content: ''; width: 3px; height: 3px; background: currentColor; }
+.core-link { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 52px; padding-block: 14px 5px; border-top: 1px solid #bdbdb7; color: #171717; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.4; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.core-link svg { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: transform 200ms var(--ease-out); }
+.core-link:focus-visible { outline: 1px solid #171717; outline-offset: 5px; }
+.core-link.is-touch-pressed svg { transform: translate(2px, -2px); transition-duration: var(--press-in); }
+@container core (min-width: 640px) {
+  .core { display: grid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); }
+  .core-subjects { padding-right: 28px; }
+  /* Rows and card share one height, and it gives way on short screens so
+     the whole of Experience and the footer fit the window together. */
+  .core-subject { flex: 1 1 auto; min-height: 0; padding-block: clamp(8px, 1.5svh, 12px); font-size: min(clamp(20px, 2.4cqw, 28px), max(20px, 3.4svh)); }
+  .core-reading { margin-top: 0; }
+  .core-reading { --core-card-height: clamp(320px, calc(100svh - 21rem), 370px); }
+  .core-panel { padding: clamp(22px, 4svh, 34px) 30px clamp(18px, 3svh, 25px); }
+  .core-title { font-size: clamp(1.75rem, 3.4cqw, 2.4rem); }
+  .core-desc { margin-top: clamp(20px, 4svh, 35px); font-size: clamp(18px, 2cqw, 22px); }
+  .core-desc + .core-desc { margin-top: 1em; }
+  .core-detail { padding-top: clamp(20px, 4svh, 40px); }
+  .core-meta { gap: 10px 26px; padding-top: clamp(18px, 3.5svh, 32px); letter-spacing: .2em; }
+}
+@container core (min-width: 1000px) {
+  .core-subjects { padding-right: 44px; }
+  .core-reading { --core-card-height: clamp(320px, calc(100svh - 21rem), 440px); }
+  .core-panel { padding: clamp(28px, 4.5svh, 44px) 42px clamp(22px, 3svh, 31px); }
+  .core-title { font-size: 2.6rem; }
+  .core-desc { margin-top: clamp(24px, 4.5svh, 44px); }
+}
+
+
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .core-subject:hover { color: var(--white); }
+  :root:not(.touch-input) .core-link:hover span { text-decoration: underline 1px; text-underline-offset: 4px; }
+  :root:not(.touch-input) .core-link:hover svg { transform: translate(3px, -3px); }
+}
+@media (max-width: 700px) {
+  .about-content { gap: 5rem; padding-top: 1.5rem; }
+  .about-hero { min-height: calc(100svh - 4rem - 1.5rem); }
+  .core-section { padding-top: 4rem; }
+  .about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 5rem); padding-bottom: 0; }
+  .about-title { font-size: clamp(2.75rem, 17vw, 5rem); }
+}
+/* Reduced motion lands on the finished state; the global rule already drops
+   the transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .about-motion:not(.is-arrived) .about-title-line { --about-fill: 1; }
+  .about-motion:not(.is-arrived) .about-hero .about-rule::after { transform: none; }
+  .about-motion:not(.is-arrived) :is(.about-lead, .about-resume) { opacity: 1; transform: none; }
+  .core-ready .core-panel[aria-hidden="true"] { transform: none; }
+}
+@media (forced-colors: active) {
+  .core-reading { forced-color-adjust: auto; border: 1px solid CanvasText; }
 }

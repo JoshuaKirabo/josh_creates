@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a, .core-subject, .core-link';
   let press = null;
   let released = null;
 
@@ -510,11 +510,13 @@ function enableSectionScroll() {
   const portrait = hero.querySelector('.portrait-scroll');
   const heroContent = hero.querySelector('.hero-content');
   // The heading travels; only the parts of it with no About twin fade.
-  const heroButton = heroContent?.querySelector?.('.button');
   const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
   const heroFooter = hero.querySelector('.hero-footer');
   const topbar = about.querySelector('.about-topbar');
   const aboutFooter = about.querySelector('.about-footer');
+  // About's own content sits under the hero for the whole fold, so it has to
+  // stay out of sight until the words have nearly landed.
+  const aboutContent = about.querySelector('.about-content');
   const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
   const currentLinks = links.filter(link => link.matches('.nav-link, .section-nav-link'));
@@ -532,6 +534,7 @@ function enableSectionScroll() {
   let presentedPosition = window.scrollY;
   let handoverState = null;
   let currentSection = null;
+  let arrivedState = null;
   let foldingState = null;
 
   const clamp = value => Math.min(1, Math.max(0, value));
@@ -730,7 +733,8 @@ function enableSectionScroll() {
     // The role lines follow the name and finish with it, two lines to each
     // icon in reading order.
     const heroLines = [...(hero.querySelectorAll?.('.hero-heading-line') || [])];
-    const roleIcons = [...(about.querySelectorAll?.('.footer-role') || [])];
+    // Only the first footer's icons: later sections carry copies of it.
+    const roleIcons = [...((about.querySelector?.('.about-footer') || about).querySelectorAll?.('.footer-role') || [])];
     if (roleIcons.length && heroLines.length % roleIcons.length === 0) {
       const perIcon = heroLines.length / roleIcons.length;
       // The corner-side words lead, so no line overtakes a slower neighbour
@@ -774,8 +778,8 @@ function enableSectionScroll() {
   // Every inline style the transition writes, handed back to CSS.
   function releaseTransition() {
     clearFolds();
-    [portrait, heroContent, heroButton, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar,
-      aboutFooter, aboutSignature, footerRule,
+    [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar,
+      aboutFooter, aboutSignature, footerRule, aboutContent,
       ...dividers, ...headerRest, ...headingRest]
       .forEach((element) => {
         if (!element) return;
@@ -814,7 +818,6 @@ function enableSectionScroll() {
       portrait.style.transform = `translate3d(0, ${-10 * leaving}%, 0)`;
       fade(portrait, 1 - leaving);
       const contentLeaving = 1 - smooth(slice(progress, 0, .28));
-      fade(heroButton, contentLeaving);
       fade(headingRule, contentLeaving);
       headingRest.forEach(line => fade(line, contentLeaving));
       headingFolds.forEach(plan => applyMorph(plan, progress));
@@ -853,16 +856,31 @@ function enableSectionScroll() {
         topbar.style.transform = `translate3d(0, ${-24 * remaining}px, 0)`;
         fade(topbar, arriving);
       }
+      // The content rises 12px under the landing words, a beat behind the bar.
+      if (aboutContent) {
+        const settling = smooth(slice(progress, .55, .98));
+        aboutContent.style.transform = settling >= 1 ? '' : `translate3d(0, ${12 * (1 - settling)}px, 0)`;
+        fade(aboutContent, settling);
+      }
       // The footer's words arrive by fold; only the rule between them, and
       // anything left without a traveller, fades in beneath them.
       fade(footerRule, arriving);
       if (!signatureFold) fade(aboutSignature, arriving);
       if (!headingFolds.length) {
-        about.querySelectorAll?.('.footer-role')?.forEach?.(icon => fade(icon, arriving));
+        (aboutFooter || about).querySelectorAll?.('.footer-role')?.forEach?.(icon => fade(icon, arriving));
       }
       // Its children already fade to zero. Keep the transparent hero composed:
       // revealing a hidden, raster-heavy surface on reversal caused a hitch.
       hero.style.visibility = '';
+    }
+    // About's own entrance plays each time the fold lands on it, and starts
+    // mid-flight so the title fills in as its content rises, not after the
+    // spring settles. At the halfway mark the content is still transparent,
+    // so resetting it on the way back out is never seen.
+    const arrived = progress >= .5;
+    if (arrived !== arrivedState) {
+      arrivedState = arrived;
+      about.classList.toggle('is-arrived', arrived);
     }
     if (running) return;
     // The hero paints above About and covers the viewport, so it would swallow
@@ -1168,7 +1186,173 @@ function enableSectionScroll() {
 if (window.sitePagesReady) {
   window.sitePagesReady.then(bindAboutNavScrambles);
   window.sitePagesReady.then(enableSectionScroll);
-} else enableSectionScroll();
+  window.sitePagesReady.then(initAboutContent);
+  window.sitePagesReady.then(initAboutPages);
+} else {
+  enableSectionScroll();
+  initAboutContent();
+  initAboutPages();
+}
+
+// Where each Experience job rests while the section is pinned; empty when
+// it scrolls as one screen.
+let coreJobStops = [];
+
+// The About title fills in when the page lands: the fold marks the landing
+// with .is-arrived, and a page without the fold arrives as soon as it paints.
+// The Core is a vertical tab list; its panels share one cell, so switching
+// subjects never changes the page height.
+function initAboutContent() {
+  const about = document.querySelector('#about');
+  const content = about?.querySelector('.about-content');
+  if (!content) return;
+  const root = document.documentElement;
+  const arrive = () => requestAnimationFrame(() => requestAnimationFrame(() => about.classList.add('is-arrived')));
+  if (!reducedMotion.matches) {
+    // A direct visit has already landed by now; hold the fill back for two
+    // frames so it still sweeps in rather than appearing finished.
+    const landed = about.classList.contains('is-arrived');
+    about.classList.remove('is-arrived');
+    about.classList.add('about-motion');
+    if (landed) arrive();
+  }
+  if (!root.classList.contains('section-scroll-ready')) arrive();
+
+  const core = content.querySelector('[data-core]');
+  const list = core?.querySelector('[role="tablist"]');
+  if (!list) return;
+  const tabs = [...list.querySelectorAll('[role="tab"]')];
+  // A tab can own more than one card (a promotion keeps the same subject), so
+  // cards are selected by their own index and light up the tab that owns them.
+  const panels = [...core.querySelectorAll('[role="tabpanel"]')];
+  const owner = panels.map(panel => tabs.findIndex(tab => tab.getAttribute('aria-controls').split(' ').includes(panel.id)));
+  let shown = -1;
+
+  function select(index) {
+    shown = index;
+    tabs.forEach((tab, i) => {
+      const selected = i === owner[index];
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach((panel, i) => {
+      panel.setAttribute('aria-hidden', String(i !== index));
+      panel.inert = i !== index;
+    });
+  }
+
+  // While pinned, the scroll position is the selection: choosing a job
+  // scrolls to it, and scrolling picks whichever card is nearest. Choosing
+  // the open job again turns to its next card.
+  let current = -1;
+  function choose(index, focus) {
+    if (focus) tabs[index].focus({ preventScroll: true });
+    const card = owner[shown] === index && owner[shown + 1] === index ? shown + 1 : owner.indexOf(index);
+    if (!coreJobStops.length) {
+      select(card);
+      return;
+    }
+    window.scrollTo({ top: coreJobStops[card], behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+  }
+  function follow() {
+    if (!coreJobStops.length) return;
+    let nearest = 0;
+    coreJobStops.forEach((top, i) => {
+      if (Math.abs(top - window.scrollY) < Math.abs(coreJobStops[nearest] - window.scrollY)) nearest = i;
+    });
+    if (nearest === current) return;
+    current = nearest;
+    select(nearest);
+  }
+  core.addEventListener('core-stops', follow);
+  window.addEventListener('scroll', follow, { passive: true });
+
+  tabs.forEach((tab, index) => tab.addEventListener('click', () => choose(index, false)));
+  list.addEventListener('keydown', (event) => {
+    const index = tabs.indexOf(document.activeElement);
+    if (index < 0) return;
+    const last = tabs.length - 1;
+    const next = { ArrowDown: index + 1, ArrowRight: index + 1, ArrowUp: index - 1, ArrowLeft: index - 1, Home: 0, End: last }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    choose(next > last ? 0 : next < 0 ? last : next, true);
+  });
+
+  list.hidden = false;
+  core.classList.add('core-ready');
+  select(Math.max(0, owner.indexOf(tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true'))));
+
+  // A title keeps to one line: one that runs past the panel scales its type
+  // down until it fits, and grows back when the panel widens again.
+  const titles = [...core.querySelectorAll('.core-title')];
+  const fitTitles = () => titles.forEach((title) => {
+    title.style.fontSize = '';
+    if (title.scrollWidth <= title.clientWidth) return;
+    const size = parseFloat(getComputedStyle(title).fontSize);
+    title.style.fontSize = `${Math.floor(size * title.clientWidth / title.scrollWidth * 2) / 2}px`;
+  });
+  new ResizeObserver(fitTitles).observe(core.querySelector('.core-reading'));
+  document.fonts.ready.then(fitTitles);
+}
+
+// About turns a page at a time: Home, Meet Josh, The Core, then the page end.
+// Home and About are sticky, and the browser reads a sticky element's snap
+// point from wherever it is stuck, so markers at fixed document offsets stand
+// in for them. The fold still owns the turn between Home and Meet Josh, and
+// lands on the same two offsets.
+function initAboutPages() {
+  const about = document.querySelector('#about');
+  const core = about?.querySelector('.core-section');
+  if (!core) return;
+  const root = document.documentElement;
+  const coreIndex = core.querySelector('[data-core]');
+  const jobs = core.querySelectorAll('[role="tabpanel"]').length;
+  const markers = [];
+
+  function place() {
+    // Pin only when one screen holds the whole of Experience; a taller one
+    // scrolls through as before.
+    root.classList.remove('core-pinned');
+    const pinned = jobs > 1 && coreIndex?.classList.contains('core-ready') && core.offsetHeight <= window.innerHeight + 1;
+    root.classList.toggle('core-pinned', pinned);
+    core.style.setProperty('--core-steps', jobs);
+
+    // Past the fold About scrolls in flow, so it lands at the fold distance.
+    const folded = root.classList.contains('section-scroll-ready') && !reducedMotion.matches;
+    const aboutTop = folded
+      ? parseFloat(root.style.getPropertyValue('--fold-distance')) || 0
+      : about.getBoundingClientRect().top + window.scrollY;
+    let coreTop = aboutTop;
+    for (let node = core; node && node !== about; node = node.offsetParent) coreTop += node.offsetTop;
+    const end = root.scrollHeight - window.innerHeight;
+    // A pinned Core stops once per card; its runway splits evenly between them.
+    const step = pinned ? (core.offsetHeight - window.innerHeight) / (jobs - 1) : 0;
+    coreJobStops = pinned ? Array.from({ length: jobs }, (_, i) => Math.round(coreTop + i * step)) : [];
+    const stops = [0, aboutTop, coreTop, ...coreJobStops];
+    // A Core taller than the screen also stops with its bottom edge in view.
+    if (core.offsetHeight > window.innerHeight + 1 && !pinned) stops.push(coreTop + core.offsetHeight - window.innerHeight);
+    stops.push(end);
+    const offsets = [...new Set(stops.map(Math.round))].filter(y => y >= 0 && y <= end);
+    while (markers.length < offsets.length) {
+      const marker = document.createElement('span');
+      marker.className = 'page-snap';
+      marker.setAttribute('aria-hidden', 'true');
+      document.body.append(marker);
+      markers.push(marker);
+    }
+    markers.splice(offsets.length).forEach(marker => marker.remove());
+    markers.forEach((marker, index) => { marker.style.top = `${offsets[index]}px`; });
+    coreIndex?.dispatchEvent(new Event('core-stops'));
+  }
+
+  // The fold remeasures on the same events, and registered first.
+  new ResizeObserver(place).observe(about);
+  window.addEventListener('resize', place, { passive: true });
+  reducedMotion.addEventListener('change', place);
+  document.fonts?.ready.then(place);
+  place();
+  root.classList.add('about-paging');
+}
 
 // Transform and opacity reveals share one entrance clock.
 async function playIntro() {
@@ -1201,7 +1385,7 @@ async function playIntro() {
     }
     finished = true;
     const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
-    const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .hero-heading-rule, .hero-content .button, .site-header, .signature')];
+    const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .hero-heading-rule, .site-header, .signature')];
     const navSlides = [...hero.querySelectorAll('.nav-label > .scramble-text')];
     // Read the currently painted poses before cancelling the shared intro clock.
     const poses = settle ? elements.map(element => ({ element, opacity: getComputedStyle(element).opacity })) : [];
@@ -1377,7 +1561,6 @@ async function playIntro() {
       animate(label, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }],
         2000 + index * 40, 250, easeOut);
     });
-    reveal(hero.querySelector('.hero-content .button'), 2650, 800);
     scrambleIn(hero.querySelector('.signature'), 3050, 700);
     // Independent CSS transitions also reveal smoothly when touch skips the intro.
     socialTimer = setTimeout(() => revealSocials(),

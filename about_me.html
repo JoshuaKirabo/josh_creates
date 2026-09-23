@@ -36,9 +36,9 @@
   <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin media="(min-width: 701px)">
   <link rel="preload" href="assets/fonts/unbounded-latin-700-merged.woff2" as="font" type="font/woff2" crossorigin media="(max-width: 700px)">
   <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
-  <link rel="stylesheet" href="styles.css?v=navbar2">
+  <link rel="stylesheet" href="styles.css?v=about15">
   <script src="page-shell.js?v=cf3d538" defer></script>
-  <script src="script.js?v=footer2" defer></script>
+  <script src="script.js?v=about4" defer></script>
 </head>
 <body>
   <div class="site-backdrop" aria-hidden="true">
@@ -60,6 +60,114 @@
           <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.62 4.22h12.76A2.18 2.18 0 0 1 20.56 6.4v11.18a2.18 2.18 0 0 1-2.18 2.18H5.62a2.18 2.18 0 0 1-2.18-2.18V6.4A2.18 2.18 0 0 1 5.62 4.22ZM5.28 6.12 12 10.72l6.72-4.6-1.08-.78L12 9.18 6.36 5.34l-1.08.78Z"/></svg><span class="nav-label">Let’s connect</span></a>
         </nav>
       </header>
+      <!-- Meet Josh is a screen of its own, so it carries its own copy of the
+           footer at the bottom of that first screen. The fold lands on this
+           one: it is first in the document. -->
+      <footer class="about-footer about-footer-fold">
+        <span class="signature">© 2026 Joshua Kirabo</span>
+        <p class="footer-roles">
+          <span class="footer-role" role="img" aria-label="Software Engineer" title="Software Engineer"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="m8 7-5 5 5 5"/><path pathLength="1" d="m16 7 5 5-5 5"/><path pathLength="1" d="m13.5 4-3 16"/></svg></span>
+          <span class="footer-roles-rule" aria-hidden="true"></span>
+          <span class="footer-role" role="img" aria-label="Creative Professional" title="Creative Professional"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path pathLength="1" d="M12 3v18"/><path pathLength="1" d="M3 12h18"/><path pathLength="1" d="m5.6 5.6 12.8 12.8"/><path pathLength="1" d="M18.4 5.6 5.6 18.4"/></svg></span>
+        </p>
+      </footer>
+      <!-- The layout and motion follow daqconsulting.com/about: the outlined
+           title that fills in, then an index of subjects beside a reading
+           panel. The copy is Josh's. Script adds .about-motion to hold the
+           fill back until the page lands, and wires the index as tabs;
+           without it the title is filled and every panel is listed. -->
+      <div class="about-main about-content" id="about-main">
+        <section class="about-hero" id="meet-josh" aria-label="Meet Josh">
+          <p class="about-eyebrow"><span>02 / About me</span><span class="about-rule" aria-hidden="true"></span></p>
+          <h1 class="about-title">
+            <span class="about-title-line"><span class="about-title-outline">Meet</span><span class="about-title-fill" aria-hidden="true">Meet</span></span>
+            <span class="about-title-line about-title-strong"><span class="about-title-outline">Josh.</span><span class="about-title-fill" aria-hidden="true">Josh.</span></span>
+          </h1>
+          <p class="about-lead">I’m a software engineer who designs. I build products end to end, from the database schema to the last frame of motion, and I judge them by how they feel in someone’s hands.</p>
+          <p class="about-resume"><a class="button button-primary" href="#" data-placeholder-link><span class="button-label">My Resume</span><span class="button-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3.25v9.25"/><path d="m7.25 9.25 4.75 4.75 4.75-4.75"/><path d="M4.75 16.75v2.1c0 1.05.85 1.9 1.9 1.9h10.7c1.05 0 1.9-.85 1.9-1.9v-2.1"/></svg></span></a></p>
+        </section>
+
+        <section class="about-block core-section" id="the-core" aria-labelledby="core-title">
+          <div class="core-stage">
+          <div class="about-block-head">
+            <p class="about-eyebrow"><span>My Career</span><span class="about-rule" aria-hidden="true"></span></p>
+            <h2 class="about-heading" id="core-title">Experience</h2>
+          </div>
+          <div class="core" data-core>
+            <div class="core-subjects" role="tablist" aria-label="My Career" aria-orientation="vertical" hidden>
+              <button class="core-subject" type="button" role="tab" id="core-tab-current" aria-controls="core-current core-consultant" aria-selected="true"><span>Tech Hub Consultant</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 09/25 – Present</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-kisaka" aria-controls="core-kisaka" aria-selected="false" tabindex="-1"><span>Information Technology Manager</span><span class="core-subject-org">Contract <span class="core-subject-sep" aria-hidden="true">|</span> 08/26 – Present</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-intern" aria-controls="core-intern" aria-selected="false" tabindex="-1"><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 05/26 – 08/26</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-tellistic" aria-controls="core-tellistic" aria-selected="false" tabindex="-1"><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 07/24 – 03/25</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-gce" aria-controls="core-gce" aria-selected="false" tabindex="-1"><span>Information Technology Support Analyst</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 10/21 – 04/24</span></button>
+            </div>
+            <div class="core-reading">
+              <article class="core-panel" id="core-current" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
+                <h3 class="core-title">Lead Tech Hub Consultant</h3>
+                <p class="core-org">Arizona State University Tech Hub</p>
+                <p class="core-desc">I run walk-in support across Polytechnic and Tempe, coach junior consultants, and write the SOPs that close our repeat cases. I also tune the department’s AI support bot and keep our docs current as services change.</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Apr 2026 – Present</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Part Time</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Tempe, Arizona</span></li>
+                </ul>
+              </article>
+              <article class="core-panel" id="core-consultant" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
+                <h3 class="core-title">Tech Hub Consultant</h3>
+                <p class="core-org">Arizona State University Tech Hub</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Sep 2025 – Apr 2026</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Part Time</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Tempe, Arizona</span></li>
+                </ul>
+              </article>
+              <article class="core-panel" id="core-kisaka" role="tabpanel" aria-labelledby="core-tab-kisaka" tabindex="0">
+                <h3 class="core-title">Information Technology Manager</h3>
+                <p class="core-org">Kisaka and Company, Certified Public Accountants</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Aug 2026 – Present</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Contract</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/></svg><span>Remote</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Kampala, Uganda</span></li>
+                </ul>
+              </article>
+              <article class="core-panel" id="core-intern" role="tabpanel" aria-labelledby="core-tab-intern" tabindex="0">
+                <h3 class="core-title">Software Engineer</h3>
+                <p class="core-org">Pearl Accounting Solutions</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>May 2026 – Aug 2026</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Internship</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Kampala, Uganda</span></li>
+                </ul>
+              </article>
+              <article class="core-panel" id="core-tellistic" role="tabpanel" aria-labelledby="core-tab-tellistic" tabindex="0">
+                <h3 class="core-title">Software Engineer</h3>
+                <p class="core-org">Tellistic Technology Services</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Jul 2024 – Mar 2025</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Internship</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/></svg><span>Remote</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Seattle, Washington</span></li>
+                </ul>
+              </article>
+              <article class="core-panel" id="core-gce" role="tabpanel" aria-labelledby="core-tab-gce" tabindex="0">
+                <h3 class="core-title">Information Technology Support Analyst</h3>
+                <p class="core-org">Grand Canyon Education, Inc.</p>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Oct 2021 – Apr 2024</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Part Time</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Phoenix, Arizona</span></li>
+                </ul>
+              </article>
+            </div>
+          </div>
+          </div>
+        </section>
+      </div>
       <footer class="about-footer">
         <span class="signature">© 2026 Joshua Kirabo</span>
         <p class="footer-roles">
