@@ -935,6 +935,18 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-motion .about-hero.is-away .about-rule::after { transform: scaleX(0); transition: none; }
 .about-motion .about-hero.is-away :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(-12px); transition: none; }
 .about-hero.is-returning { --about-sweep: 280deg; }
+/* Leaving for Experience runs the entrance backwards and quicker, the way
+   Experience leaves: the buttons and lead lift away first, the title empties
+   last line first, the rule draws back in and the scene fades. The copy exits
+   to the resting offset above, so handing over to it is never seen. The scene
+   drops its blur here: a filter on it mid-scroll is paint the fold removed. */
+.about-motion.is-arrived .about-hero.is-leaving :is(.about-lead, .about-resume) { opacity: 0; transform: translateY(-12px); }
+.about-motion.is-arrived .about-hero.is-leaving .about-resume { transition: opacity .25s var(--ease-out), transform .25s var(--ease-out); }
+.about-motion.is-arrived .about-hero.is-leaving .about-lead { transition: opacity .25s var(--ease-out) .05s, transform .25s var(--ease-out) .05s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .5s var(--ease-out) .14s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-title-strong { transition-delay: .08s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .4s var(--ease-out) .18s; }
+.about-motion.is-arrived .about-hero.is-leaving .about-scene { opacity: 0; scale: 1.02; transition: opacity .4s var(--ease-out) .1s, scale .4s var(--ease-out) .1s; }
 /* The scene materialises rather than fades: it comes into focus as it
    settles back to its size, a beat before the title fills. */
 .about-motion:not(.is-arrived) .about-scene, .about-motion .about-hero.is-away .about-scene { opacity: 0; scale: 1.04; filter: blur(12px); }
