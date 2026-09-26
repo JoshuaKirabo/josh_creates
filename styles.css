@@ -718,10 +718,12 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .project-tag-icon--fastapi { --brand: #05998b; }
 .project-tag-icon--nodedotjs { --brand: #5fa04e; }
 .project-tag-icon--postgresql { --brand: #699eca; }
+.project-tag-icon--springboot { --brand: #6db33f; }
 .project-tag-icon--html5 { --brand: #e34f26; }
 .project-tag-icon--css { --brand: #2f9be8; }
 .project-tag-icon--javascript { --brand: #f7df1e; }
 .project-tag-icon--sqlite { --brand: #44a8e0; }
+.project-tag-icon--togetherai { --brand: #ef2cc1; --tai-lilac: color-mix(in srgb, #caaef5 calc(var(--fill) * 100%), currentColor); --tai-pink: color-mix(in srgb, #ef2cc1 calc(var(--fill) * 100%), currentColor); --tai-orange: color-mix(in srgb, #fc4c02 calc(var(--fill) * 100%), currentColor); fill: none; }
 
 /* The name is drawn twice: a hairline outline, and a solid copy revealed
    through a soft 100deg edge as --fill runs 0 to 1. The numeral does the same. */
@@ -771,7 +773,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 @media (prefers-reduced-motion: reduce) {
   .projects-entered :is(.projects-title-line, .project-card) { transition: none; }
   .projects-entered .projects-rule::after { transition: none; }
-  .project-cta-arrow { transition: none; }
+  .project-cta-arrow, .core-desc-link-arrow-icon { transition: none; }
 }
 /* Contact feedback. The fold writes opacity on the wordmark, labels and icons
    every frame, so presses only touch the row, the inner name and the social
@@ -1076,6 +1078,17 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .core-title { margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: clamp(1.6rem, 6.4cqw, 2.25rem); font-weight: 400; line-height: 1.04; letter-spacing: -.015em; text-wrap: balance; }
 .core-desc { margin: 27px 0 0; color: #454541; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(17px, 4.6cqw, 21px); line-height: 1.55; text-wrap: pretty; }
 .core-desc + .core-desc { margin-top: 1em; }
+/* A link inside the card copy, in the same type as the sentence, darker so it
+   reads as something to open. The arrow flies like the project cards: one
+   copy leaves up-right, the ghost arrives from below. */
+.core-desc-link { display: inline-flex; align-items: center; gap: .28em; color: #171717; font: inherit; letter-spacing: inherit; line-height: inherit; text-transform: none; white-space: nowrap; vertical-align: baseline; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.core-desc-link-arrow { position: relative; flex: none; width: 1em; height: 1em; overflow: hidden; }
+.core-desc-link-arrow-icon { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 420ms cubic-bezier(.2, .7, .2, 1); }
+.core-desc-link-arrow-icon--ghost { transform: translate(-115%, 115%); }
+.core-desc-link:focus-visible { outline: 1px solid #171717; outline-offset: 4px; }
+.core-desc-link.is-touch-pressed { opacity: .72; }
+.core-desc-link.is-touch-pressed .core-desc-link-arrow-icon:not(.core-desc-link-arrow-icon--ghost) { transform: translate(115%, -115%); }
+.core-desc-link.is-touch-pressed .core-desc-link-arrow-icon--ghost { transform: translate(0, 0); }
 .core-detail { margin-top: auto; padding-top: 32px; }
 .core-tech { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 20px; padding: 0; color: #585854; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 12px; line-height: 1.5; list-style: none; }
 .core-tech li { display: flex; align-items: center; gap: 7px; }
@@ -1106,6 +1119,13 @@ html.about-paging { scroll-snap-type: y mandatory; }
   .core-title { font-size: 2.6rem; }
   .core-desc { margin-top: clamp(24px, 4.5svh, 44px); }
 }
+/* Kisaka carries three paragraphs in the same card as the shorter jobs.
+   The card does not grow: tighter spacing here, and script sizes the type
+   to the room that is left. */
+#core-kisaka .core-desc { margin-top: 20px; line-height: 1.45; }
+#core-kisaka .core-desc + .core-desc { margin-top: .7em; }
+#core-kisaka .core-desc-link { color: #cc0033; }
+#core-kisaka .core-desc-link:focus-visible { outline-color: #cc0033; }
 
 /* Education, after the "Evolution of AI" diptych on
    daqconsulting.com/ai-engineering: two sheets side by side. A finished
@@ -1163,6 +1183,10 @@ html.about-paging { scroll-snap-type: y mandatory; }
   :root:not(.touch-input) .core-subject:hover { color: var(--white); }
   :root:not(.touch-input) .core-link:hover span { text-decoration: underline 1px; text-underline-offset: 4px; }
   :root:not(.touch-input) .core-link:hover svg { transform: translate(3px, -3px); }
+  :root:not(.touch-input) .core-desc-link:hover .core-desc-link-arrow-icon:not(.core-desc-link-arrow-icon--ghost),
+  :root:not(.touch-input) .core-desc-link:focus-visible .core-desc-link-arrow-icon:not(.core-desc-link-arrow-icon--ghost) { transform: translate(115%, -115%); }
+  :root:not(.touch-input) .core-desc-link:hover .core-desc-link-arrow-icon--ghost,
+  :root:not(.touch-input) .core-desc-link:focus-visible .core-desc-link-arrow-icon--ghost { transform: translate(0, 0); }
 }
 @media (max-width: 700px) {
   .about-content { gap: 5rem; padding-top: 1.5rem; }
@@ -1241,3 +1265,155 @@ html.about-paging { scroll-snap-type: y mandatory; }
 @media (forced-colors: active) {
   .core-reading { forced-color-adjust: auto; border: 1px solid CanvasText; }
 }
+
+/* Project sheet. A card opens its project as a full page over the site. It is
+   clear, so the site's own drifting grain stays behind it while the page's
+   content fades out. The hero is About's: the eyebrow's rule draws out, each
+   title line fills from its outline, then the story and links rise, on the
+   timeline of DAQ Consulting's service pages. Everything rests on its
+   finished state, so reduced motion simply lands there. */
+.project-sheet { --page-gutter: clamp(1rem, 2.8vw, 3.5rem); position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; overflow-y: auto; overscroll-behavior: contain; background: transparent; color: var(--white); }
+.project-sheet::backdrop { background: transparent; }
+/* On its own the project page is the sheet, in the page's flow. */
+.project-sheet--page { position: relative; inset: auto; height: auto; min-height: 100svh; overflow: visible; }
+html.project-sheet-open { overflow: hidden; }
+body > :not(.site-backdrop, .project-sheet) { transition: opacity .24s var(--ease-out); }
+html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0; }
+/* Back sits where a way out is expected, in the site's nav type. */
+.project-sheet-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; height: 5rem; padding: 0 var(--page-gutter); pointer-events: none; }
+/* Content scrolling up under the bar fades out behind a soft, blurred edge
+   instead of running into the link. */
+.project-sheet-bar::before { content: ''; position: absolute; inset: 0 0 -1.5rem; z-index: -1; background: linear-gradient(#060606, rgba(6, 6, 6, .7) 60%, rgba(6, 6, 6, 0)); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.project-sheet-back { display: inline-flex; align-items: center; gap: .35rem; min-height: 2.75rem; margin-left: -.6rem; padding: .4rem .6rem; border: 0; border-radius: .25rem; background: none; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, sans-serif; font-size: .9375rem; font-weight: 400; line-height: 1.3; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; cursor: pointer; pointer-events: auto; touch-action: manipulation; transition: color .2s ease, background-color var(--press-out) var(--ease-out); }
+.project-sheet-back svg { width: 1.125rem; height: 1.125rem; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s var(--ease-out); }
+.project-sheet-back:focus-visible { outline: 1px solid rgba(255, 255, 255, .5); outline-offset: 2px; color: var(--white); }
+.project-sheet-back.is-touch-pressed { background: rgba(255, 255, 255, .12); transition-duration: var(--press-in); }
+.project-sheet-hero { max-width: 1600px; margin: 0 auto; padding: clamp(1.5rem, 7svh, 5rem) var(--page-gutter) 8rem; }
+.project-sheet-hero .about-eyebrow { margin-bottom: clamp(2rem, 5svh, 3rem); }
+.project-sheet-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: clamp(1.75rem, 4svh, 2.5rem) 0 0; padding: 0; list-style: none; }
+/* The site's inverse button with a clear face: the white block and its icon
+   slide across to fill it on hover, as My Resume does. The labels run longer
+   than My Resume's, so the button grows to fit them, keeping its width while
+   the label shifts. */
+.project-sheet-actions .button { width: auto; min-width: 210px; background: transparent; font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: .9375rem; font-weight: 400; letter-spacing: .01em; }
+.project-sheet-actions .button-arrow svg { width: 18px; height: 18px; }
+/* A project's mark is sparser than a glyph icon, so it gets a little more room. */
+.project-sheet-actions .button-arrow .project-sheet-mark { width: 22px; height: 22px; }
+.project-sheet-actions .button-label { padding-right: 18px; }
+.project-sheet-actions .button:not([aria-disabled="true"]):focus-visible .button-label { padding-right: 64px; }
+.project-sheet-actions .button[aria-disabled="true"] { opacity: .35; cursor: not-allowed; }
+.project-sheet-actions .button[aria-disabled="true"]::before { width: 44px !important; }
+.project-sheet-actions .button[aria-disabled="true"] .button-label { padding: 0 18px 0 46px !important; color: inherit !important; }
+.project-sheet-actions .button[aria-disabled="true"] .button-arrow { left: 2px !important; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .project-sheet-actions .button:not([aria-disabled="true"]):hover .button-label { padding-right: 64px; }
+  .project-sheet-back:hover { color: var(--white); }
+  .project-sheet-back:hover svg { transform: translateX(-3px); }
+}
+@media (max-width: 700px) {
+  .project-sheet { --page-gutter: 1.25rem; }
+}
+/* The first screen pairs the project with its story. The story starts a set
+   distance after the copy and runs toward the page edge, so the two read as
+   one group; narrower screens stack it under the links. */
+.project-sheet-hero { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); align-items: center; gap: clamp(2.5rem, 7vw, 8rem); min-height: calc(100svh - 5rem); padding-bottom: clamp(3rem, 8svh, 6rem); }
+/* The story takes the rest of the row, up to a comfortable line length. */
+.project-story { max-width: 68ch; }
+.project-story .about-eyebrow { margin-bottom: clamp(1.25rem, 3svh, 1.75rem); }
+.project-story p:not(.about-eyebrow) { margin: 0; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.7; text-wrap: pretty; }
+.project-story p:not(.about-eyebrow) + p { margin-top: 1em; }
+@media (max-width: 1000px) {
+  .project-sheet-hero { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 0; }
+}
+
+/* How it works, after DAQ Consulting's case-study architecture figure: a
+   drawing of the stack over an inspector for the selected stage. Every size is
+   fixed and the whole section is 770px tall, so it fits one laptop screen; a
+   narrower screen scrolls the figure sideways instead of reflowing it. */
+.project-how { max-width: 1600px; margin: 0 auto; padding: 80px var(--page-gutter) 24px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #777 #111; }
+.arch { width: 1378px; color: #fff; }
+.arch-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; height: 76px; margin-bottom: 20px; }
+.arch-head .about-eyebrow { margin-bottom: 14px; }
+.project-how .about-heading { font-size: 48px; }
+.arch-caption { display: flex; align-items: flex-end; gap: 40px; }
+.arch-caption h3 { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: 24px; font-weight: 300; line-height: 1.12; letter-spacing: -.035em; white-space: nowrap; }
+.arch-caption p { width: 540px; margin: 0; color: rgba(255, 255, 255, .62); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.7; }
+.arch-sheet { background: #030303; border: 1px solid rgba(255, 255, 255, .18); }
+.arch-legend { display: flex; align-items: center; gap: 24px; height: 36px; padding: 0 24px; border-bottom: 1px solid rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .62); font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .04em; }
+.arch-legend > span { display: inline-flex; align-items: center; gap: 8px; }
+.arch-legend i { display: block; width: 20px; height: 0; border-top: 1px solid; }
+.arch-legend i[data-kind="control"] { border-top-style: dashed; }
+.arch-hint { margin-left: auto; }
+.arch-drawing { display: block; width: 1376px; height: 376px; overflow: visible; }
+.arch-drawing text { user-select: none; -webkit-user-select: none; }
+.arch-region rect { fill: rgba(255, 255, 255, .01); stroke: rgba(255, 255, 255, .16); stroke-width: .6; }
+.arch-region text { fill: rgba(255, 255, 255, .57); stroke: #030303; stroke-width: 6px; paint-order: stroke; stroke-linejoin: round; font-family: 'Geist Mono', monospace; font-size: 12px; letter-spacing: 1px; }
+.arch-edge { color: #777; }
+.arch-route { fill: none; stroke: currentColor; stroke-width: 1; stroke-linejoin: round; }
+.arch-edge[data-kind="control"] .arch-route { stroke-dasharray: 6 5; }
+.arch-edge[data-active="true"] { color: #ddd; }
+.arch-edge[data-active="true"] .arch-route { stroke-width: 1.4; }
+.arch-ink { fill: none; stroke: #fff; stroke-width: 1.6; stroke-dasharray: 1; pointer-events: none; animation: arch-ink .45s cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes arch-ink { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.arch-node { cursor: pointer; outline: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.arch-node-body { fill: #090909; stroke: #666; stroke-width: 1; transition: fill .18s, stroke .18s; }
+.arch-node-backing { fill: none; stroke: #555; stroke-width: 1; }
+.arch-node-notation { fill: none; stroke: #666; stroke-width: 1; }
+.arch-layer-band { fill: #1a1a1a; }
+.arch-layer-rule { fill: none; stroke: #666; stroke-width: .7; }
+.arch-layer-label { fill: #ddd; font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: 1.6px; pointer-events: none; }
+.arch-node[data-layer] .arch-node-body { fill: #101010; stroke: #888; }
+.arch-node-title { fill: #ddd; font-family: 'Google Sans', Arial, sans-serif; font-size: 18px; letter-spacing: -.5px; pointer-events: none; }
+.arch-node[data-layer] .arch-node-title { fill: #f0f0f0; }
+.arch-node-subtitle { fill: #aaa; font-family: 'Geist Mono', monospace; font-size: 11px; pointer-events: none; }
+.arch-node[data-connected="true"] .arch-node-body { stroke: #999; }
+.arch-node[data-selected="true"] .arch-node-body { fill: #1b1b1b; stroke: #fff; stroke-width: 1.4; }
+.arch-node[data-selected="true"] .arch-layer-band { fill: #ededed; }
+.arch-node[data-selected="true"] .arch-layer-label { fill: #111; }
+.arch-node[data-selected="true"] .arch-node-title { fill: #fff; }
+.arch-node:focus-visible .arch-node-body { stroke: #fff; stroke-width: 2.5; }
+.arch-node-icons { color: #888; pointer-events: none; transition: color .18s; }
+.arch-band-icons { color: #aaa; }
+.arch-node[data-connected="true"] .arch-node-icons { color: #aaa; }
+.arch-node[data-selected="true"] .arch-node-icons { color: #fff; }
+.arch-node[data-selected="true"] .arch-band-icons { color: #111; }
+/* The selected box shows its logos in brand color. */
+.arch-icon-color { display: none; }
+.arch-node[data-selected="true"] .arch-icon-color { display: inline; }
+.arch-node[data-selected="true"] .arch-icon-mono:has(+ .arch-icon-color) { display: none; }
+.arch-selection { fill: none; stroke: #fff; stroke-width: 1.3; pointer-events: none; }
+.arch-ports { pointer-events: none; }
+.arch-ports rect { fill: #030303; stroke: #888; stroke-width: .8; }
+.arch-ports rect[data-active="true"] { fill: #eee; stroke: #eee; }
+@media (hover: hover) {
+  .arch-node:hover .arch-node-body { fill: #181818; stroke: #eee; }
+  .arch-node:not([data-selected="true"]):hover .arch-node-icons { color: #eee; }
+}
+.arch-inspector { display: grid; grid-template-columns: 300px 972px; gap: 40px; height: 144px; padding: 20px 32px; box-sizing: border-box; border-top: 1px solid rgba(255, 255, 255, .38); background: #080808; }
+.arch-stage { display: flex; flex-direction: column; align-items: flex-start; }
+.arch-stage-type { color: rgba(255, 255, 255, .6); font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 15px; letter-spacing: .08em; text-transform: uppercase; }
+.arch-stage-title { margin: 8px 0 0; font-family: 'Google Sans', Arial, sans-serif; font-size: 22px; font-weight: 400; line-height: 26px; letter-spacing: -.03em; white-space: nowrap; }
+.arch-stepper { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.arch-stepper button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 1px solid rgba(255, 255, 255, .25); background: none; color: #fff; cursor: pointer; touch-action: manipulation; transition: background-color .15s; }
+.arch-stepper button:active { background: rgba(255, 255, 255, .12); }
+.arch-stepper button:focus-visible { outline: 1px solid #fff; outline-offset: 4px; }
+.arch-stepper > span { width: 60px; font-family: 'Geist Mono', monospace; font-size: 10px; text-align: center; font-variant-numeric: tabular-nums; }
+.arch-stepper > span > span + span { color: rgba(255, 255, 255, .6); }
+@media (hover: hover) {
+  .arch-stepper button:hover { background: rgba(255, 255, 255, .08); }
+}
+.arch-desc { margin: 0; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 22px; }
+.arch-tech { display: flex; gap: 16px; margin: 14px 0 0; padding: 0; color: rgba(255, 255, 255, .6); font-family: 'Geist Mono', monospace; font-size: 10px; line-height: 15px; list-style: none; }
+.arch-tech li { display: flex; align-items: center; gap: 6px; }
+.arch-tech svg { flex: none; width: 12px; height: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .arch-ink { animation: none; }
+  .arch-node-body { transition: none; }
+}
+/* GSAP's power2.inOut and power3.out. */
+.project-sheet.is-playing .project-sheet-hero .about-rule::after { animation: project-sheet-rule 1s cubic-bezier(.455, .03, .515, .955) .1s both; }
+.project-sheet.is-playing .project-sheet-hero .about-title-line { animation: project-sheet-fill 1.3s cubic-bezier(.455, .03, .515, .955) calc(.2s + var(--line, 0) * .18s) both; }
+.project-sheet.is-playing .project-sheet-rise { animation: project-sheet-rise .8s cubic-bezier(.215, .61, .355, 1) calc(.8s + var(--rise, 0) * .1s) both; }
+@keyframes project-sheet-rule { from { transform: scaleX(0); } }
+@keyframes project-sheet-fill { from { --about-fill: 0; } }
+@keyframes project-sheet-rise { from { opacity: 0; transform: translateY(14px); } }

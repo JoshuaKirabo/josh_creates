@@ -12,14 +12,14 @@ Only commit when the user explicitly asks. Follow the existing git commit protoc
 The user is the only author and the only committer:
 
 - Name: `Joshua Kirabo Kisaku`
-- Email: `jkirabo@asu.edu`
+- Email: `joshuak2001@gmail.com`
 
 Never attribute a commit to Cursor, a coding agent, or any other identity. Never add `Co-authored-by`, `Made-with`, or similar trailers.
 
 Do not change git config. For the commit command only, force that identity so the environment cannot substitute another author:
 
 ```bash
-git -c user.name="Joshua Kirabo Kisaku" -c user.email="jkirabo@asu.edu" commit -m "$(cat <<'EOF'
+git -c user.name="Joshua Kirabo Kisaku" -c user.email="joshuak2001@gmail.com" commit -m "$(cat <<'EOF'
 feat(ui): Added a toggle.
 
 EOF

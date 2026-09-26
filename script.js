@@ -19,7 +19,7 @@ const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a, .core-subject, .core-link';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a, .core-subject, .core-link, .core-desc-link, .project-sheet-back';
   let press = null;
   let released = null;
 
@@ -1963,8 +1963,35 @@ function initAboutContent() {
     details.forEach(row => row.forEach((words, i) => { widest[i] = Math.max(widest[i] || 0, words.getBoundingClientRect().width); }));
     details.forEach(row => row.forEach((words, i) => { words.style.minWidth = `${Math.ceil(widest[i])}px`; }));
   };
-  const fitCard = () => { fitTitles(); fitDetails(); };
-  new ResizeObserver(fitCard).observe(core.querySelector('.core-reading'));
+  // The card keeps one height for every job, so a longer description steps
+  // its type down only as far as it must to fit the card the other jobs make.
+  const card = core.querySelector('.core-reading');
+  const copy = panels.map(panel => [...panel.querySelectorAll('.core-desc')]);
+  const fitCopy = () => {
+    copy.flat().forEach((paragraph) => { paragraph.style.fontSize = ''; });
+    // Each panel's own height, measured out of the shared row.
+    const natural = panels.map((panel) => {
+      panel.style.alignSelf = 'start';
+      const height = panel.offsetHeight;
+      panel.style.alignSelf = '';
+      return height;
+    });
+    const floor = parseFloat(getComputedStyle(card).minHeight);
+    panels.forEach((panel, i) => {
+      const room = Math.max(floor, ...natural.filter((_, j) => j !== i));
+      const paragraphs = copy[i];
+      if (natural[i] <= room || !paragraphs.length) return;
+      panel.style.height = `${room}px`;
+      let size = parseFloat(getComputedStyle(paragraphs[0]).fontSize);
+      while (panel.scrollHeight > panel.clientHeight && size > 13) {
+        size -= .5;
+        paragraphs.forEach((paragraph) => { paragraph.style.fontSize = `${size}px`; });
+      }
+      panel.style.height = '';
+    });
+  };
+  const fitCard = () => { fitTitles(); fitDetails(); fitCopy(); };
+  new ResizeObserver(fitCard).observe(card);
   document.fonts.ready.then(fitCard);
 }
 
@@ -2485,6 +2512,233 @@ function bindProjectCtaScrambles() {
   });
 }
 bindProjectCtaScrambles();
+
+// Each project owns a page in projects/. A card that links to one opens its
+// content in a sheet over the site instead of leaving it; the page itself is the
+// fallback, and a modified click still opens it.
+function initProjectSheet() {
+  // Opened on its own, the project page plays the same entrance.
+  document.querySelector('.project-sheet--page')?.classList.add('is-playing');
+
+  const sheet = document.createElement('dialog');
+  sheet.className = 'project-sheet';
+  sheet.setAttribute('aria-labelledby', 'project-sheet-title');
+  sheet.innerHTML = `
+    <div class="project-sheet-bar">
+      <button class="project-sheet-back" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg>Back to projects</button>
+    </div>
+    <div class="project-sheet-content"></div>`;
+  document.body.append(sheet);
+  const heroes = new Map();
+  let fade = null;
+
+  function projectLink(target) {
+    const link = target.closest?.('.project-link');
+    return link && /\/projects\/[^/]+\.html$/.test(new URL(link.href, location.href).pathname) ? link : null;
+  }
+
+  // Each page is fetched once, as soon as a reader shows interest in it.
+  function load(url) {
+    if (!heroes.has(url)) {
+      heroes.set(url, fetch(url)
+        .then((response) => {
+          if (!response.ok) throw new Error('Project unavailable');
+          return response.text();
+        })
+        .then((html) => {
+          const content = new DOMParser().parseFromString(html, 'text/html').querySelector('.project-sheet-content');
+          if (!content) throw new Error('Project unavailable');
+          return content;
+        })
+        .catch((error) => {
+          heroes.delete(url);
+          throw error;
+        }));
+    }
+    return heroes.get(url);
+  }
+
+  async function open(link, fromHistory = false) {
+    let content;
+    try {
+      content = await load(link.href);
+    } catch {
+      // file://, offline or a missing page: go to the page instead.
+      location.href = link.href;
+      return;
+    }
+    // The address follows the sheet, so a refresh lands on the project page and
+    // the browser's back button closes the sheet.
+    if (!fromHistory) history.pushState({ projectSheet: link.href }, '', link.href);
+    sheet.querySelector('.project-sheet-content').replaceWith(document.importNode(content, true));
+    fade?.cancel();
+    document.documentElement.classList.add('project-sheet-open');
+    if (!sheet.open) sheet.showModal();
+    sheet.scrollTop = 0;
+    // Restart the hero's entrance for every project.
+    sheet.classList.remove('is-playing');
+    void sheet.offsetWidth;
+    sheet.classList.add('is-playing');
+    fade = sheet.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.23, 1, .32, 1)' });
+  }
+
+  function close() {
+    if (!sheet.open) return;
+    // Leave through history, so the address returns to the page underneath;
+    // popstate then closes the sheet.
+    if (history.state?.projectSheet) {
+      history.back();
+      return;
+    }
+    dismiss();
+  }
+
+  function dismiss() {
+    if (!sheet.open) return;
+    fade?.cancel();
+    // A hidden tab never finishes the fade, so it closes at once.
+    if (document.hidden) {
+      closed();
+      return;
+    }
+    fade = sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
+    fade.onfinish = closed;
+  }
+
+  // The close event can wait on the next frame, so the page is released here.
+  function closed() {
+    if (sheet.open) sheet.close();
+    fade?.cancel();
+    fade = null;
+    sheet.classList.remove('is-playing');
+    document.documentElement.classList.remove('project-sheet-open');
+  }
+
+  sheet.addEventListener('close', closed);
+  // Escape leaves the same way the back button does.
+  sheet.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    close();
+  });
+
+  sheet.querySelector('.project-sheet-back').addEventListener('click', close);
+
+  // Back closes the sheet; forward reopens it.
+  window.addEventListener('popstate', (event) => {
+    const href = event.state?.projectSheet;
+    if (href) {
+      const link = [...document.querySelectorAll('.project-link')].find((candidate) => candidate.href === href);
+      if (link) open(link, true);
+      else location.reload();
+    } else {
+      dismiss();
+    }
+  });
+
+  const prefetch = (event) => {
+    const link = projectLink(event.target);
+    if (link) load(link.href).catch(() => {});
+  };
+  document.addEventListener('pointerover', prefetch, { passive: true });
+  document.addEventListener('focusin', prefetch);
+  document.addEventListener('click', (event) => {
+    const link = projectLink(event.target);
+    if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    open(link);
+  });
+}
+initProjectSheet();
+
+// A project's architecture drawing: selecting a stage lights its routes and
+// neighbors and fills the inspector below. The markup ships with a stage already
+// selected, and the sheet imports it fresh on every open, so the listeners live
+// on the document.
+function initArchitecture() {
+  const stagesOf = new WeakMap();
+  const stages = (arch) => {
+    if (!stagesOf.has(arch)) stagesOf.set(arch, JSON.parse(arch.querySelector('.arch-stages').textContent));
+    return stagesOf.get(arch);
+  };
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function select(arch, id, focus) {
+    const list = stages(arch);
+    const index = list.findIndex((stage) => stage.id === id);
+    if (index < 0) return;
+    const stage = list[index];
+    const svg = arch.querySelector('.arch-drawing');
+    const near = new Set();
+    svg.querySelectorAll('.arch-edge').forEach((edge) => {
+      const on = edge.dataset.from === id || edge.dataset.to === id;
+      edge.dataset.active = on;
+      edge.querySelector('.arch-ink')?.remove();
+      if (!on) return;
+      near.add(edge.dataset.from === id ? edge.dataset.to : edge.dataset.from);
+      if (reduceMotion.matches) return;
+      // Ink the route in from its source, as on the original.
+      const ink = edge.querySelector('.arch-route').cloneNode();
+      ink.setAttribute('class', 'arch-ink');
+      ink.setAttribute('pathLength', '1');
+      ink.removeAttribute('marker-end');
+      edge.append(ink);
+    });
+    svg.querySelectorAll('.arch-ports rect').forEach((port) => {
+      port.dataset.active = port.dataset.from === id || port.dataset.to === id;
+    });
+    svg.querySelectorAll('.arch-node').forEach((node) => {
+      const on = node.dataset.node === id;
+      node.dataset.selected = on;
+      node.dataset.connected = near.has(node.dataset.node);
+      node.setAttribute('aria-pressed', on);
+      node.tabIndex = on ? 0 : -1;
+      node.querySelector('.arch-selection')?.remove();
+      if (on) node.insertAdjacentHTML('beforeend', '<path class="arch-selection" d="M-3,14V-3H14M162,91H179V74" aria-hidden="true"/>');
+    });
+    arch.querySelector('.arch-stage-type').textContent = stage.type;
+    arch.querySelector('.arch-stage-title').textContent = stage.title;
+    arch.querySelector('.arch-count').textContent = String(index + 1).padStart(2, '0');
+    arch.querySelector('.arch-desc').textContent = stage.desc;
+    // A technology is a name, or a name with the id of its icon symbol.
+    arch.querySelector('.arch-tech').replaceChildren(...stage.tech.map((tech) => {
+      const item = document.createElement('li');
+      if (tech.icon) item.insertAdjacentHTML('beforeend', `<svg aria-hidden="true" focusable="false"><use href="#${tech.icon}"/></svg>`);
+      item.append(tech.name ?? tech);
+      return item;
+    }));
+    if (focus) svg.querySelector(`.arch-node[data-node="${id}"]`).focus();
+  }
+
+  function step(arch, by, focus) {
+    const list = stages(arch);
+    const current = arch.querySelector('.arch-node[data-selected="true"]')?.dataset.node;
+    const index = list.findIndex((stage) => stage.id === current);
+    select(arch, list[(index + by + list.length) % list.length].id, focus);
+  }
+
+  document.addEventListener('click', (event) => {
+    const arch = event.target.closest?.('[data-arch]');
+    if (!arch) return;
+    const node = event.target.closest('.arch-node');
+    if (node) select(arch, node.dataset.node, false);
+    const button = event.target.closest('[data-arch-step]');
+    if (button) step(arch, Number(button.dataset.archStep), false);
+  });
+  document.addEventListener('keydown', (event) => {
+    const node = event.target.closest?.('.arch-node');
+    if (!node) return;
+    const arch = node.closest('[data-arch]');
+    const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+    if (by) {
+      event.preventDefault();
+      step(arch, by, true);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      select(arch, node.dataset.node, false);
+    }
+  });
+}
+initArchitecture();
 
 function resetHoverMotion() {
   resetHoverEffects.forEach((reset) => reset());
