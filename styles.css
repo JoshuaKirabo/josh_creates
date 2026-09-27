@@ -1326,18 +1326,16 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
   .project-sheet-hero { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 0; }
 }
 
-/* How it works, after DAQ Consulting's case-study architecture figure: a
+/* Architecture figure, after DAQ Consulting's case-study drawing: a diagram of
    drawing of the stack over an inspector for the selected stage. Every size is
    fixed and the whole section is 770px tall, so it fits one laptop screen; a
    narrower screen scrolls the figure sideways instead of reflowing it. */
-.project-how { max-width: 1600px; margin: 0 auto; padding: 80px var(--page-gutter) 24px; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #777 #111; }
+/* A page turn rests this section at the top of the screen, so it takes a whole
+   screen and centers the figure in the room below the bar. */
+.project-how { display: grid; align-content: center; box-sizing: border-box; min-height: 100svh; max-width: 1600px; margin: 0 auto; padding: 5rem var(--page-gutter) 0; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #777 #111; }
 .arch { width: 1378px; color: #fff; }
-.arch-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; height: 76px; margin-bottom: 20px; }
-.arch-head .about-eyebrow { margin-bottom: 14px; }
-.project-how .about-heading { font-size: 48px; }
-.arch-caption { display: flex; align-items: flex-end; gap: 40px; }
-.arch-caption h3 { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: 24px; font-weight: 300; line-height: 1.12; letter-spacing: -.035em; white-space: nowrap; }
-.arch-caption p { width: 540px; margin: 0; color: rgba(255, 255, 255, .62); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 13px; line-height: 1.7; }
+.arch-head { margin-bottom: 20px; }
+.arch-head .about-eyebrow { margin-bottom: 0; }
 .arch-sheet { background: #030303; border: 1px solid rgba(255, 255, 255, .18); }
 .arch-legend { display: flex; align-items: center; gap: 24px; height: 36px; padding: 0 24px; border-bottom: 1px solid rgba(255, 255, 255, .1); color: rgba(255, 255, 255, .62); font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .04em; }
 .arch-legend > span { display: inline-flex; align-items: center; gap: 8px; }
@@ -1417,3 +1415,40 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
 @keyframes project-sheet-rule { from { transform: scaleX(0); } }
 @keyframes project-sheet-fill { from { --about-fill: 0; } }
 @keyframes project-sheet-rise { from { opacity: 0; transform: translateY(14px); } }
+/* The View Live mark assembles as its button lands: the ring opens out, then
+   the block rises and the step slides in to meet it. */
+.project-sheet-mark :is(.mark-ring, .mark-block, .mark-step) { transform-box: fill-box; transform-origin: center; }
+.project-sheet.is-playing .project-sheet-mark .mark-ring { animation: project-mark-ring .5s var(--ease-out) 1s both; }
+.project-sheet.is-playing .project-sheet-mark .mark-block { animation: project-mark-block .5s var(--ease-out) 1.08s both; }
+.project-sheet.is-playing .project-sheet-mark .mark-step { animation: project-mark-step .5s var(--ease-out) 1.16s both; }
+@keyframes project-mark-ring { from { opacity: 0; transform: scale(.6); } }
+@keyframes project-mark-block { from { opacity: 0; transform: translateY(24px); } }
+@keyframes project-mark-step { from { opacity: 0; transform: translateX(-24px); } }
+/* Once the fill has carried the mark across, it parts and closes again. */
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .mark-ring { animation: project-mark-ring-again .45s var(--ease-in-out) .3s; }
+  :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .mark-block { animation: project-mark-block-again .45s var(--ease-in-out) .34s; }
+  :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .mark-step { animation: project-mark-step-again .45s var(--ease-in-out) .38s; }
+}
+@keyframes project-mark-ring-again { 40% { transform: scale(.82); } }
+@keyframes project-mark-block-again { 40% { transform: translateY(12px); } }
+@keyframes project-mark-step-again { 40% { transform: translateX(-12px); } }
+/* After its entrance the hero moves only by transition. Scrolling on past it
+   plays the entrance back out, quicker, the last line to rise leaving first;
+   scrolling back returns it at the exit's pace, as About's sections do.
+   Script adds .is-leaving only when motion is allowed. */
+.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .about-title-line { transition: --about-fill .5s var(--ease-out); }
+.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .about-rule::after { transition: transform .4s var(--ease-out); }
+.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) :is(.project-sheet-copy > .about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
+.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .project-sheet-rise { transition: opacity .3s var(--ease-out) calc(var(--rise, 0) * 15ms), transform .3s var(--ease-out) calc(var(--rise, 0) * 15ms); }
+.project-sheet-hero.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
+.project-sheet-hero.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
+.project-sheet-hero.is-leaving :is(.project-sheet-copy > .about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
+.project-sheet-hero.is-leaving .project-sheet-rise { opacity: 0; transform: translateY(-12px); transition: opacity .25s var(--ease-out) calc((var(--rise-last, 0) - var(--rise, 0)) * 15ms), transform .25s var(--ease-out) calc((var(--rise-last, 0) - var(--rise, 0)) * 15ms); }
+/* Touch keeps its native momentum and lands on each section; the wheel's
+   turns are scripted. The hero rests below the bar's room. */
+@media (pointer: coarse) {
+  .project-paging { scroll-snap-type: y mandatory; }
+  .project-paging .project-sheet-content > * { scroll-snap-align: start; }
+  .project-paging .project-sheet-hero { scroll-margin-top: 5rem; }
+}
