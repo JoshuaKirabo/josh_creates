@@ -718,6 +718,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .project-tag-icon--fastapi { --brand: #05998b; }
 .project-tag-icon--nodedotjs { --brand: #5fa04e; }
 .project-tag-icon--postgresql { --brand: #699eca; }
+.project-tag-icon--react { --brand: #61dafb; }
 .project-tag-icon--springboot { --brand: #6db33f; }
 .project-tag-icon--html5 { --brand: #e34f26; }
 .project-tag-icon--css { --brand: #2f9be8; }
@@ -1484,6 +1485,8 @@ html.nav-leave .about-topbar .section-nav-link[aria-current]::before { transform
 .project-sheet.is-playing .handover-motion .about-title-line > * { animation: project-sheet-drop .7s var(--ease-out-quart) calc(var(--line, 0) * 80ms) both; }
 .project-sheet.is-playing .project-sheet-back { animation: project-sheet-rise .8s cubic-bezier(.215, .61, .355, 1) .15s both; }
 @keyframes project-sheet-drop { from { translate: 0 -105%; } }
+/* Closing, the way back lifts out with the page's exit. */
+.project-sheet.is-closing .project-sheet-back { opacity: 0; translate: 0 -.5rem; transition: opacity .24s var(--ease-in-out) .06s, translate .24s var(--ease-in-out) .06s; }
 @keyframes project-sheet-rule { from { transform: scaleX(0); } }
 @keyframes project-sheet-fill { from { --about-fill: 0; } }
 @keyframes project-sheet-rise { from { opacity: 0; transform: translateY(14px); } }

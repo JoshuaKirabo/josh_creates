@@ -1213,8 +1213,9 @@ const pageStops = () => [...document.querySelectorAll('.page-snap')].map(marker 
 // own it; `leave` starts the exit. With `fresh`, only a gesture that started
 // at the resting place can turn it. `still` names the gestures that may not
 // turn the page but must not scroll it either, so a page that only ever cuts
-// is never seen gliding to its neighbour.
-function holdPageTurns(target, leave, { fresh = false, still = () => false } = {}) {
+// is never seen gliding to its neighbour. With `wheelOnly`, touch keeps native
+// scrolling.
+function holdPageTurns(target, leave, { fresh = false, still = () => false, wheelOnly = false } = {}) {
   const gesture = { time: -Infinity, direction: 0, distance: 0, owned: false, eligible: true };
   // Returns true when this movement belongs to the exit and must not scroll.
   const claim = (direction, distance, now) => {
@@ -1249,6 +1250,7 @@ function holdPageTurns(target, leave, { fresh = false, still = () => false } = {
     const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
     if (claim(Math.sign(event.deltaY), distance, performance.now())) event.preventDefault();
   }, { passive: false, capture: true });
+  if (wheelOnly) return;
   let touchY = null;
   window.addEventListener('touchstart', (event) => {
     touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
@@ -3051,6 +3053,7 @@ function initProjectSheet() {
     // Projects waits under the sheet, reset, to play its entrance on the way back.
     if (!reducedMotion.matches) projects?.classList.remove('projects-entered');
     document.documentElement.classList.add('project-sheet-open');
+    sheet.classList.remove('is-closing');
     if (!sheet.open) sheet.showModal();
     sheet.scrollTop = 0;
     // Restart the hero's entrance for every project.
@@ -3079,12 +3082,14 @@ function initProjectSheet() {
       closed();
       return;
     }
-    // The section on screen plays its exit first; the sheet fades once most of
-    // it has gone, and Projects starts back in underneath as it does.
+    // The section on screen plays its exit on its own, the way back lifting
+    // out with it; then the sheet clears, and Projects comes back in as it
+    // goes, so the three beats read one after another.
     leaveProjectPage(sheet);
     stopHero();
-    reveal = setTimeout(showProjects, 180);
-    fade = sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, delay: 180, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
+    if (!reducedMotion.matches) sheet.classList.add('is-closing');
+    reveal = setTimeout(showProjects, 400);
+    fade = sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, delay: 360, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
     fade.onfinish = closed;
   }
 
@@ -3095,7 +3100,7 @@ function initProjectSheet() {
     fade = null;
     stopHero();
     stopHero = () => {};
-    sheet.classList.remove('is-playing');
+    sheet.classList.remove('is-playing', 'is-closing');
     showProjects();
   }
 
@@ -3265,8 +3270,6 @@ function initProjectsTrack() {
   const phone = window.matchMedia('(max-width: 700px)');
   // Scroll pixels per pixel of horizontal travel.
   const PACE = 1.15;
-  // Glide time constant for a fine pointer, in seconds.
-  const GLIDE = .09;
 
   main.classList.add('projects-pinned');
   document.documentElement.classList.add('projects-snapping');
@@ -3278,9 +3281,7 @@ function initProjectsTrack() {
     return snap;
   });
   let geometry = null;
-  let shown = 0;
   let frameId = 0;
-  let lastTime = 0;
   let current = -1;
   const fills = cards.map(() => -1);
 
@@ -3354,17 +3355,20 @@ function initProjectsTrack() {
     }
   }
 
-  function tick(time) {
+  // A fine pointer sees the track glide to each stop on a critically damped
+  // spring; touch has native momentum and reduced motion follows exactly.
+  const smooth = () => finePointer.matches && !reducedMotion.matches && !document.documentElement.classList.contains('touch-input');
+  const glide = createSpring2D(.5, ({ x }) => paint(x), { restDistance: .1, restSpeed: 2 });
+  glide.setActive(true);
+
+  function tick() {
     frameId = 0;
     const goal = target();
-    const glide = finePointer.matches && !reducedMotion.matches && !document.documentElement.classList.contains('touch-input');
-    const dt = lastTime ? Math.min(.064, (time - lastTime) / 1000) : 1 / 60;
-    lastTime = time;
-    shown = glide ? goal + (shown - goal) * Math.exp(-dt / GLIDE) : goal;
-    if (Math.abs(goal - shown) < .1) shown = goal;
-    paint(shown);
-    if (shown !== goal) frameId = requestAnimationFrame(tick);
-    else lastTime = 0;
+    if (smooth()) glide.setTarget(goal, 0);
+    else {
+      glide.jumpTo(goal, 0);
+      paint(goal);
+    }
   }
 
   function schedule() {
@@ -3373,8 +3377,9 @@ function initProjectsTrack() {
 
   function refresh() {
     measure();
-    shown = target();
-    paint(shown);
+    const goal = target();
+    glide.jumpTo(goal, 0);
+    paint(goal);
   }
 
   // Scroll position that brings card `index` to the column's centre.
@@ -3387,9 +3392,28 @@ function initProjectsTrack() {
   railLinks.forEach((link, index) => {
     link.addEventListener('click', (event) => {
       event.preventDefault();
-      window.scrollTo({ top: scrollFor(index), behavior: reducedMotion.matches ? 'auto' : 'smooth' });
+      window.scrollTo({ top: scrollFor(index), behavior: reducedMotion.matches || !smooth() ? 'auto' : 'instant' });
     });
   });
+  // A fine pointer turns the track one card per gesture, as About turns its
+  // pages: the document cuts to the card's stop and the spring carries the
+  // track there, so the browser's snap never has momentum to pull back.
+  // Before the first card is Education, reached the way it turns down.
+  const cardStops = () => {
+    const end = document.documentElement.scrollHeight - window.innerHeight;
+    return cards.map((_, index) => Math.min(scrollFor(index), end));
+  };
+  holdPageTurns((direction) => {
+    if (!geometry?.distance || !smooth()) return;
+    const y = window.scrollY;
+    const stops = cardStops();
+    const at = stops.findIndex(stop => Math.abs(stop - y) <= 2);
+    if (at < 0) return;
+    if (at + direction < 0) return pageStops().filter(top => top < y - 2).pop();
+    return stops[at + direction];
+  }, (to) => {
+    window.scrollTo({ top: to, behavior: to < geometry.start ? 'smooth' : 'instant' });
+  }, { wheelOnly: true });
   // Keyboard focus lands on the card at once; the track follows without a glide.
   track.addEventListener('focusin', (event) => {
     const index = cards.indexOf(event.target.closest('[data-project]'));
