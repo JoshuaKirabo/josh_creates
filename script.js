@@ -1449,6 +1449,890 @@ function initAboutScene(about) {
 // with .is-arrived, and a page without the fold arrives as soon as it paints.
 // The Core is a vertical tab list; its panels share one cell, so switching
 // subjects never changes the page height.
+// What I do's field of points. Each discipline gathers them into a solid of
+// its own, built in three dimensions: a browser window with a pointer,
+// code brackets, a stack of database discs, an AI chip, a neural network,
+// a cloud with an upload arrow, an endless loop, two gears, a server rack. Every point
+// sits on the solid's skin at an even spacing and knows which way that skin
+// faces, so faces turned away fall dark and the shape reads as a body, not
+// a picture. A change sweeps through as a scan line, and each point only
+// sets off once the line has passed it. Left alone the field cycles through
+// the disciplines, lighting the cell it is showing; pointing at or focusing
+// a cell holds its shape. It draws only while on screen.
+const CRAFT_ORDER = ['frontend', 'backend', 'database', 'ai', 'ml', 'cloud', 'devops', 'automation', 'server'];
+const CRAFT_DWELL = Object.fromEntries(CRAFT_ORDER.map(name => [name, 3000]));
+// Each discipline's points take the colour of its lead tool: React, Spring,
+// Postgres, Together AI, scikit-learn, Git, Windows. Cloud and Automation
+// have no coloured mark of their own, so they take a sky and a violet.
+const CRAFT_COLORS = {
+  frontend: [97, 218, 251],
+  backend: [109, 179, 63],
+  database: [105, 158, 202],
+  ai: [239, 44, 193],
+  ml: [247, 147, 30],
+  cloud: [125, 211, 252],
+  devops: [240, 80, 50],
+  automation: [167, 139, 250],
+  server: [76, 194, 255]
+};
+
+// A small kit of solids in a -1..1 space, y up and +z toward the viewer.
+// Each lays points over its skin `gap` apart with the skin's outward normal,
+// and can tell whether a point lies inside it, so where solids overlap only
+// the outer skin of the whole is kept.
+function craftKit(gap) {
+  const points = [];
+  const solids = [];
+  const solid = (inside) => { solids.push(inside); return solids.length - 1; };
+  const put = (owner, x, y, z, nx, ny, nz) => points.push([x, y, z, nx, ny, nz, owner]);
+  const along = (length) => Math.max(1, Math.round(length / gap));
+  // A flat patch: a centre, two unit axes and their half-lengths.
+  const patch = (owner, [cx, cy, cz], u, v, hu, hv, n) => {
+    const cu = along(hu * 2);
+    const cv = along(hv * 2);
+    for (let i = 0; i < cu; i++) {
+      for (let j = 0; j < cv; j++) {
+        const a = ((i + .5) / cu * 2 - 1) * hu;
+        const b = ((j + .5) / cv * 2 - 1) * hv;
+        put(owner, cx + u[0] * a + v[0] * b, cy + u[1] * a + v[1] * b, cz + u[2] * a + v[2] * b, ...n);
+      }
+    }
+  };
+  // Points on a sphere by the golden angle, so they sit evenly with no seams.
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const kit = {
+    box(cx, cy, cz, hx, hy, hz) {
+      const owner = solid((x, y, z, e) => Math.abs(x - cx) < hx - e && Math.abs(y - cy) < hy - e && Math.abs(z - cz) < hz - e);
+      const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
+      patch(owner, [cx, cy, cz + hz], X, Y, hx, hy, [0, 0, 1]);
+      patch(owner, [cx, cy, cz - hz], X, Y, hx, hy, [0, 0, -1]);
+      patch(owner, [cx, cy + hy, cz], X, Z, hx, hz, [0, 1, 0]);
+      patch(owner, [cx, cy - hy, cz], X, Z, hx, hz, [0, -1, 0]);
+      patch(owner, [cx + hx, cy, cz], Y, Z, hy, hz, [1, 0, 0]);
+      patch(owner, [cx - hx, cy, cz], Y, Z, hy, hz, [-1, 0, 0]);
+    },
+    sphere(cx, cy, cz, r) {
+      const owner = solid((x, y, z, e) => Math.hypot(x - cx, y - cy, z - cz) < r - e);
+      const count = Math.max(6, Math.round(4 * Math.PI * r * r / (gap * gap)));
+      for (let i = 0; i < count; i++) {
+        const ny = 1 - (i + .5) / count * 2;
+        const ring = Math.sqrt(1 - ny * ny);
+        const nx = Math.cos(i * golden) * ring;
+        const nz = Math.sin(i * golden) * ring;
+        put(owner, cx + nx * r, cy + ny * r, cz + nz * r, nx, ny, nz);
+      }
+    },
+    // A disc standing on the y axis, with both lids.
+    cylinder(cx, cy, cz, r, h) {
+      const owner = solid((x, y, z, e) => Math.hypot(x - cx, z - cz) < r - e && Math.abs(y - cy) < h / 2 - e);
+      const rows = along(h);
+      const round = Math.max(8, Math.round(2 * Math.PI * r / gap));
+      for (let j = 0; j < rows; j++) {
+        for (let i = 0; i < round; i++) {
+          const a = (i + (j % 2) * .5) / round * Math.PI * 2;
+          put(owner, cx + Math.cos(a) * r, cy - h / 2 + (j + .5) / rows * h, cz + Math.sin(a) * r, Math.cos(a), 0, Math.sin(a));
+        }
+      }
+      const lid = Math.max(4, Math.round(Math.PI * r * r / (gap * gap)));
+      [1, -1].forEach((side) => {
+        for (let i = 0; i < lid; i++) {
+          const d = Math.sqrt((i + .5) / lid) * r;
+          put(owner, cx + Math.cos(i * golden) * d, cy + side * h / 2, cz + Math.sin(i * golden) * d, 0, side, 0);
+        }
+      });
+    },
+    // A tube of radius r along a path of [x, y, z] points, rounded at its
+    // ends and corners. A closed path loops back to its start.
+    tube(path, r, closed = false) {
+      const nodes = closed ? [...path, path[0]] : path;
+      const lines = nodes.slice(1).map((end, i) => [nodes[i], end]);
+      const near = (x, y, z) => Math.min(...lines.map(([a, b]) => {
+        const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        const t = Math.max(0, Math.min(1, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / (d[0] ** 2 + d[1] ** 2 + d[2] ** 2 || 1)));
+        return Math.hypot(x - a[0] - d[0] * t, y - a[1] - d[1] * t, z - a[2] - d[2] * t);
+      }));
+      const owner = solid((x, y, z, e) => near(x, y, z) < r - e);
+      const round = Math.max(6, Math.round(2 * Math.PI * r / gap));
+      let ring = 0;
+      lines.forEach(([a, b]) => {
+        const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        const length = Math.hypot(...d);
+        const t = d.map(c => c / length);
+        // Two axes across the tube, square to its direction.
+        const up = Math.abs(t[2]) > .9 ? [0, 1, 0] : [0, 0, 1];
+        let u = [t[1] * up[2] - t[2] * up[1], t[2] * up[0] - t[0] * up[2], t[0] * up[1] - t[1] * up[0]];
+        const lu = Math.hypot(...u);
+        u = u.map(c => c / lu);
+        const v = [t[1] * u[2] - t[2] * u[1], t[2] * u[0] - t[0] * u[2], t[0] * u[1] - t[1] * u[0]];
+        const steps = Math.max(1, Math.round(length / gap));
+        for (let s = 0; s < steps; s++, ring++) {
+          const f = (s + .5) / steps;
+          for (let i = 0; i < round; i++) {
+            const turn = (i + (ring % 2) * .5) / round * Math.PI * 2;
+            const n = [0, 1, 2].map(k => u[k] * Math.cos(turn) + v[k] * Math.sin(turn));
+            put(owner, a[0] + d[0] * f + n[0] * r, a[1] + d[1] * f + n[1] * r, a[2] + d[2] * f + n[2] * r, ...n);
+          }
+        }
+      });
+      // Corners are rounded off; only a few long, straight tubes need them.
+      if (nodes.length < 12) (closed ? path : nodes).forEach(([x, y, z]) => kit.sphere(x, y, z, r));
+    },
+    // A flat outline pushed out to a depth: `loops` are its edges as closed
+    // [x, y] lists, `inside` says whether a point of the face is solid.
+    slab(cx, cy, cz, depth, loops, inside) {
+      const owner = solid((x, y, z, e) => Math.abs(z - cz) < depth / 2 - e && inside(x - cx, y - cy));
+      const xs = loops.flat().map(p => p[0]);
+      const ys = loops.flat().map(p => p[1]);
+      for (let x = Math.min(...xs) + gap / 2; x < Math.max(...xs); x += gap) {
+        for (let y = Math.min(...ys) + gap / 2; y < Math.max(...ys); y += gap) {
+          if (!inside(x, y)) continue;
+          put(owner, cx + x, cy + y, cz + depth / 2, 0, 0, 1);
+          put(owner, cx + x, cy + y, cz - depth / 2, 0, 0, -1);
+        }
+      }
+      const rows = along(depth);
+      loops.forEach((loop) => {
+        loop.forEach(([ax, ay], i) => {
+          const [bx, by] = loop[(i + 1) % loop.length];
+          const length = Math.hypot(bx - ax, by - ay);
+          let nx = (by - ay) / length, ny = -(bx - ax) / length;
+          const mx = (ax + bx) / 2, my = (ay + by) / 2;
+          // The normal points out of the solid, whichever way the loop runs.
+          if (inside(mx + nx * gap * .3, my + ny * gap * .3)) { nx = -nx; ny = -ny; }
+          const steps = Math.max(1, Math.round(length / gap));
+          for (let s = 0; s < steps; s++) {
+            for (let j = 0; j < rows; j++) {
+              const f = (s + .5) / steps;
+              put(owner, cx + ax + (bx - ax) * f, cy + ay + (by - ay) * f, cz - depth / 2 + (j + .5) / rows * depth, nx, ny, 0);
+            }
+          }
+        });
+      });
+    },
+    // Only the outer skin: points buried inside another solid are dropped.
+    skin() {
+      const e = gap * .3;
+      return points.filter(([x, y, z, , , , owner]) => !solids.some((inside, k) => k !== owner && inside(x, y, z, e)));
+    }
+  };
+  return kit;
+}
+
+// A rounded rectangle as a closed path, flat at depth z, for kit.tube.
+function craftRoundRect(cx, cy, z, hw, hh, r, steps = 6) {
+  const path = [];
+  [[hw - r, hh - r, 0], [-hw + r, hh - r, Math.PI / 2], [-hw + r, -hh + r, Math.PI], [hw - r, -hh + r, Math.PI * 1.5]].forEach(([ox, oy, from]) => {
+    for (let i = 0; i <= steps; i++) {
+      const a = from + i / steps * Math.PI / 2;
+      path.push([cx + ox + Math.cos(a) * r, cy + oy + Math.sin(a) * r, z]);
+    }
+  });
+  return path;
+}
+
+const CRAFT_FORMS = {
+  // A browser window drawn in tubes: its frame, the bar with its three
+  // lights, a heading and a line of text, then three cards floating forward
+  // and a pointer in front of them all, clicking the last.
+  frontend(kit) {
+    kit.tube(craftRoundRect(0, .06, 0, .94, .7, .12), .045, true);
+    kit.tube([[-.94, .5, 0], [.94, .5, 0]], .03);
+    [-.78, -.64, -.5].forEach(x => kit.sphere(x, .63, 0, .045));
+    kit.tube([[-.66, .3, .16], [.1, .3, .16]], .05);
+    kit.tube([[-.66, .14, .16], [.34, .14, .16]], .028);
+    [-.46, 0, .46].forEach(x => kit.tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true));
+    const pointer = [[0, 0], [0, -.5], [.12, -.38], [.21, -.56], [.29, -.52], [.2, -.35], [.36, -.35], [0, 0]];
+    kit.tube(pointer.map(([x, y]) => [.5 + x, -.2 + y, .52]), .04);
+  },
+  // Code: the APIs behind the page, as a pair of brackets and a slash.
+  backend(kit) {
+    kit.tube([[-.28, .46, 0], [-.72, 0, 0], [-.28, -.46, 0]], .09);
+    kit.tube([[.28, .46, 0], [.72, 0, 0], [.28, -.46, 0]], .09);
+    kit.tube([[.14, .58, 0], [-.14, -.58, 0]], .09);
+  },
+  // A database drawn in tubes: three rings stacked into a drum, joined at
+  // the sides.
+  database(kit) {
+    const ring = y => Array.from({ length: 48 }, (_, i) => [Math.cos(i / 48 * Math.PI * 2) * .72, y, Math.sin(i / 48 * Math.PI * 2) * .72]);
+    [.62, .1, -.42].forEach(y => kit.tube(ring(y), .04, true));
+    [-1, 1].forEach(side => kit.tube([[side * .72, .62, 0], [side * .72, -.42, 0]], .04));
+  },
+
+  // AI as a chip: the package and its pins, the die raised off it, and the
+  // letters AI standing in front.
+  ai(kit) {
+    kit.tube(craftRoundRect(0, 0, 0, .56, .56, .1), .045, true);
+    [-.33, -.11, .11, .33].forEach((p) => {
+      kit.tube([[p, .6, 0], [p, .8, 0]], .035);
+      kit.tube([[p, -.6, 0], [p, -.8, 0]], .035);
+      kit.tube([[.6, p, 0], [.8, p, 0]], .035);
+      kit.tube([[-.6, p, 0], [-.8, p, 0]], .035);
+    });
+    kit.tube(craftRoundRect(0, 0, .14, .38, .38, .06), .03, true);
+    const z = .3;
+    kit.tube([[-.25, -.2, z], [-.12, .2, z], [.01, -.2, z]], .05);
+    kit.tube([[-.2, -.06, z], [-.04, -.06, z]], .045);
+    kit.tube([[.17, .2, z], [.17, -.2, z]], .05);
+    kit.tube([[.08, .2, z], [.26, .2, z]], .045);
+    kit.tube([[.08, -.2, z], [.26, -.2, z]], .045);
+  },
+  // A small neural network: three layers of nodes set round in depth, every
+  // node wired to each one in the next layer.
+  ml(kit) {
+    const layers = [[-.74, 3, .46], [0, 4, .6], [.74, 2, .32]].map(([x, count, spread]) =>
+      Array.from({ length: count }, (_, i) => {
+        const a = i / count * Math.PI * 2 + (count === 4 ? Math.PI / 4 : Math.PI / 2);
+        return [x, Math.sin(a) * spread, Math.cos(a) * spread];
+      }));
+    layers.flat().forEach(([x, y, z]) => kit.sphere(x, y, z, .11));
+    layers.slice(0, -1).forEach((layer, l) => layer.forEach(a => layers[l + 1].forEach(b => kit.tube([a, b], .016))));
+  },
+  // A cloud's outline as one tube, with an upload arrow rising through it
+  // a little in front.
+  cloud(kit) {
+    const path = [];
+    const arc = (cx, cy, r, from, to, steps) => {
+      for (let i = 0; i <= steps; i++) {
+        const a = from + (to - from) * i / steps;
+        path.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0]);
+      }
+    };
+    arc(-.52, -.12, .3, -Math.PI / 2, -Math.PI * 1.5 + .35, 14);
+    arc(-.02, .12, .44, Math.PI * .92, Math.PI * .12, 20);
+    arc(.56, -.1, .32, Math.PI * .62, -Math.PI / 2, 14);
+    kit.tube(path, .05, true);
+    kit.tube([[0, -.5, .3], [0, .16, .3]], .05);
+    kit.tube([[-.2, -.04, .3], [0, .18, .3], [.2, -.04, .3]], .05);
+  },
+  // DevOps' endless loop in two halves, each running into an arrowhead at
+  // the top of its lobe where it hands over to the other. The halves pass
+  // one in front of the other where they cross.
+  devops(kit) {
+    const at = (t) => {
+      const d = 1 + Math.sin(t) ** 2;
+      return [.95 * Math.cos(t) / d, .95 * Math.sin(t) * Math.cos(t) / d, .16 * Math.sin(t)];
+    };
+    const gap = .22;
+    [.62, Math.PI + .62].forEach((start) => {
+      const from = start + gap / 2;
+      const to = start + Math.PI - gap / 2;
+      kit.tube(Array.from({ length: 49 }, (_, i) => at(from + (to - from) * i / 48)), .05);
+      const [px, py, pz] = at(to);
+      const [qx, qy] = at(to - .02);
+      const length = Math.hypot(px - qx, py - qy);
+      const tx = (px - qx) / length, ty = (py - qy) / length;
+      const wing = side => [px - tx * .22 + ty * side * .19, py - ty * .22 - tx * side * .19, pz];
+      kit.tube([wing(1), [px + tx * .06, py + ty * .06, pz], wing(-1)], .05);
+    });
+  },
+  // Two meshed gears with depth, the small one set a little behind.
+  automation(kit) {
+    const gear = (cx, cy, cz, outer, inner, teeth, turn, hole) => {
+      const rim = Array.from({ length: teeth * 4 }, (_, i) => {
+        const a = turn + i / (teeth * 4) * Math.PI * 2;
+        const r = i % 4 < 2 ? outer : inner;
+        return [Math.cos(a) * r, Math.sin(a) * r];
+      });
+      const bore = Array.from({ length: 28 }, (_, i) => [Math.cos(i / 28 * Math.PI * 2) * hole, Math.sin(i / 28 * Math.PI * 2) * hole]);
+      const inside = (x, y) => {
+        if (Math.hypot(x, y) < hole) return false;
+        let within = false;
+        rim.forEach(([ax, ay], i) => {
+          const [bx, by] = rim[(i + 1) % rim.length];
+          if ((ay > y) !== (by > y) && x < ax + (y - ay) / (by - ay) * (bx - ax)) within = !within;
+        });
+        return within;
+      };
+      kit.slab(cx, cy, cz, .2, [rim, bore], inside);
+    };
+    gear(-.28, -.18, 0, .62, .5, 10, 0, .24);
+    gear(.5, .44, -.12, .38, .3, 7, .22, .13);
+  },
+  // A server rack: three units, each with two lights and a vent.
+  server(kit) {
+    [.46, 0, -.46].forEach((y) => {
+      kit.box(0, y, 0, .7, .16, .44);
+      [-.5, -.34].forEach(x => kit.sphere(x, y, .45, .06));
+      kit.tube([[-.1, y, .46], [.5, y, .46]], .03);
+    });
+  }
+};
+
+// Builds a form as exactly `count` points, each with its normal, as a flat
+// run of x, y, z, nx, ny, nz. The spacing is tuned until the skin holds
+// about that many; the last few are then dropped or doubled evenly.
+function buildCraftForm(name, count) {
+  let gap = .05;
+  let found = [];
+  for (let pass = 0; pass < 5; pass++) {
+    const kit = craftKit(gap);
+    CRAFT_FORMS[name](kit);
+    found = kit.skin();
+    if (Math.abs(found.length - count) < count * .01) break;
+    gap *= Math.sqrt(found.length / count);
+  }
+  const form = new Float32Array(count * 6);
+  for (let i = 0; i < count; i++) {
+    const point = found[Math.floor(i * found.length / count)];
+    for (let a = 0; a < 6; a++) form[i * 6 + a] = point[a];
+  }
+  return form;
+}
+
+// Each cell's mark: its discipline's solid drawn flat and small, the way it
+// looks face on.
+const CRAFT_GLYPHS = {
+  // A browser window: its bar and lights, a heading and a line of text,
+  // three cards, and a pointer clicking the last.
+  frontend(context) {
+    context.lineWidth = 14;
+    context.beginPath();
+    context.roundRect(40, 71, 320, 238, 20);
+    context.stroke();
+    context.lineWidth = 10;
+    context.beginPath();
+    context.moveTo(40, 115); context.lineTo(360, 115);
+    context.stroke();
+    [67, 91, 115].forEach((x) => {
+      context.beginPath();
+      context.arc(x, 93, 8, 0, Math.PI * 2);
+      context.fill();
+    });
+    context.lineWidth = 16;
+    context.beginPath();
+    context.moveTo(88, 149); context.lineTo(217, 149);
+    context.stroke();
+    context.lineWidth = 9;
+    context.beginPath();
+    context.moveTo(88, 176); context.lineTo(258, 176);
+    [122, 200, 278].forEach(x => context.roundRect(x - 29, 217, 58, 68, 8));
+    context.stroke();
+    // The pointer sits on a gap cut through whatever is under it.
+    const pointer = new Path2D('M285 234v85l20-20 16 30 14-7-15-29h27Z');
+    context.save();
+    context.globalCompositeOperation = 'destination-out';
+    context.lineWidth = 22;
+    context.stroke(pointer);
+    context.restore();
+    context.fill(pointer);
+  },
+  // Code: the APIs behind the page.
+  backend(context) {
+    context.lineWidth = 30;
+    context.beginPath();
+    context.moveTo(145, 115); context.lineTo(62, 200); context.lineTo(145, 285);
+    context.moveTo(255, 115); context.lineTo(338, 200); context.lineTo(255, 285);
+    context.moveTo(226, 92); context.lineTo(174, 308);
+    context.stroke();
+  },
+  // AI as a chip: the package, its pins, and the letters AI.
+  ai(context) {
+    context.lineWidth = 14;
+    context.beginPath();
+    context.roundRect(105, 105, 190, 190, 18);
+    context.stroke();
+    context.lineWidth = 12;
+    context.beginPath();
+    [144, 181, 219, 256].forEach((p) => {
+      context.moveTo(p, 98); context.lineTo(p, 62);
+      context.moveTo(p, 302); context.lineTo(p, 338);
+      context.moveTo(98, p); context.lineTo(62, p);
+      context.moveTo(302, p); context.lineTo(338, p);
+    });
+    context.stroke();
+    context.lineWidth = 16;
+    context.beginPath();
+    context.moveTo(158, 236); context.lineTo(180, 164); context.lineTo(202, 236);
+    context.moveTo(166, 212); context.lineTo(194, 212);
+    context.moveTo(229, 164); context.lineTo(229, 236);
+    context.moveTo(214, 164); context.lineTo(244, 164);
+    context.moveTo(214, 236); context.lineTo(244, 236);
+    context.stroke();
+  },
+  // A database: a stack of three discs.
+  database(context) {
+    context.lineWidth = 14;
+    context.beginPath();
+    context.ellipse(200, 100, 118, 36, 0, 0, Math.PI * 2);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(82, 100); context.lineTo(82, 300);
+    context.moveTo(318, 100); context.lineTo(318, 300);
+    context.stroke();
+    [166, 233, 300].forEach((y) => {
+      context.beginPath();
+      context.ellipse(200, y, 118, 36, 0, 0, Math.PI);
+      context.stroke();
+    });
+  },
+  // A small neural network: three layers of open rings, every node wired
+  // to each one in the next layer. The wires stop at the rings.
+  ml(context) {
+    const layers = [[58, [110, 200, 290]], [200, [80, 160, 240, 320]], [342, [150, 250]]];
+    const ring = 22;
+    context.lineWidth = 5;
+    context.beginPath();
+    layers.slice(0, -1).forEach(([x, ys], l) => {
+      const [nextX, nextYs] = layers[l + 1];
+      ys.forEach(y => nextYs.forEach((nextY) => { context.moveTo(x, y); context.lineTo(nextX, nextY); }));
+    });
+    context.stroke();
+    context.globalCompositeOperation = 'destination-out';
+    layers.forEach(([x, ys]) => ys.forEach((y) => {
+      context.beginPath();
+      context.arc(x, y, ring + 6, 0, Math.PI * 2);
+      context.fill();
+    }));
+    context.globalCompositeOperation = 'source-over';
+    context.lineWidth = 10;
+    layers.forEach(([x, ys]) => ys.forEach((y) => {
+      context.beginPath();
+      context.arc(x, y, ring, 0, Math.PI * 2);
+      context.stroke();
+    }));
+  },
+  // A cloud outline with an upload arrow inside.
+  cloud(context) {
+    const puffs = (inset) => {
+      context.beginPath();
+      context.arc(128, 232, 62 - inset, 0, Math.PI * 2);
+      context.arc(204, 186, 84 - inset, 0, Math.PI * 2);
+      context.arc(284, 228, 64 - inset, 0, Math.PI * 2);
+      context.fill();
+      context.fillRect(128, 232, 156, 62 - inset);
+    };
+    puffs(0);
+    context.globalCompositeOperation = 'destination-out';
+    puffs(15);
+    context.globalCompositeOperation = 'source-over';
+    context.lineWidth = 15;
+    context.beginPath();
+    context.moveTo(204, 266); context.lineTo(204, 176);
+    context.moveTo(172, 206); context.lineTo(204, 174); context.lineTo(236, 206);
+    context.stroke();
+  },
+  // DevOps' endless loop in two halves, each ending in an arrowhead at the
+  // top of its lobe: build, release, run, and round again.
+  devops(context) {
+    const at = (t) => {
+      const d = 1 + Math.sin(t) ** 2;
+      return [200 + 170 * Math.cos(t) / d, 200 - 170 * Math.sin(t) * Math.cos(t) / d];
+    };
+    context.lineWidth = 20;
+    [.62, Math.PI + .62].forEach((start) => {
+      const from = start + .2;
+      const to = start + Math.PI - .2;
+      context.beginPath();
+      for (let i = 0; i <= 48; i++) context.lineTo(...at(from + (to - from) * i / 48));
+      const [px, py] = at(to);
+      const [qx, qy] = at(to - .02);
+      const length = Math.hypot(px - qx, py - qy);
+      const tx = (px - qx) / length, ty = (py - qy) / length;
+      context.moveTo(px - tx * 40 + ty * 34, py - ty * 40 - tx * 34);
+      context.lineTo(px + tx * 8, py + ty * 8);
+      context.lineTo(px - tx * 40 - ty * 34, py - ty * 40 + tx * 34);
+      context.stroke();
+    });
+  },
+  // Two meshed gears.
+  automation(context) {
+    const gear = (cx, cy, outer, inner, teeth, turn) => {
+      context.beginPath();
+      for (let i = 0; i < teeth * 4; i++) {
+        const angle = turn + i / (teeth * 4) * Math.PI * 2;
+        const r = i % 4 < 2 ? outer : inner;
+        context.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+      }
+      context.closePath();
+      context.fill();
+      context.globalCompositeOperation = 'destination-out';
+      context.beginPath();
+      context.arc(cx, cy, inner - 18, 0, Math.PI * 2);
+      context.fill();
+      context.globalCompositeOperation = 'source-over';
+      context.beginPath();
+      context.arc(cx, cy, inner * .32, 0, Math.PI * 2);
+      context.fill();
+    };
+    gear(162, 222, 116, 94, 10, 0);
+    gear(296, 124, 72, 56, 7, .22);
+  },
+  server(context) {
+    context.lineWidth = 14;
+    [78, 168, 258].forEach((top) => {
+      context.beginPath();
+      context.roundRect(72, top, 256, 66, 12);
+      context.stroke();
+      context.beginPath();
+      context.arc(112, top + 33, 10, 0, Math.PI * 2);
+      context.arc(146, top + 33, 10, 0, Math.PI * 2);
+      context.fill();
+      context.lineWidth = 10;
+      context.beginPath();
+      context.moveTo(200, top + 33); context.lineTo(292, top + 33);
+      context.stroke();
+      context.lineWidth = 14;
+    });
+  }
+};
+
+function initCraftField(craft) {
+  const field = craft.querySelector('.craft-field');
+  const canvas = field?.querySelector('canvas');
+  const context = canvas?.getContext('2d');
+  if (!context) return null;
+  const section = craft.closest('.craft-section') || craft;
+  const cells = [...craft.querySelectorAll('.craft-cell[data-shape]')];
+  const still = reducedMotion.matches;
+  // The field's own name line and each discipline's list of tools.
+  // Each cell's mark is its discipline's solid drawn flat and small.
+  cells.forEach((cell) => {
+    const mark = cell.querySelector('.craft-mark');
+    const draw = CRAFT_GLYPHS[cell.dataset.shape];
+    const pen = mark?.getContext('2d');
+    if (!pen || !draw) return;
+    const px = Math.round(20 * Math.min(window.devicePixelRatio || 1, 3));
+    mark.width = mark.height = px;
+    pen.scale(px / 400, px / 400);
+    pen.fillStyle = pen.strokeStyle = `rgb(${CRAFT_COLORS[cell.dataset.shape] || [255, 255, 255]})`;
+    pen.lineCap = pen.lineJoin = 'round';
+    draw(pen);
+  });
+  const nowLine = field.querySelector('.craft-now');
+  const toolSets = [...field.querySelectorAll('.craft-tools-set')];
+  let toolTimer = 0;
+  // Fewer points on a phone. Each solid is built the first time it is shown.
+  const COUNT = window.innerWidth < 640 ? 3000 : 7000;
+  const forms = {};
+  const form = name => forms[name] || (forms[name] = buildCraftForm(name, COUNT));
+  const now = new Float32Array(COUNT * 3);
+  // Which way each point's patch of skin faces. It turns toward the new
+  // solid's as the point flies, so a point in flight is lit half way.
+  const facing = new Float32Array(COUNT * 3);
+  // Each point rides a critically damped spring to its place, so a shape can
+  // be interrupted mid-flight and every point carries its speed into the next.
+  const speed = new Float32Array(COUNT * 3);
+  const STIFFNESS = (2 * Math.PI / .55) ** 2;
+  const DAMPING = 4 * Math.PI / .55;
+  const screenY = new Float32Array(COUNT);
+  const setOff = new Float32Array(COUNT);
+  const lag = Float32Array.from({ length: COUNT }, () => Math.random());
+  // Each colour plain, and run toward white for points the scan line has
+  // just lit.
+  const paints = Object.fromEntries(CRAFT_ORDER.map((name) => {
+    const rgb = CRAFT_COLORS[name] || [255, 255, 255];
+    return [name, [0, .5].map((white) => {
+      const [r, g, b] = rgb.map(c => Math.round(c + (255 - c) * white));
+      return `rgb(${r}, ${g}, ${b})`;
+    })];
+  }));
+  let width = 0;
+  let height = 0;
+  let ratio = 1;
+  let shape = CRAFT_ORDER[0];
+  // A point keeps its old colour until the scan line sets it off.
+  let previous = shape;
+  let sweepAt = -Infinity;
+  let frame = 0;
+  let last = 0;
+  let visible = false;
+  let running = false;
+  let held = null;
+  let cycleTimer = 0;
+  let resumeTimer = 0;
+  let pointer = 0;
+  let yaw = 0;
+
+
+  function measure() {
+    const box = field.getBoundingClientRect();
+    ratio = Math.min(window.devicePixelRatio || 1, 2);
+    width = box.width;
+    height = box.height;
+    canvas.width = Math.round(width * ratio);
+    canvas.height = Math.round(height * ratio);
+    if (still) draw(0, 0);
+  }
+
+  function draw(time, step) {
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+    context.clearRect(0, 0, width, height);
+    if (!width || !height) return;
+    const goal = form(shape);
+    const size = Math.min(width * .34, height * .36);
+    const camera = 3.2;
+    // The solid is seen from a little above. It turns slowly from one
+    // three-quarter view to the other and leans toward the pointer.
+    yaw += ((still ? -.5 : Math.sin(time * .4) * .62 + pointer * .3) - yaw) * (step ? 1 - Math.exp(-step * 3) : 1);
+    const pitch = .32 + (still ? 0 : Math.sin(time * .27) * .06);
+    const sinYaw = Math.sin(yaw), cosYaw = Math.cos(yaw);
+    const sinPitch = Math.sin(pitch), cosPitch = Math.cos(pitch);
+    const sweep = still ? Infinity : (time - sweepAt) / .75 * height;
+    // Springs are integrated in small slices so a long frame stays stable.
+    const slices = step ? Math.ceil(step / (1 / 120)) : 0;
+    const slice = slices ? step / slices : 0;
+    const turnTo = step ? 1 - Math.exp(-step * 9) : 1;
+    let paint = null;
+    for (let i = 0; i < COUNT; i++) {
+      const k = i * 3;
+      const g = i * 6;
+      const set = step === 0 || time >= setOff[i];
+      if (step === 0) {
+        for (let a = 0; a < 3; a++) { now[k + a] = goal[g + a]; speed[k + a] = 0; facing[k + a] = goal[g + 3 + a]; }
+      } else if (set) {
+        for (let n = 0; n < slices; n++) {
+          for (let a = 0; a < 3; a++) {
+            speed[k + a] += ((goal[g + a] - now[k + a]) * STIFFNESS - speed[k + a] * DAMPING) * slice;
+            now[k + a] += speed[k + a] * slice;
+          }
+        }
+        for (let a = 0; a < 3; a++) facing[k + a] += (goal[g + 3 + a] - facing[k + a]) * turnTo;
+      }
+      // Turn about the upright, then tip the top toward the viewer.
+      const x = now[k] * cosYaw + now[k + 2] * sinYaw;
+      const flatZ = now[k + 2] * cosYaw - now[k] * sinYaw;
+      const y = now[k + 1] * cosPitch - flatZ * sinPitch;
+      const z = flatZ * cosPitch + now[k + 1] * sinPitch;
+      const scale = camera / (camera - z);
+      const sx = width / 2 + x * size * scale;
+      const sy = height / 2 - y * size * scale;
+      screenY[i] = sy;
+      // Skin facing the viewer is lit and skin facing away falls dark, which
+      // is what makes the points read as a solid. Nearer points are a
+      // little brighter, each one flickers faintly, and the scan line lights
+      // what it has just passed.
+      const toward = (facing[k + 2] * cosYaw - facing[k] * sinYaw) * cosPitch + facing[k + 1] * sinPitch;
+      const lit = sweep - sy >= 0 && sweep - sy < 70;
+      let alpha = ((1 + toward) / 2) ** 2 * (.55 + .45 * Math.min(1, Math.max(0, (scale - .8) / .5)));
+      if (!still) alpha *= 1 + .14 * Math.sin(time * 2.6 + lag[i] * 6.28);
+      if (lit) alpha = alpha * 1.6 + .12;
+      if (alpha < .04) continue;
+      const fill = paints[set ? shape : previous][lit ? 1 : 0];
+      if (fill !== paint) { context.fillStyle = fill; paint = fill; }
+      context.globalAlpha = Math.min(1, alpha);
+      const dot = Math.max(.7, 1.35 * scale);
+      context.fillRect(sx - dot / 2, sy - dot / 2, dot, dot);
+    }
+    context.globalAlpha = 1;
+    if (sweep < height + 40) {
+      const glow = context.createLinearGradient(0, sweep - 46, 0, sweep);
+      glow.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      glow.addColorStop(1, 'rgba(255, 255, 255, .07)');
+      context.fillStyle = glow;
+      context.fillRect(0, sweep - 46, width, 46);
+      const line = context.createLinearGradient(0, 0, width, 0);
+      line.addColorStop(0, 'rgba(255, 255, 255, 0)');
+      line.addColorStop(.5, 'rgba(255, 255, 255, .85)');
+      line.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      context.fillStyle = line;
+      context.fillRect(0, sweep, width, 1);
+    }
+  }
+
+  function tick(stamp) {
+    frame = 0;
+    if (!running) return;
+    const time = stamp / 1000;
+    const step = last ? Math.min(time - last, .05) : .016;
+    last = time;
+    draw(time, step);
+    frame = requestAnimationFrame(tick);
+  }
+  function play() {
+    const should = visible && section.classList.contains('is-entered') && !document.hidden && !still;
+    if (should === running) return;
+    running = should;
+    last = 0;
+    if (running) frame = requestAnimationFrame(tick);
+    else cancelAnimationFrame(frame);
+  }
+
+  // The name above rises in as the old one lifts away, and the tools
+  // below follow it in one by one. The Tools row shows only when that
+  // discipline lists some.
+  function caption(to) {
+    const cell = cells.find(item => item.dataset.shape === to);
+    nowLine?.querySelectorAll('span:not(.is-after)').forEach((old) => {
+      old.classList.add('is-after');
+      setTimeout(() => old.remove(), 300);
+    });
+    if (nowLine && cell) {
+      const name = document.createElement('span');
+      name.className = 'is-before';
+      name.textContent = cell.querySelector('.craft-name')?.textContent || '';
+      nowLine.append(name);
+      requestAnimationFrame(() => requestAnimationFrame(() => name.classList.remove('is-before')));
+    }
+    const set = toolSets.find(list => list.dataset.shape === to);
+    const tools = set ? [...set.children] : [];
+    field.classList.remove('has-tools');
+    clearTimeout(toolTimer);
+    toolTimer = setTimeout(() => {
+      toolSets.forEach((list) => { list.hidden = list !== set; });
+      if (!tools.length) return;
+      tools.forEach((tool, k) => { tool.style.setProperty('--k', k); tool.classList.add('is-before'); });
+      field.classList.add('has-tools');
+      requestAnimationFrame(() => requestAnimationFrame(() => tools.forEach(tool => tool.classList.remove('is-before'))));
+    }, 160);
+  }
+
+  // A new shape sets off as the scan line reaches each point.
+  function morph(to) {
+    if (to === shape) return;
+    previous = shape;
+    shape = to;
+    caption(to);
+    if (still) { draw(0, 0); return; }
+    const time = performance.now() / 1000;
+    sweepAt = time;
+    for (let i = 0; i < COUNT; i++) setOff[i] = time + Math.max(0, screenY[i] / (height || 1)) * .75 + lag[i] * .08;
+  }
+
+  function light(name, mode) {
+    cells.forEach((cell) => {
+      const on = cell.dataset.shape === name;
+      cell.classList.remove('is-lit', 'is-held');
+      if (!on || !mode) return;
+      if (mode === 'lit') {
+        cell.style.setProperty('--dwell', `${CRAFT_DWELL[name]}ms`);
+        void cell.offsetWidth;
+      }
+      cell.classList.add(mode === 'lit' ? 'is-lit' : 'is-held');
+    });
+  }
+  function advance() {
+    clearTimeout(cycleTimer);
+    if (held || still) return;
+    const next = CRAFT_ORDER[(CRAFT_ORDER.indexOf(shape) + 1) % CRAFT_ORDER.length];
+    morph(next);
+    light(next, 'lit');
+    cycleTimer = setTimeout(advance, CRAFT_DWELL[next]);
+  }
+  function hold(cell) {
+    clearTimeout(resumeTimer);
+    clearTimeout(cycleTimer);
+    held = cell.dataset.shape;
+    morph(held);
+    light(held, 'held');
+  }
+  function release(cell) {
+    if (held !== cell.dataset.shape || cell.matches(':focus-within')) return;
+    held = null;
+    light(null);
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(advance, 1200);
+  }
+  cells.forEach((cell) => {
+    cell.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') hold(cell); });
+    cell.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') release(cell); });
+    cell.addEventListener('focusin', () => hold(cell));
+    cell.addEventListener('focusout', () => requestAnimationFrame(() => release(cell)));
+  });
+  field.addEventListener('pointermove', (event) => {
+    if (event.pointerType !== 'mouse') return;
+    const box = field.getBoundingClientRect();
+    pointer = ((event.clientX - box.left) / box.width - .5) * 2;
+  });
+  field.addEventListener('pointerleave', () => { pointer = 0; });
+
+  new ResizeObserver(measure).observe(field);
+  new IntersectionObserver((entries) => {
+    visible = entries[entries.length - 1].isIntersecting;
+    play();
+  }).observe(field);
+  document.addEventListener('visibilitychange', play);
+  measure();
+
+  return {
+    // Arriving, the points rise out of a flat line across the middle
+    // straight into the first discipline, and the cycle starts over.
+    enter() {
+      clearTimeout(cycleTimer);
+      clearTimeout(resumeTimer);
+      held = null;
+      shape = previous = CRAFT_ORDER[0];
+      caption(shape);
+      light(shape, still ? 'held' : 'lit');
+      if (still) { draw(0, 0); return; }
+      for (let i = 0; i < COUNT; i++) {
+        now[i * 3] = (i % 60) / 59 * 2.1 - 1.05;
+        now[i * 3 + 1] = -.08;
+        now[i * 3 + 2] = 0;
+        facing.set([0, 0, 1], i * 3);
+        speed.fill(0, i * 3, i * 3 + 3);
+        screenY[i] = height / 2;
+      }
+      const time = performance.now() / 1000;
+      sweepAt = time;
+      for (let i = 0; i < COUNT; i++) setOff[i] = time + lag[i] * .35;
+      play();
+      cycleTimer = setTimeout(advance, CRAFT_DWELL[shape]);
+    },
+    leave() {
+      clearTimeout(cycleTimer);
+      clearTimeout(resumeTimer);
+      play();
+    },
+    sync: play
+  };
+}
+
+// The Skills page's panel. It arrives once it is on screen: the frame draws
+// round, the hairlines grow, the copy rises and the points gather into the
+// first discipline. It leaves the same way backwards if it scrolls away, and arrives
+// again when it returns.
+function initCraft() {
+  const craft = document.querySelector('.craft-section');
+  const panel = craft?.querySelector('[data-craft]');
+  if (!panel) return;
+  // The frame is one plain rectangle, drawn as a path so it can trace itself in.
+  const outline = panel.querySelector('.craft-frame path');
+  const frame = () => {
+    const w = panel.offsetWidth;
+    const h = panel.offsetHeight;
+    outline.setAttribute('d', `M.5 .5H${w - .5}V${h - .5}H.5Z`);
+    panel.classList.add('has-frame');
+  };
+  new ResizeObserver(frame).observe(panel);
+  frame();
+  panel.querySelectorAll('.craft-cell').forEach((cell, i) => cell.style.setProperty('--i', i));
+  const points = initCraftField(panel);
+  // Projects comes before Skills. Scrolling up from the top plays the exit
+  // in place, then cuts back to Projects, which opens on its last card.
+  let turning = false;
+  holdPageTurns((direction) => {
+    if (direction > 0 || turning || window.scrollY > 2) return;
+    return 'projects.html';
+  }, (href) => {
+    turning = true;
+    try { sessionStorage.setItem('projects-from', 'skills'); } catch {}
+    if (reducedMotion.matches) { location.href = href; return; }
+    craft.classList.add('is-leaving');
+    setTimeout(() => { location.href = href; }, 360);
+  }, { fresh: true });
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted || !turning) return;
+    turning = false;
+    craft.classList.remove('is-leaving');
+  });
+  if (reducedMotion.matches || !('IntersectionObserver' in window)) {
+    points?.enter();
+    return;
+  }
+  craft.classList.add('craft-motion');
+  new IntersectionObserver((entries) => {
+    const entry = entries[entries.length - 1];
+    if (!craft.classList.contains('is-entered') && entry.intersectionRatio >= .35) {
+      craft.classList.remove('is-leaving');
+      craft.classList.add('is-entered');
+      points?.enter();
+    } else if (craft.classList.contains('is-entered') && !entry.isIntersecting) {
+      craft.classList.remove('is-entered', 'is-leaving');
+      points?.leave();
+    }
+  }, { threshold: [0, .35] }).observe(craft);
+}
+
 function initAboutContent() {
   const about = document.querySelector('#about');
   const content = about?.querySelector('.about-content');
@@ -3414,6 +4298,43 @@ function initProjectsTrack() {
   }, (to) => {
     window.scrollTo({ top: to, behavior: to < geometry.start ? 'smooth' : 'instant' });
   }, { wheelOnly: true });
+  // Skills comes next. Scrolling on from the last card plays Projects' exit
+  // in place, then cuts to the Skills page. The top bar stays, since Skills
+  // shares it.
+  let turning = false;
+  holdPageTurns((direction) => {
+    if (direction < 0 || turning || !geometry) return;
+    const stops = cardStops();
+    if (window.scrollY >= stops[stops.length - 1] - 2) return 'skills.html';
+  }, (href) => {
+    turning = true;
+    if (reducedMotion.matches) { location.href = href; return; }
+    document.documentElement.classList.add('projects-leaving');
+    setTimeout(() => { location.href = href; }, 320);
+  }, { fresh: true });
+  // Coming back through the browser's history finds Projects as it left.
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted || !turning) return;
+    turning = false;
+    document.documentElement.classList.remove('projects-leaving');
+  });
+  // Turning back up from Skills lands on the last card, where the reader left.
+  let fromSkills = false;
+  try {
+    fromSkills = sessionStorage.getItem('projects-from') === 'skills';
+    sessionStorage.removeItem('projects-from');
+  } catch {}
+  if (fromSkills && !about) {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const land = () => {
+      measure();
+      const stops = cardStops();
+      window.scrollTo({ top: stops[stops.length - 1], behavior: 'instant' });
+      refresh();
+    };
+    land();
+    document.fonts?.ready.then(land);
+  }
   // Keyboard focus lands on the card at once; the track follows without a glide.
   track.addEventListener('focusin', (event) => {
     const index = cards.indexOf(event.target.closest('[data-project]'));
@@ -3443,6 +4364,8 @@ function initProjectsTrack() {
   }
 }
 initProjectsTrack();
+// Skills is a standalone page; its panel starts once everything above is defined.
+initCraft();
 
 playIntro();
 

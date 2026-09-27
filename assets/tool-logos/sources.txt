@@ -1,0 +1,14 @@
+CA Service Desk: CA letter paths from https://commons.wikimedia.org/wiki/File:CA_Technologies_logo.svg; isolated as a transparent SVG and colored blue/green to match the user-provided logo.
+macOS, Linux, PowerShell, Bash: Simple Icons v11 (CC0), https://cdn.jsdelivr.net/npm/simple-icons@11/icons/
+Active Directory: https://raw.githubusercontent.com/benc-uk/icon-collection/master/azure-icons/Azure-AD-Domain-Services.svg
+Microsoft Entra ID uses the Microsoft corporate mark: https://api.iconify.design/logos/microsoft-icon.svg
+Google Workspace uses the Google mark: https://api.iconify.design/logos/google-icon.svg
+Maven and Postman: Simple Icons v11 (CC0), https://cdn.jsdelivr.net/npm/simple-icons@11/icons/
+Original-color tool SVGs: https://github.com/devicons/devicon (original variants, fetched via jsDelivr). Assets: apachemaven, azure, bootstrap, c, cplusplus, css, fastapi, git, gnubash, html5, java, javascript, linux, postgresql, postman, powershell, python, raspberrypi, react, springboot, sqlite, vite, windows.
+Monochrome Apple, GitHub, Next.js and Vercel marks retain their white dark-background variants.
+C: blue logo variant from https://api.iconify.design/logos/c.svg (replaces the pale Devicon letter variant).
+Django and scikit-learn: Devicon django-plain and scikitlearn-original SVGs.
+PyTorch and TensorFlow: Devicon original-color SVGs, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/pytorch/pytorch-original.svg and https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/tensorflow/tensorflow-original.svg
+Docker: Devicon original-color SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg
+pandas: Devicon pandas-original SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/pandas/pandas-original.svg, with its navy bars (#130754) lightened to #ece9f7 so they show on the dark background.
+SQL: generic database mark from https://api.iconify.design/vscode-icons/file-type-sql.svg (VS Code Icons, MIT).

@@ -1,0 +1,15 @@
+TinyML project content
+https://github.com/JoshuaKirabo/TinyML
+Source files inspected: AccelerometerData.py, preprocessing.py, Gesture_Recog.ipynb, model.py.
+The notebook trains a scikit-learn random forest (not a language model).
+No live accuracy or deployment performance claims are made. The live extractor
+in model.py differs from the training extractor; the diagram describes the
+repository's prototype flow without claiming feature parity.
+Josh identified this as a school project and requested Lorem ipsum for the
+About section until the submitted write-ups are available.
+
+Python, scikit-learn and Raspberry Pi icons: Simple Icons (CC0)
+https://github.com/simple-icons/simple-icons/blob/develop/icons/python.svg
+https://github.com/simple-icons/simple-icons/blob/develop/icons/scikitlearn.svg
+https://github.com/simple-icons/simple-icons/blob/develop/icons/raspberrypi.svg
+The MPU6050 icon is a generic chip outline drawn for this site.

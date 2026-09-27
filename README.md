@@ -7,6 +7,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `index.html` — homepage and mobile navigation
 - `about_me.html` — standalone About page; the single source of its section markup
 - `projects.html` — Projects page, built on the About layout and reached by ordinary navigation
+- `skills.html` — Skills page (“What I do”): a field of points that takes the shape of each discipline beside a grid of the disciplines, reached by ordinary navigation
 - `page-shell.js` — joins the two documents for continuous scrolling with native page links as fallback
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
@@ -22,7 +23,7 @@ Home, About me, and Meet Josh now navigate between the two sections, and Project
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
-For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `page-shell.js`, `styles.css`, `script.js`, `assets/workplace-logos/`, and the other referenced assets into `dist/`. No compilation is needed.
+For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `skills.html`, `page-shell.js`, `styles.css`, `script.js`, `assets/workplace-logos/`, and the other referenced assets into `dist/`. No compilation is needed.
 
 ## Opening animation
 

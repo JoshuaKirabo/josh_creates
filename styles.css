@@ -712,6 +712,9 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 /* Stack logos wake into their brand colour as the card takes the centre.
    Black marks (Next.js, Express) stay white. */
 .project-tag-icon { --brand: #fff; flex: none; width: 1.1em; height: 1.1em; margin-right: -.2rem; fill: color-mix(in srgb, var(--brand) calc(var(--fill) * 100%), currentColor); }
+.project-tag-icon--python { --brand: #3776ab; }
+.project-tag-icon--scikitlearn { --brand: #f7931e; }
+.project-tag-icon--raspberrypi { --brand: #c51a4a; }
 .project-tag-icon--swift { --brand: #f05138; }
 .project-tag-icon--spotify { --brand: #1ed760; }
 .project-tag-icon--electron { --brand: #9feaf9; }
@@ -780,6 +783,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
   .projects-entered :is(.projects-title-line, .project-card) { transition: none; }
   .projects-entered .projects-rule::after { transition: none; }
   .project-cta-arrow, .core-desc-link-arrow-icon { transition: none; }
+  .craft-cell.is-lit .craft-meter { animation: none; }
 }
 /* Contact feedback. The fold writes opacity on the wordmark, labels and icons
    every frame, so presses only touch the row, the inner name and the social
@@ -1270,6 +1274,144 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .edu-motion.is-entered.is-resuming:not(.is-leaving) .edu-sheet { transition: opacity .3s var(--ease-out), transform .3s var(--ease-out); }
 .edu-motion.is-entered.is-resuming:not(.is-leaving) .about-title-line { transition: --about-fill .5s var(--ease-out); }
 .edu-motion.is-entered.is-resuming:not(.is-leaving) .about-rule::after { transition: transform .4s var(--ease-out); }
+/* Skills: What I do. The panel follows meritfirst.us's "Real world
+   assessments": a field of points beside the disciplines, inside one plain
+   frame. The field is the hero and takes whatever the three 260px columns of
+   cells leave, about 650px on a laptop; the cells stay compact. Script draws
+   the frame to the panel's size; without it the panel keeps a plain border. */
+/* The top bar sits in the page's flow above it, so the section only has to
+   fill what is left and centre the panel there. */
+.skills { padding-bottom: calc(var(--footer-bottom) + 40px); }
+.skills-main { display: flex; flex-direction: column; }
+.skills-main:focus { outline: none; }
+.craft-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 8px 24px; }
+.craft-section .about-block-head { margin-bottom: 24px; }
+.craft-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+.craft { --craft-line: rgba(255, 255, 255, .2); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 260px); grid-template-rows: repeat(3, 155px); color: var(--white); }
+.craft:not(.has-frame) { border: 1px solid var(--craft-line); }
+.craft-frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; fill: none; stroke: var(--craft-line); stroke-width: 1; }
+.craft-frame path { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
+.craft-field { position: relative; grid-area: 1 / 1 / 4 / 2; min-width: 0; margin: 0; overflow: hidden; }
+/* A soft pool of light under the points, so the shape reads as lit. */
+.craft-field::after { content: ''; position: absolute; inset: 0; background: radial-gradient(closest-side, rgba(255, 255, 255, .07), transparent 70%); pointer-events: none; }
+/* A faint graph-paper grid under the points, fading out toward the edges. */
+.craft-field::before { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, .045) 1px, transparent 1px); background-position: center; background-size: 48px 48px; -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent); mask-image: radial-gradient(closest-side, #000 35%, transparent); }
+.craft-canvas { position: absolute; inset: 0; z-index: 1; display: block; width: 100%; height: 100%; }
+/* The field names what it is showing at the top and lists its tools at the
+   foot. A new name rises in as the old one lifts away; the tools follow it
+   in one by one. At rest, on the sheet, both stand empty. */
+.craft-now { position: absolute; top: 26px; right: 0; left: 0; z-index: 2; height: 40px; margin: 0; pointer-events: none; }
+.craft-now span { position: absolute; inset: 0; color: var(--white); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 30px; font-weight: 300; letter-spacing: -.04em; line-height: 40px; text-align: center; transition: opacity .5s var(--ease-out), transform .7s var(--ease-out-quart); }
+.craft-now span.is-before { opacity: 0; transform: translateY(14px); }
+.craft-now span.is-after { opacity: 0; transform: translateY(-14px); transition-duration: .25s; }
+.craft-tools { position: absolute; bottom: 24px; left: 50%; z-index: 2; display: flex; align-items: center; gap: 16px; transform: translateX(-50%); opacity: 0; transition: opacity .3s var(--ease-out); }
+.craft-field.has-tools .craft-tools { opacity: 1; }
+.craft-tools-label { color: rgba(255, 255, 255, .6); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .14em; line-height: 1; text-transform: uppercase; }
+.craft-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.craft-tools-set { --tai-lilac: currentColor; --tai-pink: currentColor; --tai-orange: currentColor; display: flex; gap: 10px; margin: 0; padding: 0; color: rgba(255, 255, 255, .9); list-style: none; }
+.craft-tools-set[hidden] { display: none; }
+/* Keep longer tool lists inside the field at every width. */
+.craft-tools:has(:is([data-shape="server"], [data-shape="backend"], [data-shape="frontend"]):not([hidden])) { width: calc(100% - 40px); max-width: 410px; }
+.craft-tools-set:is([data-shape="server"], [data-shape="backend"], [data-shape="frontend"]) { flex: 1; min-width: 0; flex-wrap: wrap; justify-content: center; row-gap: 12px; }
+.craft-tools-set:is([data-shape="server"], [data-shape="backend"], [data-shape="frontend"]) li { flex-shrink: 0; }
+.craft-tools-set img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.craft-tools-set li:has([href="#icon-powershell"]) { --brand: #5391fe; }
+.craft-tools-set li:has([href="#icon-gnubash"]) { --brand: #8fcf48; }
+.craft-tools-set li { display: block; width: 22px; height: 22px; transition: opacity .45s var(--ease-out) calc(.12s + var(--k, 0) * 50ms), transform .55s var(--ease-out-quart) calc(.12s + var(--k, 0) * 50ms); }
+.craft-tools-set li.is-before { opacity: 0; transform: translateY(8px); }
+.craft-tools-set svg { display: block; width: 100%; height: 100%; fill: var(--brand, currentColor); }
+/* Multicolor tools use local original-color SVG images.
+   Monochrome brands use their white marks on this dark surface. */
+.craft-tools-set li:has([href="#icon-react"]) { --brand: #61dafb; }
+.craft-tools-set li:has([href="#icon-javascript"]) { --brand: #f7df1e; }
+.craft-tools-set li:has([href="#icon-html5"]) { --brand: #e34f26; }
+.craft-tools-set li:has([href="#icon-css"]) { --brand: #2f9be8; }
+.craft-tools-set li:has([href="#icon-vite"]) { --brand: #9e75ff; }
+.craft-tools-set li:has([href="#icon-tailwindcss"]) { --brand: #06b6d4; }
+.craft-tools-set li:has([href="#icon-bootstrap"]) { --brand: #9b72dd; }
+.craft-tools-set li:has([href="#icon-swift"]) { --brand: #f05138; }
+.craft-tools-set li:has([href="#icon-electron"]) { --brand: #9feaf9; }
+.craft-tools-set li:has([href="#icon-nodedotjs"]) { --brand: #5fa04e; }
+.craft-tools-set li:has([href="#icon-springboot"]) { --brand: #6db33f; }
+.craft-tools-set li:has([href="#icon-postgresql"]) { --brand: #699eca; }
+.craft-tools-set li:has([href="#icon-sqlite"]) { --brand: #44a8e0; }
+.craft-tools-set li:has([href="#icon-togetherai"]) { --tai-lilac: #caaef5; --tai-pink: #ef2cc1; --tai-orange: #fc4c02; }
+.craft-tools-set li:has([href="#icon-python"]) { --brand: #3776ab; }
+.craft-tools-set li:has([href="#icon-scikitlearn"]) { --brand: #f7931e; }
+.craft-tools-set li:has([href="#icon-raspberrypi"]) { --brand: #c51a4a; }
+.craft-tools-set li:has([href="#icon-git"]) { --brand: #f05032; }
+.craft-tools-set li:has([href="#icon-windows"]) { --brand: #4cc2ff; }
+@media (max-width: 700px) {
+  .craft-now { top: 16px; }
+  .craft-now span { font-size: 24px; }
+  .craft-tools { bottom: 16px; gap: 12px; }
+  .craft-tools-set { gap: 12px; }
+  .craft-tools-set li { width: 18px; height: 18px; }
+}
+/* Each cell draws its own hairlines: --l shows the left one, --t the top.
+   The meter on the left edge fills while that cell's shape holds the field. */
+.craft-cell { --l: 1; --t: 0; position: relative; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; margin: 0; padding: 22px 22px 20px; }
+.craft-cell { justify-content: flex-start; gap: 10px; }
+.craft-cell::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--craft-line); opacity: var(--l); transform-origin: top; }
+.craft-cell::after { content: ''; position: absolute; top: 0; right: 0; left: 0; height: 1px; background: var(--craft-line); opacity: var(--t); transform-origin: left; }
+.craft-cell:nth-of-type(n + 4) { --t: 1; }
+.craft-meter { position: absolute; top: 0; bottom: 0; left: 0; z-index: 1; width: 1px; background: var(--white); transform: scaleY(0); transform-origin: top; pointer-events: none; }
+.craft-cell.is-lit .craft-meter { animation: craft-meter var(--dwell, 3.6s) linear forwards; }
+.craft-cell.is-held .craft-meter { transform: none; transition: transform .5s var(--ease-out); }
+@keyframes craft-meter { to { transform: none; } }
+.craft-text { margin: 0; color: rgba(255, 255, 255, .78); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 400; line-height: 1.45; text-wrap: pretty; transition: color .45s var(--ease-out); }
+.craft-cell:is(.is-lit, .is-held) .craft-text { color: var(--white); }
+/* The discipline's name heads its cell, beside its mark. */
+.craft-name { display: flex; align-items: center; gap: 10px; margin: 0; text-wrap: balance; color: rgba(255, 255, 255, .7); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .14em; line-height: 1.5; text-transform: uppercase; transition: color .45s var(--ease-out); }
+/* The discipline's mark, drawn by script from the same shape the points
+   take in the field. */
+.craft-mark { flex: none; width: 20px; height: 20px; opacity: .8; transition: opacity .45s var(--ease-out); }
+.craft-cell:is(.is-lit, .is-held) .craft-mark { opacity: 1; }
+.craft-cell:is(.is-lit, .is-held) .craft-name { color: var(--white); }
+/* Below that the field goes across the top with the cells three to a row
+   beneath it. */
+@media (max-width: 1180px) {
+  .craft { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: 320px; grid-auto-rows: 155px; }
+  .craft-field { grid-area: 1 / 1 / 2 / -1; }
+  .craft-cell, .craft-cell:nth-of-type(n) { --t: 1; }
+  .craft-cell:nth-of-type(3n + 1) { --l: 0; }
+}
+/* Phones stack everything under a shorter field. */
+@media (max-width: 700px) {
+  .craft-section { justify-content: flex-start; }
+  .craft { grid-template-columns: minmax(0, 1fr); grid-template-rows: 260px; grid-auto-rows: auto; }
+  .craft-cell, .craft-cell:nth-of-type(n) { --l: 0; --t: 1; gap: 24px; padding: 24px 20px; }
+}
+/* Skills arrives once it is on screen: the rule draws, the heading fills,
+   the frame traces itself round from its top-left corner, the hairlines
+   grow, and the copy rises in cell by cell while the points gather into
+   their sheet. Script adds .craft-motion only when motion is allowed. */
+.craft-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
+.craft-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
+.craft-motion:not(.is-entered) :is(.about-eyebrow, .about-title-outline) { opacity: 0; }
+.craft-motion:not(.is-entered) .craft-frame path { stroke-dashoffset: 1; }
+.craft-motion:not(.is-entered) .craft-cell::before { transform: scaleY(0); }
+.craft-motion:not(.is-entered) .craft-cell::after { transform: scaleX(0); }
+.craft-motion:not(.is-entered) .craft-copy { opacity: 0; transform: translateY(14px); }
+.craft-motion:not(.is-entered) .craft-field { opacity: 0; }
+.craft-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.craft-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.craft-motion.is-entered:not(.is-leaving) :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
+.craft-motion.is-entered .craft-frame path { transition: stroke-dashoffset 1.5s var(--ease-in-out-cubic) .15s; }
+.craft-motion.is-entered .craft-cell::before,
+.craft-motion.is-entered .craft-cell::after { transition: transform .9s var(--ease-out-quart) calc(.55s + var(--i, 0) * 90ms); }
+.craft-motion.is-entered .craft-copy { transition: opacity .7s var(--ease-out) calc(.7s + var(--i, 0) * 90ms), transform .7s var(--ease-out) calc(.7s + var(--i, 0) * 90ms), color .45s var(--ease-out); }
+.craft-motion.is-entered .craft-name { transition: opacity .7s var(--ease-out) calc(.85s + var(--i, 0) * 90ms), transform .7s var(--ease-out) calc(.85s + var(--i, 0) * 90ms), color .45s var(--ease-out); }
+.craft-motion.is-entered .craft-field { transition: opacity .8s var(--ease-out) .3s; }
+.craft-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
+.craft-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
+.craft-motion.is-entered.is-leaving :is(.about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
+.craft-motion.is-entered.is-leaving .craft-frame path { stroke-dashoffset: 1; transition: stroke-dashoffset .34s var(--ease-in-out-cubic); }
+.craft-motion.is-entered.is-leaving .craft-cell::before { transform: scaleY(0); transition: transform .26s var(--ease-out); }
+.craft-motion.is-entered.is-leaving .craft-cell::after { transform: scaleX(0); transition: transform .26s var(--ease-out); }
+.craft-motion.is-entered.is-leaving .craft-copy { opacity: 0; transform: translateY(-10px); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
+.craft-motion.is-entered.is-leaving .craft-field { opacity: 0; transition: opacity .26s var(--ease-out); }
+.craft-motion.is-entered.is-leaving .craft-meter { opacity: 0; transition: opacity .2s var(--ease-out); }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
 @media (prefers-reduced-motion: reduce) {
@@ -1359,6 +1501,13 @@ html.nav-leave .about-topbar .section-nav-link[aria-current]::before { transform
 .project-sheet-hero { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); align-items: center; gap: clamp(2.5rem, 7vw, 8rem); min-height: calc(100svh - 5rem); padding-bottom: clamp(3rem, 8svh, 6rem); }
 /* The story takes the rest of the row, up to a comfortable line length. */
 .project-story { max-width: 68ch; }
+.project-stack-list { margin: 0; }
+.project-stack-list > div { padding: .85rem 0; border-top: 1px solid rgba(255, 255, 255, .15); }
+.project-stack-list dt { margin-bottom: .35rem; color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.project-stack-list dd { margin: 0; color: rgba(255, 255, 255, .8); font-family: 'Google Sans', Arial, sans-serif; font-size: 1rem; line-height: 1.6; }
+.project-story > p + .project-stack { margin-top: 2rem; }
+.handover-motion .project-stack { transition: opacity .5s var(--ease-out) .12s, translate .5s var(--ease-out) .12s; }
+.handover-motion.is-leaving .project-stack { opacity: 0; translate: 0 -10px; transition-duration: .24s; transition-delay: 0s; }
 .project-story .about-eyebrow { margin-bottom: clamp(1.25rem, 3svh, 1.75rem); }
 .project-story p:not(.about-eyebrow) { margin: 0; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, Helvetica, sans-serif; font-size: clamp(1rem, 1.2vw, 1.125rem); line-height: 1.7; text-wrap: pretty; }
 .project-story p:not(.about-eyebrow) + p { margin-top: 1em; }
@@ -1597,3 +1746,6 @@ html.nav-leave .about-topbar .section-nav-link[aria-current]::before { transform
 .how-motion.is-entered :is(.arch-stage-type, .arch-stage-title, .arch-desc) { animation: arch-rise .5s var(--ease-out) calc(var(--inspect-at) + var(--i) * 60ms) both; }
 .how-motion.is-entered :is(.arch-tech, .arch-stepper) { animation: arch-fade .4s var(--ease-out) calc(var(--inspect-at) + .2s) both; }
 @keyframes arch-rise { from { translate: 0 100%; clip-path: inset(0 0 100% 0); } }
+
+.craft-tools-set li:has([href="#icon-postman"]) { --brand: #ff6c37; }
+.craft-tools-set li:has([href="#icon-apachemaven"]) { --brand: #e56a9b; }
