@@ -709,9 +709,9 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .project-tags { font-size: 11px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .25rem .5rem; max-width: 70%; margin: 0; padding: 0; list-style: none; color: rgba(255, 255, 255, calc(.3 + var(--fill) * .55)); letter-spacing: .14em; }
 .project-tags li { display: flex; align-items: center; gap: .5rem; }
 .project-tags li + li::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: rgba(255, 255, 255, calc(.2 + var(--fill) * .4)); }
-/* Stack logos wake into their brand colour, with a matching glow, as the card
-   takes the centre. Black marks (Next.js, Express) keep white and just glow. */
-.project-tag-icon { --brand: #fff; flex: none; width: 1.1em; height: 1.1em; margin-right: -.2rem; fill: color-mix(in srgb, var(--brand) calc(var(--fill) * 100%), currentColor); filter: drop-shadow(0 0 calc(var(--fill) * 4px) color-mix(in srgb, var(--brand) calc(var(--fill) * 75%), transparent)); }
+/* Stack logos wake into their brand colour as the card takes the centre.
+   Black marks (Next.js, Express) stay white. */
+.project-tag-icon { --brand: #fff; flex: none; width: 1.1em; height: 1.1em; margin-right: -.2rem; fill: color-mix(in srgb, var(--brand) calc(var(--fill) * 100%), currentColor); }
 .project-tag-icon--swift { --brand: #f05138; }
 .project-tag-icon--spotify { --brand: #1ed760; }
 .project-tag-icon--electron { --brand: #9feaf9; }
@@ -747,6 +747,11 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .project-numeral--logo svg { display: block; height: .8em; width: auto; overflow: visible; }
 .project-numeral--logo .project-numeral-outline { fill: none; stroke: rgba(255, 255, 255, .12); stroke-width: 1; }
 .project-numeral--logo .project-numeral-fill svg { fill: currentColor; }
+/* Supplied brand images keep their colours through the existing reveal. */
+.project-numeral--image img { display: block; height: .9em; width: auto; }
+.project-numeral--image > .project-numeral-outline { opacity: .18; filter: grayscale(1); }
+.project-numeral--wordmark { width: clamp(8.5rem, 16vw, 15rem); max-width: 45%; }
+.project-numeral--wordmark img { width: 100%; height: auto; }
 @media (hover: hover) and (pointer: fine) {
   :root:not(.touch-input) .project-link:hover { border-color: rgba(255, 255, 255, .4); }
   :root:not(.touch-input) .project-link:hover .project-cta { color: var(--white); }
@@ -1122,8 +1127,10 @@ html.about-paging { scroll-snap-type: y mandatory; }
 /* Kisaka carries three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
-#core-kisaka .core-desc { margin-top: 20px; line-height: 1.45; }
-#core-kisaka .core-desc + .core-desc { margin-top: .7em; }
+#core-kisaka .core-desc,
+#core-kisaka-support .core-desc { margin-top: 20px; line-height: 1.45; }
+#core-kisaka .core-desc + .core-desc,
+#core-kisaka-support .core-desc + .core-desc { margin-top: .7em; }
 #core-kisaka .core-desc-link { color: #cc0033; }
 #core-kisaka .core-desc-link:focus-visible { outline-color: #cc0033; }
 
@@ -1197,29 +1204,37 @@ html.about-paging { scroll-snap-type: y mandatory; }
   /* Phones leave the 3D scene out; script does not load it at this width. */
   .about-scene { display: none; }
 }
+/* The big boxes that arrive after a page cut (Experience's card, How it
+   works' sheet) come in through a soft edge that sweeps up from their foot
+   as they rise into place, so no hard line crosses a bright box and nothing
+   pops. --sheet-reveal runs 0 to 1; the edge is feathered over 15% of the
+   box and starts and ends past its edges, so 0 hides it all and 1 shows it
+   all. */
+@property --sheet-reveal { syntax: '<number>'; inherits: false; initial-value: 1; }
+:is(.core-motion .core-reading, .how-motion .arch-sheet) { --reveal-at: calc(var(--sheet-reveal) * 130% - 15%); -webkit-mask-image: linear-gradient(to top, #000 var(--reveal-at), transparent calc(var(--reveal-at) + 15%)); mask-image: linear-gradient(to top, #000 var(--reveal-at), transparent calc(var(--reveal-at) + 15%)); }
 /* Experience arrives once, the first time the page turns to it: the rule
    draws, the heading fills, the jobs fade in one after another and the card
-   wipes up from the bottom. Its eyebrow and outline fade up from nothing
+   rises in through a soft edge. Its eyebrow and outline fade up from nothing
    too, so the page it replaces never shows through. Script adds .core-motion
    only when motion is allowed, so without it everything is already in place. */
 .core-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
 .core-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
 .core-motion:not(.is-entered) .core-subject { opacity: 0; }
 .core-motion:not(.is-entered) .core-rail { opacity: 0; }
-.core-motion:not(.is-entered) .core-reading { clip-path: inset(100% 0 0 0); }
+.core-motion:not(.is-entered) .core-reading { --sheet-reveal: 0; translate: 0 32px; }
 .core-motion:not(.is-entered) :is(.about-eyebrow, .about-title-outline) { opacity: 0; }
 .core-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
 .core-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
 .core-motion.is-entered .core-subject { transition: color var(--press-out) var(--ease-out), opacity .6s var(--ease-out) calc(.35s + var(--i, 0) * 60ms); }
 .core-motion.is-entered .core-subject.is-touch-pressed { transition-duration: var(--press-in); }
 .core-motion.is-entered .core-rail { transition: opacity .6s var(--ease-out) .35s; }
-.core-motion.is-entered .core-reading { clip-path: inset(0); transition: clip-path .9s var(--ease-out-quart) .5s; }
+.core-motion.is-entered .core-reading { transition: --sheet-reveal 1s var(--ease-out-cubic) .3s, translate 1s var(--ease-out-cubic) .3s; }
 .core-motion.is-entered:not(.is-leaving) :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
 /* Leaving, in either direction, runs the entrance backwards and quicker, so
    the page is empty before it turns: the card wipes back down, the jobs
    fade last one first, the heading empties and the rule draws back in.
    These are transitions, so scrolling back mid-exit simply returns them. */
-.core-motion.is-entered.is-leaving .core-reading { clip-path: inset(100% 0 0 0); transition: clip-path .3s var(--ease-out); }
+.core-motion.is-entered.is-leaving .core-reading { --sheet-reveal: 0; translate: 0 32px; transition: --sheet-reveal .3s var(--ease-out), translate .3s var(--ease-out); }
 .core-motion.is-entered.is-leaving .core-subject { opacity: 0; transition: color var(--press-out) var(--ease-out), opacity .2s var(--ease-out) calc(.05s + (var(--n, 1) - 1 - var(--i, 0)) * 20ms); }
 .core-motion.is-entered.is-leaving .core-rail { opacity: 0; transition: opacity .2s var(--ease-out) .08s; }
 .core-motion.is-entered.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
@@ -1279,6 +1294,30 @@ html.about-paging { scroll-snap-type: y mandatory; }
 html.project-sheet-open { overflow: hidden; }
 body > :not(.site-backdrop, .project-sheet) { transition: opacity .24s var(--ease-out); }
 html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0; }
+/* Closing a project sheet brings the top bar back with Projects: the
+   wordmark and each link drop in from above, 30ms apart, and the current
+   page's line draws back on. Only the contents move; the bar and its
+   gradient fade in with the page. Script adds .nav-return only when motion
+   is allowed. */
+html.nav-return .about-topbar :is(.topbar-wordmark, .section-nav > *) { animation: nav-return .5s var(--ease-out) calc(.06s + var(--nav-i, 0) * 30ms) both; }
+html.nav-return .about-topbar .section-nav-link[aria-current]::before { animation: nav-return-line .5s var(--ease-out) .35s both; }
+@keyframes nav-return { from { opacity: 0; translate: 0 -.75rem; } }
+@keyframes nav-return-line { from { transform: scaleX(0); } }
+/* Opening a project plays Projects out first: the title lifts, the cards
+   slide on to the left and the chosen one brightens and goes last, and the
+   top bar's links lift out, before the sheet cuts in. Script adds these
+   classes only when motion is allowed. */
+html.projects-leaving .projects-main :is(.projects-title-line, .project-card) { opacity: 0; transition: opacity .28s var(--ease-in-out), transform .28s var(--ease-in-out); }
+html.projects-leaving .projects-main .projects-title-line { transform: translateY(-.35em); }
+html.projects-leaving .projects-main .projects-title-strong { transition-delay: .04s; }
+html.projects-leaving .projects-main .project-card { transform: translateX(-2.5rem); transition-delay: .04s; }
+html.projects-leaving .projects-main .project-card.is-opening { transform: none; transition: opacity .2s var(--ease-in-out) .12s; }
+html.projects-leaving .projects-main .project-card.is-opening .project-link { border-color: rgba(255, 255, 255, .6); transition-duration: .15s; }
+html.projects-leaving .projects-main .projects-rule::after { transform: scaleX(0); transform-origin: right; transition: transform .28s var(--ease-in-out); }
+html.nav-leave .about-topbar :is(.topbar-wordmark, .section-nav > *) { animation: nav-leave .24s var(--ease-in-out) calc(var(--nav-i, 0) * 15ms) both; }
+html.nav-leave .about-topbar .section-nav-link[aria-current]::before { transform-origin: right; animation: nav-leave-line .24s var(--ease-in-out) both; }
+@keyframes nav-leave { to { opacity: 0; translate: 0 -.75rem; } }
+@keyframes nav-leave-line { to { transform: scaleX(0); } }
 /* Back sits where a way out is expected, in the site's nav type. */
 .project-sheet-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; height: 5rem; padding: 0 var(--page-gutter); pointer-events: none; }
 /* Content scrolling up under the bar fades out behind a soft, blurred edge
@@ -1324,6 +1363,34 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
 .project-story p:not(.about-eyebrow) + p { margin-top: 1em; }
 @media (max-width: 1000px) {
   .project-sheet-hero { grid-template-columns: minmax(0, 1fr); align-items: start; min-height: 0; }
+}
+/* The way on, after Karim Bastami's Click To Scroll: a mouse whose wheel keeps
+   rolling down, and a pair of chevrons. It rests centred at the foot of the
+   first screen and turns the page as a flick of the wheel does. Stacked, it follows
+   the story. */
+.project-sheet-hero { position: relative; }
+.project-scroll-cue { position: absolute; left: 0; right: 0; bottom: 24px; display: flex; align-items: center; gap: 10px; width: fit-content; min-height: 44px; margin: 0 auto; padding: 0 8px; border-radius: 4px; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, sans-serif; font-size: 15px; line-height: 1.3; letter-spacing: .04em; text-transform: uppercase; text-decoration: none; white-space: nowrap; touch-action: manipulation; transition: color .2s ease; }
+.project-scroll-cue svg { flex: none; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.project-scroll-mouse { width: 20px; height: 30px; stroke-width: 1.5; }
+.project-scroll-wheel { stroke-width: 2; animation: project-scroll-wheel 1.8s var(--ease-in-out) infinite; }
+.project-scroll-chevrons { width: 18px; height: 18px; stroke-width: 1.75; transition: transform .3s var(--ease-out); }
+.project-scroll-chevrons path:last-child { animation: project-scroll-chevron 1.8s var(--ease-in-out) infinite; }
+.project-scroll-cue:focus-visible { outline: 1px solid rgba(255, 255, 255, .5); outline-offset: 2px; color: var(--white); }
+@keyframes project-scroll-wheel {
+  0% { opacity: 0; transform: translateY(-2px); }
+  20% { opacity: 1; transform: translateY(0); }
+  70%, 100% { opacity: 0; transform: translateY(8px); }
+}
+@keyframes project-scroll-chevron { 0%, 30%, 100% { opacity: 1; } 55% { opacity: .35; } }
+@media (hover: hover) and (pointer: fine) {
+  .project-scroll-cue:hover { color: var(--white); }
+  .project-scroll-cue:hover .project-scroll-chevrons { transform: translateY(3px); }
+}
+@media (max-width: 1000px) {
+  .project-scroll-cue { position: static; justify-self: center; margin-top: -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-scroll-cue svg * { animation: none; }
 }
 
 /* Architecture figure, after DAQ Consulting's case-study drawing: a diagram of
@@ -1412,6 +1479,11 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
 .project-sheet.is-playing .project-sheet-hero .about-rule::after { animation: project-sheet-rule 1s cubic-bezier(.455, .03, .515, .955) .1s both; }
 .project-sheet.is-playing .project-sheet-hero .about-title-line { animation: project-sheet-fill 1.3s cubic-bezier(.455, .03, .515, .955) calc(.2s + var(--line, 0) * .18s) both; }
 .project-sheet.is-playing .project-sheet-rise { animation: project-sheet-rise .8s cubic-bezier(.215, .61, .355, 1) calc(.8s + var(--rise, 0) * .1s) both; }
+/* The title drops in through its lines' top edges as the fill starts, so
+   the page moves from its first frame, and the way back rises with it. */
+.project-sheet.is-playing .handover-motion .about-title-line > * { animation: project-sheet-drop .7s var(--ease-out-quart) calc(var(--line, 0) * 80ms) both; }
+.project-sheet.is-playing .project-sheet-back { animation: project-sheet-rise .8s cubic-bezier(.215, .61, .355, 1) .15s both; }
+@keyframes project-sheet-drop { from { translate: 0 -105%; } }
 @keyframes project-sheet-rule { from { transform: scaleX(0); } }
 @keyframes project-sheet-fill { from { --about-fill: 0; } }
 @keyframes project-sheet-rise { from { opacity: 0; transform: translateY(14px); } }
@@ -1439,12 +1511,10 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
    Script adds .is-leaving only when motion is allowed. */
 .project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .about-title-line { transition: --about-fill .5s var(--ease-out); }
 .project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .about-rule::after { transition: transform .4s var(--ease-out); }
-.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) :is(.project-sheet-copy > .about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
-.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .project-sheet-rise { transition: opacity .3s var(--ease-out) calc(var(--rise, 0) * 15ms), transform .3s var(--ease-out) calc(var(--rise, 0) * 15ms); }
+.project-sheet:not(.is-playing) .project-sheet-hero:not(.is-leaving) .project-sheet-copy > .about-eyebrow { transition: opacity .4s var(--ease-out); }
 .project-sheet-hero.is-leaving .about-title-line { --about-fill: 0; transition: --about-fill .28s var(--ease-out) .06s; }
-.project-sheet-hero.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
-.project-sheet-hero.is-leaving :is(.project-sheet-copy > .about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
-.project-sheet-hero.is-leaving .project-sheet-rise { opacity: 0; transform: translateY(-12px); transition: opacity .25s var(--ease-out) calc((var(--rise-last, 0) - var(--rise, 0)) * 15ms), transform .25s var(--ease-out) calc((var(--rise-last, 0) - var(--rise, 0)) * 15ms); }
+.project-sheet-hero.is-leaving .about-rule::after { transform: scaleX(0); transform-origin: right; transition: transform .28s var(--ease-out) .06s; }
+.project-sheet-hero.is-leaving .project-sheet-copy > .about-eyebrow { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
 /* Touch keeps its native momentum and lands on each section; the wheel's
    turns are scripted. The hero rests below the bar's room. */
 @media (pointer: coarse) {
@@ -1452,3 +1522,75 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet) { opacity: 0
   .project-paging .project-sheet-content > * { scroll-snap-align: start; }
   .project-paging .project-sheet-hero { scroll-margin-top: 5rem; }
 }
+
+/* The handover. Every line of the hero leaves through its own top edge, as
+   Masaigon's and Akaru's headings do: the links, the lead and the title,
+   12ms apart, while the story dissolves beside them, before the page cuts; they
+   come back down in the opposite order. Script splits the paragraphs into
+   lines, sets each one's --out and --in, and adds .handover-motion only when
+   motion is allowed. The clips reach past each line's sides and foot, so
+   nothing is cut at rest; only the top edge is a mask. */
+.handover-line { display: block; clip-path: inset(0 -1em -.3em -1em); }
+.handover-out { display: block; white-space: nowrap; }
+.handover-motion :is(.project-story .about-eyebrow, .about-title-line) { clip-path: inset(0 -1em -.3em -1em); }
+.handover-motion .project-sheet-actions li { clip-path: inset(0 -4px -4px -4px); }
+.handover-motion :is(.handover-out, .project-story .about-eyebrow > span, .about-title-line > *) { transition: translate .5s var(--ease-out) calc(var(--in, 0) * 12ms); }
+.handover-motion.is-leaving :is(.handover-out, .project-story .about-eyebrow > span, .about-title-line > *) { translate: 0 -105%; transition: translate .28s var(--ease-in-out) calc(var(--out, 0) * 12ms); }
+/* The links keep their press feedback alongside. */
+.handover-motion .project-sheet-actions .button { transition: translate .5s var(--ease-out) calc(var(--in, 0) * 12ms), transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out); }
+.handover-motion.is-leaving .project-sheet-actions .button { translate: 0 -105%; transition: translate .28s var(--ease-in-out) calc(var(--out, 0) * 12ms), transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out); }
+/* The story dissolves instead of lifting: each line softens and fades up
+   10px in reading order, 14ms apart, alongside the title side's lift. It
+   re-forms in the same order, a beat after the title side starts back. */
+.handover-motion .project-story :is(.about-eyebrow, .handover-line) { clip-path: none; }
+.handover-motion .project-story :is(.handover-out, .about-eyebrow > span) { transition: opacity .5s var(--ease-out) calc(.12s + var(--out, 0) * 24ms), translate .5s var(--ease-out) calc(.12s + var(--out, 0) * 24ms), filter .5s var(--ease-out) calc(.12s + var(--out, 0) * 24ms); }
+.handover-motion.is-leaving .project-story :is(.handover-out, .about-eyebrow > span) { opacity: 0; translate: 0 -10px; filter: blur(6px); transition: opacity .24s var(--ease-out) calc(var(--out, 0) * 14ms), translate .24s var(--ease-out) calc(var(--out, 0) * 14ms), filter .24s var(--ease-out) calc(var(--out, 0) * 14ms); }
+/* The cue drops away first, the way it points, and comes back last. */
+.handover-motion .project-scroll-cue { transition: color .2s ease, opacity .4s var(--ease-out) .3s, translate .4s var(--ease-out) .3s; }
+.handover-motion.is-leaving .project-scroll-cue { opacity: 0; translate: 0 12px; pointer-events: none; transition: color .2s ease, opacity .2s var(--ease-out), translate .2s var(--ease-out); }
+/* How it works rises in where the hero stood, through a soft edge, and its
+   line draws on from the left as the hero's shrinks away to the right.
+   Script adds .how-motion only when motion is allowed. */
+/* The sheet waits below its place; the section must not scroll to it. */
+.how-motion { overflow-y: hidden; }
+.how-motion .arch-head .about-eyebrow { clip-path: inset(0 -1em -.3em -1em); }
+.how-motion:not(.is-entered) .arch-sheet { transform: translateY(40px); --sheet-reveal: 0; }
+.how-motion:not(.is-entered) .arch-head .about-eyebrow > span:first-child { translate: 0 105%; }
+.how-motion:not(.is-entered) .arch-head .about-rule::after { transform: scaleX(0); }
+.how-motion.is-entered:not(.is-leaving) .arch-sheet { transition: transform 1s var(--ease-out-cubic) .12s, --sheet-reveal 1s var(--ease-out-cubic) .12s; }
+.how-motion.is-entered:not(.is-leaving) .arch-head .about-eyebrow > span:first-child { transition: translate .6s var(--ease-out) .2s; }
+.how-motion.is-entered:not(.is-leaving) .arch-head .about-rule::after { transition: transform .7s var(--ease-out) .25s; }
+/* It leaves on the hero's own exit curve and clears before the page cuts
+   back to the hero. */
+.how-motion.is-leaving .arch-sheet { transform: translateY(40px); --sheet-reveal: 0; transition: transform .32s var(--ease-in-out), --sheet-reveal .32s var(--ease-in-out); }
+.how-motion.is-leaving .arch-head .about-eyebrow > span:first-child { translate: 0 105%; transition: translate .25s var(--ease-out); }
+.how-motion.is-leaving .arch-head .about-rule::after { transform: scaleX(0); transition: transform .25s var(--ease-out); }
+/* The first arrival draws the figure, as ChainGPT's mark draws itself: each
+   box's outline in the order data flows (--flow, 70ms apart), then its fill,
+   labels and routes, and last the selected stage's logos in colour. Every
+   box is 176 by 88, so each outline is 528 long; script sets each route's
+   --len. */
+.how-motion.is-drawing .arch-region { animation: arch-fade .5s var(--ease-out) .45s both; }
+.how-motion.is-drawing .arch-node-body { stroke-dasharray: 528; animation: arch-outline .6s var(--ease-out-quart) calc(.5s + var(--flow, 0) * 70ms) both, arch-fill .3s var(--ease-out) calc(.8s + var(--flow, 0) * 70ms) both; }
+.how-motion.is-drawing .arch-node > :not(.arch-node-body) { animation: arch-fade .3s var(--ease-out) calc(.85s + var(--flow, 0) * 70ms) both; }
+.how-motion.is-drawing .arch-edge:not([data-kind="control"]) .arch-route { stroke-dasharray: var(--len); animation: arch-route .45s cubic-bezier(.22, 1, .36, 1) calc(.75s + var(--flow, 0) * 70ms) both; }
+/* A route's arrowhead draws even while its line is hidden, so each route
+   stays out of sight until its line starts. */
+.how-motion.is-drawing .arch-edge:not([data-kind="control"]) { animation: arch-fade .12s linear calc(.75s + var(--flow, 0) * 70ms) both; }
+.how-motion.is-drawing .arch-edge[data-kind="control"],
+.how-motion.is-drawing .arch-ports rect { animation: arch-fade .3s var(--ease-out) calc(.85s + var(--flow, 0) * 70ms) both; }
+.how-motion.is-drawing .arch-node[data-selected="true"] .arch-icon-color { animation: arch-fade .25s var(--ease-out) 1.95s both; }
+@keyframes arch-outline { from { stroke-dashoffset: 528; } }
+@keyframes arch-fill { from { fill-opacity: 0; } }
+@keyframes arch-route { from { stroke-dashoffset: var(--len); } }
+@keyframes arch-fade { from { opacity: 0; } }
+/* The inspector rises through its own top edge once the figure is in:
+   after the drawing on the first arrival, straight after the sheet later. */
+.how-motion { --inspect-at: .55s; }
+.how-motion.is-drawing { --inspect-at: 2s; }
+.how-motion.is-entered .arch-stage-type { --i: 0; }
+.how-motion.is-entered .arch-stage-title { --i: 1; }
+.how-motion.is-entered .arch-desc { --i: 2; }
+.how-motion.is-entered :is(.arch-stage-type, .arch-stage-title, .arch-desc) { animation: arch-rise .5s var(--ease-out) calc(var(--inspect-at) + var(--i) * 60ms) both; }
+.how-motion.is-entered :is(.arch-tech, .arch-stepper) { animation: arch-fade .4s var(--ease-out) calc(var(--inspect-at) + .2s) both; }
+@keyframes arch-rise { from { translate: 0 100%; clip-path: inset(0 0 100% 0); } }

@@ -1976,17 +1976,40 @@ function initAboutContent() {
       panel.style.alignSelf = '';
       return height;
     });
-    const floor = parseFloat(getComputedStyle(card).minHeight);
+    const floor = parseFloat(getComputedStyle(card).minHeight) || 0;
+    // Longer, multi-paragraph entries must not set each other's target height.
+    // Keep the shared size established by the compact entries.
+    const compact = natural.filter((_, i) => copy[i].length <= 1);
+    const baseline = Math.max(floor, ...(compact.length ? compact : [Math.min(...natural)]));
+    // Let the outer grid account for the career navigation's height before
+    // fitting copy. Long descriptions must not inflate that measurement.
+    panels.forEach(panel => { panel.style.height = `${baseline}px`; });
+    const room = Math.max(baseline, card.clientHeight);
+    panels.forEach(panel => { panel.style.height = ''; });
     panels.forEach((panel, i) => {
-      const room = Math.max(floor, ...natural.filter((_, j) => j !== i));
       const paragraphs = copy[i];
-      if (natural[i] <= room || !paragraphs.length) return;
-      panel.style.height = `${room}px`;
-      let size = parseFloat(getComputedStyle(paragraphs[0]).fontSize);
-      while (panel.scrollHeight > panel.clientHeight && size > 13) {
-        size -= .5;
-        paragraphs.forEach((paragraph) => { paragraph.style.fontSize = `${size}px`; });
+      if (!paragraphs.length) return;
+      const isKisaka = panel.id === 'core-kisaka' || panel.id === 'core-kisaka-support';
+      const base = parseFloat(getComputedStyle(paragraphs[0]).fontSize);
+      // Measure the natural layout for both shrinking and growing. scrollHeight
+      // on a constrained flex panel includes overflow and can over-shrink copy.
+      panel.style.height = 'auto';
+      panel.style.alignSelf = 'start';
+      let low = 13;
+      let high = isKisaka ? base + 5 : base;
+      let best = low;
+      while (low <= high) {
+        const size = Math.floor((low + high) * 2) / 4;
+        paragraphs.forEach(paragraph => { paragraph.style.fontSize = `${size}px`; });
+        if (panel.offsetHeight <= room) {
+          best = size;
+          low = size + .25;
+        } else {
+          high = size - .25;
+        }
       }
+      paragraphs.forEach(paragraph => { paragraph.style.fontSize = `${best}px`; });
+      panel.style.alignSelf = '';
       panel.style.height = '';
     });
   };
@@ -2516,16 +2539,85 @@ bindProjectCtaScrambles();
 // Each project owns a page in projects/. A card that links to one opens its
 // content in a sheet over the site instead of leaving it; the page itself is the
 // fallback, and a modified click still opens it.
+// Splits a paragraph of plain text into its rendered lines, each in its own
+// clip, so a line can leave through its own top edge. Re-run on resize; the
+// original text is kept on the element.
+function splitProjectLines(paragraph) {
+  paragraph.dataset.text ??= paragraph.textContent;
+  const words = paragraph.dataset.text.trim().split(/\s+/);
+  paragraph.replaceChildren(...words.flatMap((word, i) => {
+    const span = document.createElement('span');
+    span.textContent = word;
+    return i ? [' ', span] : [span];
+  }));
+  const lines = [];
+  let top = null;
+  paragraph.querySelectorAll('span').forEach((span) => {
+    if (span.offsetTop !== top) lines.push([]);
+    top = span.offsetTop;
+    lines[lines.length - 1].push(span.textContent);
+  });
+  paragraph.replaceChildren(...lines.map((line, i) => {
+    const clip = document.createElement('span');
+    clip.className = 'handover-line';
+    const inner = document.createElement('span');
+    inner.className = 'handover-out';
+    // The trailing space keeps the words apart for anything reading the text.
+    inner.textContent = line.join(' ') + (i < lines.length - 1 ? ' ' : '');
+    clip.append(inner);
+    return clip;
+  }));
+}
+
+// Everything in the hero that leaves, in two chains that start together. The
+// title side lifts out through its clips, links first and title last; the
+// story dissolves in reading order, eyebrow first. Each returns in its own
+// order.
+function orderProjectHandover(hero) {
+  const bottomUp = el => [...el.querySelectorAll('.handover-out')].reverse();
+  const lift = [
+    ...[...hero.querySelectorAll('.project-sheet-actions .button')].reverse(),
+    ...[...hero.querySelectorAll('.about-lead')].flatMap(bottomUp),
+    ...[...hero.querySelectorAll('.about-title-line')].reverse(),
+  ].filter(Boolean);
+  const story = [
+    hero.querySelector('.project-story .about-eyebrow > span'),
+    ...hero.querySelectorAll('.project-story .handover-out'),
+  ].filter(Boolean);
+  [lift, story].forEach(chain => chain.forEach((el, i) => {
+    el.style.setProperty('--out', i);
+    el.style.setProperty('--in', chain.length - 1 - i);
+  }));
+}
+
 // A project's hero plays its entrance once, then moves only by transition:
-// scrolling on past it plays the entrance back out, and scrolling back returns
-// it, as About's sections do. Returns what stops the watching.
+// turning to the next section plays it back out, each line leaving through
+// its own top edge, and turning back returns it, as About's sections do. The
+// page's turns announce themselves with project-leave and project-arrive; a
+// scroll that is not a turn (the scrollbar, keys, touch) is caught by what is
+// on screen. Returns what stops the watching.
 function playProjectHero(sheet) {
   const hero = sheet.querySelector('.project-sheet-hero');
   hero?.classList.remove('is-leaving');
   sheet.classList.remove('is-playing');
   void sheet.offsetWidth;
   sheet.classList.add('is-playing');
-  if (!hero || reducedMotion.matches || !('IntersectionObserver' in window)) return () => {};
+  const stopHow = initProjectHow(sheet.querySelector('.project-how'));
+  if (!hero || reducedMotion.matches || !('IntersectionObserver' in window)) return stopHow;
+  hero.classList.add('handover-motion');
+  const paragraphs = [...hero.querySelectorAll('.about-lead, .project-story p:not(.about-eyebrow)')];
+  let width = 0;
+  const split = () => {
+    paragraphs.forEach(splitProjectLines);
+    orderProjectHandover(hero);
+  };
+  const resized = new ResizeObserver(([entry]) => {
+    if (Math.round(entry.contentRect.width) === width) return;
+    width = Math.round(entry.contentRect.width);
+    split();
+  });
+  resized.observe(hero);
+  document.fonts?.ready.then(() => hero.isConnected && split());
   // The last line to rise ends the entrance. Settling early, mid-entrance,
   // lets the exit's transitions start from wherever the entrance had got to.
   const last = [...hero.querySelectorAll('.project-sheet-rise')].pop();
@@ -2533,39 +2625,133 @@ function playProjectHero(sheet) {
   const ended = (event) => {
     if (event.target === last && event.animationName === 'project-sheet-rise') settle();
   };
-  hero.addEventListener('animationend', ended);
-  // How much of the hero is on screen, against as much as ever can be.
-  const shownOf = (entry) => {
-    const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
-    return whole ? entry.intersectionRect.height / whole : 0;
+  const leave = () => {
+    settle();
+    hero.classList.add('is-leaving');
   };
+  const arrive = () => hero.classList.remove('is-leaving');
+  hero.addEventListener('animationend', ended);
+  hero.addEventListener('project-leave', leave);
+  hero.addEventListener('project-arrive', arrive);
+  // How much of the hero is on screen, against as much as ever can be.
   let lastShown = 1;
   const observer = new IntersectionObserver((entries) => {
     const now = shownOf(entries[entries.length - 1]);
     const rising = now > lastShown;
     lastShown = now;
-    if (!rising && now < .55 && !hero.classList.contains('is-leaving')) {
-      settle();
-      hero.classList.add('is-leaving');
-    } else if (rising) {
-      hero.classList.remove('is-leaving');
-    }
+    if (!rising && now < .55 && !hero.classList.contains('is-leaving')) leave();
+    else if (rising) arrive();
   }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
   observer.observe(hero);
   return () => {
+    stopHow();
     observer.disconnect();
+    resized.disconnect();
     hero.removeEventListener('animationend', ended);
+    hero.removeEventListener('project-leave', leave);
+    hero.removeEventListener('project-arrive', arrive);
+  };
+}
+
+// How much of an observed element is on screen, against as much as ever can
+// be: one taller than the window never shows all of itself.
+function shownOf(entry) {
+  const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
+  return whole ? entry.intersectionRect.height / whole : 0;
+}
+
+// How it works takes the page over from the hero. Its sheet slides up over
+// the hero's exit, as Akaru's panels do; the first time each visit, the
+// drawing then draws itself in the order data flows through it: each box's
+// outline, then its fill and labels, then its routes, ending on the selected
+// stage, whose logos take their colour last. The inspector rises after.
+// Turning back up drops the sheet back out; once it is off screen it resets,
+// and later arrivals skip the drawing. A click skips it too.
+const HOW_DRAW_MS = 2400;
+function initProjectHow(section) {
+  if (!section || reducedMotion.matches || !('IntersectionObserver' in window)) return () => {};
+  const arch = section.querySelector('[data-arch]');
+  const flow = new Map(JSON.parse(arch?.querySelector('.arch-stages')?.textContent || '[]').map((stage, i) => [stage.id, i]));
+  arch?.querySelectorAll('.arch-node').forEach(node => node.style.setProperty('--flow', flow.get(node.dataset.node) ?? 0));
+  arch?.querySelectorAll('.arch-edge, .arch-ports rect').forEach(el => el.style.setProperty('--flow', flow.get(el.dataset.to) ?? 0));
+  arch?.querySelectorAll('.arch-route').forEach(route => route.style.setProperty('--len', Math.ceil(route.getTotalLength())));
+  section.classList.add('how-motion');
+  let drawTimer = 0;
+  const endDraw = () => {
+    clearTimeout(drawTimer);
+    section.classList.remove('is-drawing');
+  };
+  const finishDraw = () => {
+    if (!section.classList.contains('is-drawing')) return;
+    endDraw();
+    // The selected stage's routes ink in, as a selection does.
+    arch?.dispatchEvent(new CustomEvent('arch-ink', { bubbles: true }));
+  };
+  // Every arrival draws the figure again, from blank.
+  const draw = () => {
+    endDraw();
+    arch?.querySelectorAll('.arch-ink').forEach(ink => ink.remove());
+    void section.offsetWidth;
+    section.classList.add('is-drawing');
+    drawTimer = setTimeout(finishDraw, HOW_DRAW_MS);
+  };
+  const enter = () => {
+    if (section.classList.contains('is-leaving')) section.classList.remove('is-leaving');
+    if (section.classList.contains('is-entered')) return;
+    draw();
+    section.classList.add('is-entered');
+  };
+  const leave = () => {
+    if (section.classList.contains('is-entered')) section.classList.add('is-leaving');
+  };
+  const reset = () => {
+    endDraw();
+    section.classList.remove('is-entered', 'is-leaving');
+  };
+  section.addEventListener('project-arrive', enter);
+  section.addEventListener('project-leave', leave);
+  section.addEventListener('pointerdown', finishDraw);
+  let lastShown = 0;
+  const observer = new IntersectionObserver((entries) => {
+    const entry = entries[entries.length - 1];
+    const now = shownOf(entry);
+    const was = lastShown;
+    const rising = now > was;
+    lastShown = now;
+    const entered = section.classList.contains('is-entered');
+    const leaving = section.classList.contains('is-leaving');
+    // A section resets once it has been left, or jumped away from while in
+    // view (a key, the scrollbar). One the page has just turned to is still
+    // a pixel short of the window as the glide begins, and stays.
+    if (now === 0) {
+      if (!entered || leaving || was > 0) reset();
+    }
+    else if (!entered && now >= .35) enter();
+    else if (entered && !leaving && !rising && now < .5) leave();
+    else if (leaving && rising && now >= .35) enter();
+    // A pixel's margin, so a section resting just below the window is out.
+  }, { rootMargin: '-1px 0px', threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
+  observer.observe(section);
+  return () => {
+    clearTimeout(drawTimer);
+    observer.disconnect();
   };
 }
 
 // A project page turns a screen at a time. One flick of the wheel or trackpad
-// glides to the next section on Malvah's Lenis curve (expo out), and the rest
-// of that flick's momentum is spent on the turn, so a hard flick still turns
-// only one. A section taller than the window scrolls natively until its edge.
-// Touch keeps its own momentum and snaps with CSS; keys stay native, as on
-// About. `scroller` is the window for the page or the sheet's dialog.
+// turns to the next section by exit, cut and entrance, so the page never
+// slides; the rest of that flick's momentum is spent on the turn, so a hard
+// flick still turns only one. A section taller than the window scrolls
+// natively until its edge. Touch keeps its own momentum and snaps with CSS;
+// keys stay native, as on About. `scroller` is the window for the page or the
+// sheet's dialog.
+// Scrolling within a section taller than the window still glides, on
+// Malvah's Lenis curve (expo out).
 const projectTurnEase = t => Math.min(1, 1.001 - Math.pow(2, -10 * t));
 const PROJECT_TURN_MS = 1100;
+// A turn between sections cuts once the leaving section's exit has cleared
+// (every exit piece ends by 370ms).
+const PROJECT_CUT_MS = 380;
 function initProjectPaging(scroller) {
   const isWindow = scroller === window;
   const box = isWindow ? document.documentElement : scroller;
@@ -2580,16 +2766,23 @@ function initProjectPaging(scroller) {
     const origin = (isWindow ? 0 : scroller.getBoundingClientRect().top) - getY();
     const sections = [...box.querySelectorAll('.project-sheet-content > *')];
     const top = sections.map((el, i) => i ? Math.min(Math.round(el.getBoundingClientRect().top - origin), maxY()) : 0);
-    return top.map((y, i) => ({ top: y, bottom: i + 1 < top.length ? top[i + 1] : box.scrollHeight }));
+    return top.map((y, i) => ({ el: sections[i], top: y, bottom: i + 1 < top.length ? top[i + 1] : box.scrollHeight }));
   };
   let turn = null;
   const gesture = { time: -Infinity, direction: 0, distance: 0, magnitude: 0, spent: false };
+  const tell = (el, type) => el?.dispatchEvent(new CustomEvent(type));
+
+  function stop() {
+    cancelAnimationFrame(turn?.frame);
+    clearTimeout(turn?.hold);
+    turn = null;
+  }
 
   function glide(to) {
-    const from = getY();
-    if (Math.abs(to - from) < 1) return;
-    cancelAnimationFrame(turn?.frame);
-    turn = { to, direction: Math.sign(to - from), last: from, start: performance.now() };
+    const origin = getY();
+    stop();
+    if (Math.abs(to - origin) < 1) return;
+    turn = { to, direction: Math.sign(to - origin), last: origin, start: performance.now() };
     const step = (now) => {
       // Anything else moving the page (the scrollbar, a key) takes it back.
       if (Math.abs(getY() - turn.last) > 2) {
@@ -2598,12 +2791,32 @@ function initProjectPaging(scroller) {
       }
       // A frame can be stamped a moment before the glide began.
       const t = Math.min(1, Math.max(0, (now - turn.start) / PROJECT_TURN_MS));
-      setY(Math.round(from + (to - from) * projectTurnEase(t)));
+      setY(Math.round(origin + (to - origin) * projectTurnEase(t)));
       turn.last = getY();
       if (t < 1) turn.frame = requestAnimationFrame(step);
       else turn = null;
     };
     turn.frame = requestAnimationFrame(step);
+  }
+
+  // A turn between sections is a page transition, not a journey: the section
+  // in front plays its exit where it stands, and once that has cleared the
+  // page cuts to the next section, which plays its entrance in the same
+  // place. Nothing slides past.
+  function handOver(next) {
+    const { to, from, into } = next;
+    if (!from || !into || from === into) {
+      glide(to);
+      return;
+    }
+    tell(from, 'project-leave');
+    stop();
+    turn = { direction: Math.sign(to - getY()), from, into };
+    turn.hold = setTimeout(() => {
+      turn = null;
+      setY(to);
+      tell(into, 'project-arrive');
+    }, PROJECT_CUT_MS);
   }
 
   // Where a flick in this direction goes from here: a stop to glide to, an
@@ -2617,7 +2830,7 @@ function initProjectPaging(scroller) {
     const here = list[i];
     if (direction > 0) {
       const end = Math.min(here.bottom - view(), maxY());
-      if (!tall(here) || y >= end - 2) return list[i + 1] && { to: list[i + 1].top };
+      if (!tall(here) || y >= end - 2) return list[i + 1] && { to: list[i + 1].top, from: here.el, into: list[i + 1].el };
       return y + distance > end ? { to: end, edge: true } : undefined;
     }
     if (y > here.top + 2) {
@@ -2625,7 +2838,7 @@ function initProjectPaging(scroller) {
       return y - distance < here.top ? { to: here.top, edge: true } : undefined;
     }
     const previous = list[i - 1];
-    return previous && { to: Math.max(previous.top, here.top - view()) };
+    return previous && { to: Math.max(previous.top, here.top - view()), from: here.el, into: previous.el };
   }
 
   scroller.addEventListener('wheel', (event) => {
@@ -2645,14 +2858,14 @@ function initProjectPaging(scroller) {
     gesture.magnitude = distance;
     if (turn) {
       event.preventDefault();
-      // Turning back mid-glide returns to where it came from.
-      if (fresh && direction !== turn.direction) {
-        const list = stops().map(s => s.top);
-        const back = direction < 0 ? list.filter(top => top < turn.to - 2).pop() : list.find(top => top > turn.to + 2);
-        if (back !== undefined) {
-          gesture.spent = true;
-          glide(back);
-        }
+      // Turning back before the cut hands the page straight back; it has
+      // not moved, so only the sections change.
+      if (fresh && direction !== turn.direction && turn.into) {
+        gesture.spent = true;
+        const { from, into } = turn;
+        stop();
+        tell(into, 'project-leave');
+        tell(from, 'project-arrive');
       }
       return;
     }
@@ -2673,15 +2886,36 @@ function initProjectPaging(scroller) {
     gesture.distance += distance;
     if (gesture.distance < 12) return;
     gesture.spent = true;
-    glide(next.to);
+    handOver(next);
   }, { passive: false });
+
+  // The hero's See how it works turns the page as a flick down would.
+  // Without motion, its link jumps there.
+  box.addEventListener('click', (event) => {
+    const cue = event.target.closest?.('.project-scroll-cue');
+    if (!cue || reducedMotion.matches) return;
+    event.preventDefault();
+    if (turn) return;
+    const list = stops();
+    const i = list.findIndex(s => s.el.contains(cue));
+    const next = list[i + 1];
+    if (next) handOver({ to: next.top, from: list[i].el, into: next.el });
+  });
 }
 
-// Leaving the project page plays the hero's exit on the way out.
-function leaveProjectHero(sheet) {
+// Leaving the project page plays the exit of whichever section is on screen:
+// the hero's lines lift out, How it works sinks back through its edge.
+function leaveProjectPage(sheet) {
   if (reducedMotion.matches) return;
   sheet.classList.remove('is-playing');
-  sheet.querySelector('.project-sheet-hero')?.classList.add('is-leaving');
+  const middle = window.innerHeight / 2;
+  const sections = [...sheet.querySelectorAll('.project-sheet-content > *')];
+  const shown = sections.find((el) => {
+    const box = el.getBoundingClientRect();
+    return box.top <= middle && box.bottom > middle;
+  }) || sections[0];
+  if (shown?.matches('.project-sheet-hero')) shown.classList.add('is-leaving');
+  else shown?.dispatchEvent(new CustomEvent('project-leave'));
 }
 
 // Opened on its own, the project page plays the sheet's entrance, and its link
@@ -2697,7 +2931,7 @@ function initProjectPage() {
     event.preventDefault();
     if (exit) return;
     const href = event.currentTarget.href;
-    leaveProjectHero(page);
+    leaveProjectPage(page);
     // The page fades behind the hero's exit, not over it.
     exit = page.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 140, easing: 'cubic-bezier(.77, 0, .175, 1)', fill: 'forwards' });
     exit.onfinish = () => { location.href = href; };
@@ -2707,7 +2941,7 @@ function initProjectPage() {
     if (!event.persisted || !exit) return;
     exit.cancel();
     exit = null;
-    page.querySelector('.project-sheet-hero')?.classList.remove('is-leaving');
+    page.querySelectorAll('.project-sheet-content > .is-leaving').forEach((el) => el.classList.remove('is-leaving'));
   });
 }
 initProjectPage();
@@ -2727,6 +2961,46 @@ function initProjectSheet() {
   const heroes = new Map();
   let fade = null;
   let stopHero = () => {};
+  const projects = document.querySelector('.projects-main');
+  let reveal = 0;
+  // The top bar's contents come back in reading order.
+  document.querySelectorAll('.about-topbar :is(.topbar-wordmark, .section-nav > *)').forEach((el, i) => el.style.setProperty('--nav-i', i));
+  let navDone = 0;
+  // Projects plays its entrance again as the sheet clears, and the top bar
+  // comes back with it.
+  const showProjects = () => {
+    restProjects();
+    clearTimeout(reveal);
+    const root = document.documentElement;
+    if (!root.classList.contains('project-sheet-open')) return;
+    root.classList.remove('project-sheet-open');
+    projects?.classList.add('projects-entered');
+    if (reducedMotion.matches || document.hidden) return;
+    clearTimeout(navDone);
+    root.classList.add('nav-return');
+    navDone = setTimeout(() => root.classList.remove('nav-return'), 1000);
+  };
+  let opening = null;
+  let rest = 0;
+  // Projects leaves before a project opens over it: the title lifts, the
+  // cards slide on and the chosen one goes last, and the top bar's links
+  // lift out. Resolves once it has cleared.
+  function leaveProjects(link) {
+    if (reducedMotion.matches || sheet.open) return Promise.resolve();
+    const root = document.documentElement;
+    clearTimeout(navDone);
+    clearTimeout(rest);
+    root.classList.remove('nav-return');
+    link.closest('.project-card')?.classList.add('is-opening');
+    root.classList.add('projects-leaving', 'nav-leave');
+    return new Promise((resolve) => setTimeout(resolve, 320));
+  }
+  // Once the sheet covers it, Projects drops its exit and waits, reset.
+  function restProjects() {
+    clearTimeout(rest);
+    document.documentElement.classList.remove('projects-leaving', 'nav-leave');
+    projects?.querySelectorAll('.is-opening').forEach((card) => card.classList.remove('is-opening'));
+  }
 
   function projectLink(target) {
     const link = target.closest?.('.project-link');
@@ -2755,19 +3029,27 @@ function initProjectSheet() {
   }
 
   async function open(link, fromHistory = false) {
+    if (opening === link.href) return;
+    opening = link.href;
     let content;
     try {
-      content = await load(link.href);
+      // Projects plays its exit while the page loads.
+      [content] = await Promise.all([load(link.href), leaveProjects(link)]);
     } catch {
       // file://, offline or a missing page: go to the page instead.
       location.href = link.href;
       return;
+    } finally {
+      opening = null;
     }
     // The address follows the sheet, so a refresh lands on the project page and
     // the browser's back button closes the sheet.
     if (!fromHistory) history.pushState({ projectSheet: link.href }, '', link.href);
     sheet.querySelector('.project-sheet-content').replaceWith(document.importNode(content, true));
     fade?.cancel();
+    clearTimeout(reveal);
+    // Projects waits under the sheet, reset, to play its entrance on the way back.
+    if (!reducedMotion.matches) projects?.classList.remove('projects-entered');
     document.documentElement.classList.add('project-sheet-open');
     if (!sheet.open) sheet.showModal();
     sheet.scrollTop = 0;
@@ -2775,6 +3057,7 @@ function initProjectSheet() {
     stopHero();
     stopHero = playProjectHero(sheet);
     fade = sheet.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.23, 1, .32, 1)' });
+    rest = setTimeout(restProjects, 260);
   }
 
   function close() {
@@ -2796,9 +3079,12 @@ function initProjectSheet() {
       closed();
       return;
     }
+    // The section on screen plays its exit first; the sheet fades once most of
+    // it has gone, and Projects starts back in underneath as it does.
+    leaveProjectPage(sheet);
     stopHero();
-    leaveProjectHero(sheet);
-    fade = sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
+    reveal = setTimeout(showProjects, 180);
+    fade = sheet.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, delay: 180, easing: 'cubic-bezier(.23, 1, .32, 1)', fill: 'forwards' });
     fade.onfinish = closed;
   }
 
@@ -2810,7 +3096,7 @@ function initProjectSheet() {
     stopHero();
     stopHero = () => {};
     sheet.classList.remove('is-playing');
-    document.documentElement.classList.remove('project-sheet-open');
+    showProjects();
   }
 
   sheet.addEventListener('close', closed);
@@ -2922,6 +3208,12 @@ function initArchitecture() {
     if (node) select(arch, node.dataset.node, false);
     const button = event.target.closest('[data-arch-step]');
     if (button) step(arch, Number(button.dataset.archStep), false);
+  });
+  // How it works asks for the selected stage's routes once it has drawn.
+  document.addEventListener('arch-ink', (event) => {
+    const arch = event.target.closest?.('[data-arch]');
+    const current = arch?.querySelector('.arch-node[data-selected="true"]')?.dataset.node;
+    if (current) select(arch, current, false);
   });
   document.addEventListener('keydown', (event) => {
     const node = event.target.closest?.('.arch-node');
