@@ -1,0 +1,183 @@
+/* The Blog heading, in the site's section-heading pattern ("04 / Skills" over
+   an outlined title that fills in). Rules are copied from styles.css; the
+   heading uses the Google Sans variant, like Experience, Education and Skills. */
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('../assets/fonts/geist-mono-latin.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bounded';
+  src: url('../assets/fonts/bounded-variable.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+@property --about-fill { syntax: '<number>'; inherits: true; initial-value: 1; }
+
+.blog-head { --white: #ffffff; --ease-out: cubic-bezier(.23, 1, .32, 1); }
+.about-block-head { display: flex; flex-direction: column; gap: clamp(1rem, 1.6vw, 1.25rem); margin-bottom: clamp(2.5rem, 4vw, 3.5rem); }
+.about-eyebrow { display: flex; align-items: center; gap: 1rem; margin: 0; color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+.about-rule { position: relative; flex: 1; max-width: 240px; height: 1px; background: rgba(255, 255, 255, .1); }
+.about-rule::after { content: ''; position: absolute; inset: 0; background: rgba(255, 255, 255, .4); transform-origin: left; }
+.about-heading { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.1rem, 4.6vw, 4.25rem); font-weight: 300; line-height: .95; letter-spacing: -.045em; }
+.about-title-line { --about-fill: 1; position: relative; display: block; width: fit-content; }
+.about-title-outline, .about-title-fill { padding-right: .12em; }
+.about-title-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .32); }
+.about-title-fill { position: absolute; inset: 0; display: block; color: var(--white); --edge-at: calc(var(--about-fill) * 124% - 12%); -webkit-mask-image: linear-gradient(var(--about-sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(var(--about-sweep, 100deg), #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
+
+/* Blog: the Google Sans variant used by the section headings, and sitting in
+   DAQ's gallery header (which otherwise styles any h1 there). */
+.OutcomesGallery-module__0WS_ta__header .blog-head { margin-bottom: 0; }
+.OutcomesGallery-module__0WS_ta__header .blog-head .about-heading { font-family: 'Google Sans', Arial, sans-serif; font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); font-weight: 300; line-height: .95; letter-spacing: -.045em; }
+
+/* Entrance, as the sections do it: the rule draws, the heading fills, the
+   eyebrow and outline fade up. blog.js adds .blog-motion only when motion is
+   allowed, so without it everything is already in place. */
+.blog-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
+.blog-motion:not(.is-entered) .about-title-line { --about-fill: 0; }
+.blog-motion:not(.is-entered) :is(.about-eyebrow, .about-title-outline) { opacity: 0; }
+.blog-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.blog-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
+.blog-motion.is-entered :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
+
+/* First screen: the heading and the first featured card fit together within
+   the ~770px one-screen budget (bar 72 + 48 + heading ~125 + card 502). The
+   card's drawing is capped at 750x500 instead of spanning two-thirds of the
+   page at 3:2; the caption takes the rest of the row. */
+.OutcomesGallery-module__0WS_ta__header { padding-bottom: 32px; }
+@media (min-width: 1024px) {
+  .OutcomesGallery-module__0WS_ta__featured:not(.OutcomesGallery-module__0WS_ta__closing) .OutcomesGallery-module__0WS_ta__projectLink { grid-template-columns: minmax(0, 1fr) minmax(0, 750px); }
+}
+/* DAQ's header is a row that sizes its children to their content, which left
+   the eyebrow's rule with no room to draw. The heading block takes the row. */
+.OutcomesGallery-module__0WS_ta__header .blog-head { flex: 1; }
+
+/* "Blog." is the page's title, so it takes the display style of the page
+   titles ("Meet Josh.", "Josh's Creations."): Bounded, capitals, heavy. */
+.OutcomesGallery-module__0WS_ta__header .blog-head .about-title { margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: 80px; font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
+.blog-head .about-title-strong { font-weight: 800; }
+.OutcomesGallery-module__0WS_ta__header { padding-bottom: 28px; }
+@media (max-width: 767px) { .OutcomesGallery-module__0WS_ta__header .blog-head .about-title { font-size: 56px; } }
+
+/* Read Article, in the tags' mono type. Hovering it (not the rest of the
+   card) runs one gesture: the label rolls up to a bright copy, a bright line
+   draws along the rule beneath, and the arrow flies out as a fresh one flies
+   in a beat later. Leaving plays it back, the line retracting to the right. */
+.OutcomesGallery-module__0WS_ta__featureAction.blog-read { position: relative; color: rgba(255, 255, 255, .72); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+.blog-roll { position: relative; display: block; overflow: hidden; }
+.blog-roll > span { display: block; transition: transform .5s cubic-bezier(.19, 1, .22, 1); }
+.blog-roll-b { position: absolute; inset: 0; color: #fff; transform: translateY(100%); }
+.blog-read-line { position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: #fff; transform: scaleX(0); transform-origin: right center; transition: transform .5s cubic-bezier(.19, 1, .22, 1); }
+.blog-arrow-window { display: grid; place-items: center; width: 19px; height: 19px; overflow: hidden; }
+.blog-arrow-window > svg { grid-area: 1 / 1; transition: transform .42s cubic-bezier(.22, 1, .36, 1) .06s; }
+.OutcomesGallery-module__0WS_ta__featureAction .blog-arrow-window > .OutcomesGallery-module__0WS_ta__arrow { transform: none; }
+.OutcomesGallery-module__0WS_ta__featureAction .blog-arrow-window > .blog-arrow-in { transform: translate(-180%, 180%); }
+@media (hover: hover) and (pointer: fine) {
+  .blog-read:hover .blog-roll-a { transform: translateY(-100%); }
+  .blog-read:hover .blog-roll-b { transform: none; }
+  .blog-read:hover .blog-read-line { transform: scaleX(1); transform-origin: left center; }
+  .blog-read:hover .blog-arrow-window > .blog-arrow-out { transform: translate(180%, -180%); color: #fff; }
+  .blog-read:hover .blog-arrow-window > .blog-arrow-in { transform: none; color: #fff; }
+}
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-roll-a { transform: translateY(-100%); }
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-roll-b { transform: none; }
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-read-line { transform: scaleX(1); transform-origin: left center; }
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-arrow-window > .blog-arrow-out { transform: translate(180%, -180%); }
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-arrow-window > .blog-arrow-in { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .blog-roll > span, .blog-read-line, .blog-arrow-window > svg { transition: none; }
+}
+
+/* Josh's articles: the tags use the eyebrow's type ("BLOG"), and the title,
+   summary and scope use Google Sans, the site's reading face. */
+.blog-card :is(h2, .OutcomesGallery-module__0WS_ta__outcome, .OutcomesGallery-module__0WS_ta__scope) { font-family: 'Google Sans', Arial, sans-serif; }
+.blog-card .OutcomesGallery-module__0WS_ta__meta { color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+
+/* The featured article's diagram speaks in Google Sans like the rest of the card. */
+.OutcomeFields-module__OZp7ua__field.blog-field { font-family: 'Google Sans', Arial, sans-serif; }
+/* Tags sit on one line, split by a hairline as on the smaller cards. */
+.OutcomesGallery-module__0WS_ta__featured:not(.OutcomesGallery-module__0WS_ta__closing) .OutcomesGallery-module__0WS_ta__meta { flex-direction: row; flex-wrap: wrap; gap: 4px 16px; }
+.OutcomesGallery-module__0WS_ta__featured:not(.OutcomesGallery-module__0WS_ta__closing) .OutcomesGallery-module__0WS_ta__meta > span + span { border-left: 1px solid rgba(255, 255, 255, .2); padding-left: 16px; }
+
+/* Half-width cards keep their arrow beside the title; hovering the card
+   sends it flying out as a fresh one flies in. */
+.blog-title-arrow { flex: none; width: 24px; height: 24px; margin-top: 3px; }
+.blog-title-arrow > .OutcomesGallery-module__0WS_ta__arrow { margin: 0; transform: none; }
+.blog-title-arrow > .blog-arrow-in { transform: translate(-180%, 180%); }
+@media (hover: hover) and (pointer: fine) {
+  .OutcomesGallery-module__0WS_ta__projectLink:hover .blog-title-arrow > .blog-arrow-out { transform: translate(180%, -180%); color: #fff; }
+  .OutcomesGallery-module__0WS_ta__projectLink:hover .blog-title-arrow > .blog-arrow-in { transform: none; color: #fff; }
+}
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-title-arrow > .blog-arrow-out { transform: translate(180%, -180%); }
+.OutcomesGallery-module__0WS_ta__projectLink:focus-visible .blog-title-arrow > .blog-arrow-in { transform: none; }
+@media (max-width: 767px) { .blog-title-arrow { width: 22px; height: 22px; } }
+
+/* "Five capacities, one score" entrance. Until it has played, the bundles are
+   wiped back to the left edge, the gate, score line, square and label are
+   hidden. blog.js plays it once, the first time the cover is seen, and then
+   adds .is-drawn. Only with JavaScript and motion allowed; otherwise the
+   drawing is simply there. */
+@media (prefers-reduced-motion: no-preference) {
+  .blog-js [data-entrance="capacities"]:not(.is-drawn) .cap-wipe { transform: scaleX(0); transform-origin: 0 0; }
+  .blog-js [data-entrance="capacities"]:not(.is-drawn) :is([data-e="gate"], [data-e="square"], [data-e="score-label"]) { opacity: 0; }
+  .blog-js [data-entrance="capacities"]:not(.is-drawn) [data-e="score"] { stroke-dasharray: 1; stroke-dashoffset: 1; }
+}
+
+/* After the entrance, the drawing keeps flowing: a pulse rides each bundle's
+   centre thread into the gate (the Electricity one stutters, an outage), a
+   pulse runs out along the score line, and a ring ripples off the square as
+   it lands. It runs only once the entrance is done (.is-flowing), pauses
+   off-screen (.is-offscreen), and never runs under reduced motion. */
+.cap-flow { display: none; pointer-events: none; }
+.cap-pulse, .cap-pulse-out { fill: none; stroke: var(--field-ink); stroke-width: 2px; stroke-linecap: round; opacity: 0; }
+.cap-pulse { stroke-dasharray: .06 1; stroke-dashoffset: .06; }
+.cap-pulse-out { stroke-dasharray: .18 1; stroke-dashoffset: .18; }
+.cap-ping { fill: none; stroke: var(--field-ink); stroke-width: 1px; opacity: 0; transform-box: fill-box; transform-origin: center; }
+@keyframes cap-ride { 0% { stroke-dashoffset: .06; opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { stroke-dashoffset: -1; opacity: 0; } }
+@keyframes cap-stutter { 0%, 100% { opacity: 1; } 30% { opacity: 1; } 34% { opacity: 0; } 42% { opacity: 1; } 58% { opacity: 0; } 61% { opacity: 1; } }
+@keyframes cap-out { 0%, 40% { stroke-dashoffset: .18; opacity: 0; } 46% { opacity: 1; } 92% { opacity: 1; } 100% { stroke-dashoffset: -1; opacity: 0; } }
+@keyframes cap-ping { 0%, 88% { transform: scale(1); opacity: 0; } 90% { opacity: .9; } 100% { transform: scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .is-flowing .cap-flow { display: block; }
+  .is-flowing .cap-pulse { animation: cap-ride 2.8s cubic-bezier(.65, 0, .35, 1) calc(var(--i) * .56s) infinite both; }
+  .is-flowing .cap-pulse-outage { animation: cap-ride 2.8s cubic-bezier(.65, 0, .35, 1) calc(var(--i) * .56s) infinite both, cap-stutter .9s steps(1, end) infinite; }
+  .is-flowing .cap-pulse-out { animation: cap-out 2.8s cubic-bezier(.23, 1, .32, 1) infinite both; }
+  .is-flowing .cap-ping { animation: cap-ping 2.8s cubic-bezier(.23, 1, .32, 1) infinite both; }
+  .is-flowing.is-offscreen .cap-flow * { animation-play-state: paused; }
+}
+
+/* Fake Listings entrance: until it plays, the match-links are undrawn, the
+   copies' frames sit dim and their marks are hidden. */
+@media (prefers-reduced-motion: no-preference) {
+  .blog-js [data-entrance="listings"]:not(.is-drawn) [data-linkmask] { stroke-dashoffset: 1; }
+  .blog-js [data-entrance="listings"]:not(.is-drawn) [data-role="copy"] [data-frame] { opacity: .35; }
+  .blog-js [data-entrance="listings"]:not(.is-drawn) [data-mark] { opacity: 0; }
+}
+
+/* T-shaped entrance: until it plays, the bar lines are collapsed to their
+   centres, the stem is folded up to the bar, and the square, ticks and
+   labels are hidden. */
+@media (prefers-reduced-motion: no-preference) {
+  .blog-js [data-entrance="tshape"]:not(.is-drawn) [data-bar] { transform: scaleX(0); transform-box: fill-box; transform-origin: center; }
+  .blog-js [data-entrance="tshape"]:not(.is-drawn) [data-stem] { transform: scaleY(0); transform-box: fill-box; transform-origin: top; }
+  .blog-js [data-entrance="tshape"]:not(.is-drawn) :is([data-e="ticks"], [data-e="square"], [data-e="breadth-label"], [data-e="depth-label"]) { opacity: 0; }
+}
+
+/* The T keeps going: a scan crosses the breadth, runs down the depth, and the
+   square pings as it lands. Pauses off-screen; never under reduced motion. */
+.t-flow { display: none; pointer-events: none; }
+.t-scan-x, .t-scan-y { fill: none; stroke: var(--field-ink); stroke-width: 2px; stroke-linecap: round; opacity: 0; }
+.t-ping { fill: none; stroke: var(--field-ink); stroke-width: 1px; opacity: 0; transform-box: fill-box; transform-origin: center; }
+@keyframes t-scan-x { 0% { transform: translateX(112px); opacity: 0; } 4% { opacity: 1; } 36% { opacity: 1; } 40%, 100% { transform: translateX(608px); opacity: 0; } }
+@keyframes t-scan-y { 0%, 38% { transform: translateY(148px); opacity: 0; } 42% { opacity: 1; } 74% { opacity: 1; } 78%, 100% { transform: translateY(360px); opacity: 0; } }
+@keyframes t-ping { 0%, 76% { transform: scale(1); opacity: 0; } 79% { opacity: .9; } 94%, 100% { transform: scale(2.6); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  .is-flowing .t-flow { display: block; }
+  .is-flowing .t-scan-x { animation: t-scan-x 4.8s cubic-bezier(.65, 0, .35, 1) infinite both; }
+  .is-flowing .t-scan-y { animation: t-scan-y 4.8s cubic-bezier(.65, 0, .35, 1) infinite both; }
+  .is-flowing .t-ping { animation: t-ping 4.8s cubic-bezier(.23, 1, .32, 1) infinite both; }
+  .is-flowing.is-offscreen .t-flow * { animation-play-state: paused; }
+}

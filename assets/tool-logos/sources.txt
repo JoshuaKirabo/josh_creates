@@ -12,3 +12,4 @@ PyTorch and TensorFlow: Devicon original-color SVGs, https://cdn.jsdelivr.net/gh
 Docker: Devicon original-color SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original.svg
 pandas: Devicon pandas-original SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/pandas/pandas-original.svg, with its navy bars (#130754) lightened to #ece9f7 so they show on the dark background.
 SQL: generic database mark from https://api.iconify.design/vscode-icons/file-type-sql.svg (VS Code Icons, MIT).
+MySQL: Devicon original-color SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/mysql/mysql-original.svg

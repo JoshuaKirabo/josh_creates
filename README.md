@@ -6,6 +6,8 @@ Open `index.html` directly, or serve this directory with any static web server.
 
 - `index.html` — the whole site in one document: Home, then About (Meet Josh, The Core, Education), Projects and Skills as sections, plus the mobile navigation
 - `projects/` — one page per project, opened in a sheet over the site
+- `blog.html` — the Blog, a standalone page (like Ask Josh and Contact, which sit past the navbar's end-of-scroll bar). It carries the same JOSH top bar as About, Projects and Skills (`blog/topbar.css`, copied from `styles.css`). Its content currently starts as a clone of daqconsulting.com/case-studies: `blog/daq.css` is that site's compiled CSS vendored verbatim, `blog/fonts/` its Inter files, and `blog/blog.js` a plain-JavaScript port of its motion (page turn, artwork sweeps, index rule). Content links still point at the DAQ site until it is rewritten
+- `articles/` — one page per blog article, reached from its Blog card with the page-turn transition. Each reuses the Blog's top bar and heading styles, plus `blog/article.css` for the reading column; the text is reproduced from the original post
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
@@ -56,7 +58,7 @@ The native dialog contains keyboard focus and makes the page behind it inert; pa
 
 The social icons enter individually with a 160ms opacity/8px rise transition and 40ms stagger (280ms for the group), using the existing `--ease-out` curve. Their transitions also run when touch skips the main intro, so they no longer appear abruptly. Hit areas remain available during the entrance. Keyboard skips show them immediately; reduced motion removes the rise. Stagger delays apply only during the entrance, preserving immediate touch and hover feedback afterward.
 
-Blog starts the right-hand desktop navigation group, before Ask Josh and Let’s connect. It follows Projects in the mobile menu, using the same placeholder behavior as the existing navigation until its destination is provided.
+The home screen balances four links on the left (Home through Skills) with three on the right (Let’s connect, Blog, Ask Josh). In the section navbar, Let’s connect stays directly after Skills and before the divider; the mobile menu keeps the same link order. These links keep their placeholder behavior until their destinations are provided.
 
 ## Scroll motion
 

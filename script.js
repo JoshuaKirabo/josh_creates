@@ -1370,7 +1370,19 @@ function holdPageTurns(target, leave, { fresh = false, still = () => false, whee
 // it is moving: the fold, Meet Josh's entrance and its exit all run on the
 // same thread as the scene, so it holds its last frame until they finish.
 // Phones get none of it; the scene is not loaded below the tablet width.
-const SPLINE_RUNTIME = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.55/build/runtime.js';
+const SPLINE_BUILD = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.55/build/';
+const SPLINE_RUNTIME = SPLINE_BUILD + 'runtime.js';
+// Left alone, the runtime asks for these one wave at a time: its modules, then
+// the scene, then what the scene uses, then the renderer. Asked for together,
+// they arrive in one wave. The list is this scene's and this runtime
+// version's; a name that goes stale costs one unused download, nothing more.
+const SPLINE_MODULES = ['runtime-timeline-5YUCVT7L.js', 'runtime-text-LFJHKA7L.js',
+  'runtime-particles-PBWDRHMN.js', 'runtime-DRACOLoader-GLMRFFK2.js', 'process.js', 'opentype.js'];
+const SPLINE_FILES = ['https://cdn.spline.design/@splinetool/runtime@2.0.55/build/process.wasm',
+  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js',
+  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.wasm'];
+// The renderer is WebGPU where the browser has it and WebGL elsewhere.
+const SPLINE_RENDERER = 'gpu' in navigator ? 'runtime-webgpu-DDM7K6ES.js' : 'runtime-classicRuntime-7CF5S54Q.js';
 // The scene is soft enough that a retina screen gains little from drawing it
 // at full density, and every extra pixel is drawn every frame.
 const SCENE_PIXEL_RATIO = 1.25;
@@ -1483,17 +1495,41 @@ function initAboutScene(about) {
     setTimeout(restore, 15000);
     return restore;
   };
+  // Everything the scene needs is asked for at once when the page settles:
+  // downloads run off the main thread, so they cost the entrance nothing.
+  let runtime = null;
+  let bytes = null;
+  const fetchScene = () => {
+    for (const [href, rel, as] of [
+      ...[SPLINE_RENDERER, ...SPLINE_MODULES].map(name => [SPLINE_BUILD + name, 'modulepreload']),
+      ...SPLINE_FILES.map(href => [href, 'preload', 'fetch']),
+    ]) {
+      const link = document.createElement('link');
+      link.rel = rel;
+      link.href = href;
+      link.crossOrigin = 'anonymous';
+      if (as) link.as = as;
+      document.head.append(link);
+    }
+    runtime = import(SPLINE_RUNTIME);
+    bytes = fetch(new URL(canvas.dataset.scene, document.baseURI).href)
+      .then(response => response.ok ? response.arrayBuffer() : Promise.reject(new Error(response.status)));
+    // Settled here so a failure waits for load to handle it.
+    runtime.catch(() => {});
+    bytes.catch(() => {});
+  };
   const load = async () => {
     const restore = gateSceneMoves();
     gateSceneFrames();
     try {
-      const { Application } = await import(SPLINE_RUNTIME);
+      const [{ Application }, data] = await Promise.all([runtime, bytes]);
       // The scene's own script drives everything that moves: the typing and
       // sway, his gaze, and the lamp switching on a click. Inline runs it in
       // this page; the default sandbox would lay an iframe over the canvas
       // and take the pointer.
       const scene = new Application(canvas, { htmlContentMode: 'inline' });
-      await scene.load(new URL(canvas.dataset.scene, document.baseURI).href);
+      // Load is a fetch and then start; the fetch has already run.
+      await scene.start(data);
       // The sky and the studio floor give way to the grain behind them.
       scene.setBackgroundColor('transparent');
       const floor = scene.findObjectByName('Studio floor');
@@ -1521,6 +1557,9 @@ function initAboutScene(about) {
   const start = () => {
     if (requested || !wide.matches) return;
     requested = true;
+    fetchScene();
+    // Building the scene does hold the main thread, so that part still waits
+    // for a quiet moment.
     if ('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 2000 });
     else setTimeout(load, 200);
   };

@@ -1,0 +1,43 @@
+/* An article page: the Blog's top bar and heading pattern, then a single
+   reading column in Google Sans. Fixed sizes, with a phone breakpoint. */
+.article { position: relative; z-index: 10; width: 100%; max-width: 1600px; margin-inline: auto; padding: 48px 32px 112px; color: #fff; outline: none; }
+
+.article-hero { max-width: 1040px; }
+.article-hero .about-eyebrow { margin-bottom: 24px; }
+.article-title { margin: 0; font-family: 'Google Sans', Arial, sans-serif; font-size: 64px; font-weight: 400; line-height: 1.02; letter-spacing: -.035em; text-wrap: balance; }
+.article-title .about-title-line { width: auto; max-width: 16ch; }
+.article-lead { max-width: 44ch; margin: 28px 0 0; color: rgba(255, 255, 255, .6); font-family: 'Google Sans', Arial, sans-serif; font-size: 22px; line-height: 1.45; letter-spacing: -.01em; text-wrap: pretty; }
+.article-tags { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 24px 0 0; color: rgba(255, 255, 255, .5); font-family: 'Geist Mono', monospace; font-size: 10px; font-weight: 300; letter-spacing: .3em; line-height: 1.5; text-transform: uppercase; }
+.article-tags > span + span { border-left: 1px solid rgba(255, 255, 255, .2); padding-left: 16px; }
+
+.article-figure { max-width: 960px; margin: 56px 0 0; }
+
+.article-body { max-width: 680px; margin-top: 64px; font-family: 'Google Sans', Arial, sans-serif; font-size: 18px; line-height: 1.7; color: rgba(255, 255, 255, .72); }
+.article-body p { margin: 0; text-wrap: pretty; }
+.article-body p + p, .article-body figure + p { margin-top: 24px; }
+.article-body strong { color: #fff; font-weight: 400; }
+.article-video { margin: 32px 0; aspect-ratio: 16 / 9; border: 1px solid rgba(255, 255, 255, .15); background: #0b0b0b; }
+.article-video iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+.article-end { max-width: 680px; margin-top: 80px; padding-top: 8px; }
+.article-back.OutcomesGallery-module__0WS_ta__featureAction { margin-top: 0; }
+
+/* Entrance: the eyebrow and title run the heading's own motion (rule, fill);
+   the lead, tags and drawing rise in behind them. */
+.article-rise { transition: opacity .7s cubic-bezier(.23, 1, .32, 1), transform .7s cubic-bezier(.23, 1, .32, 1); }
+.blog-motion:not(.is-entered) .article-rise, .blog-motion:not(.is-entered) ~ .article-rise { opacity: 0; transform: translateY(16px); }
+.blog-motion.is-entered .article-lead { transition-delay: .35s; }
+.blog-motion.is-entered .article-tags { transition-delay: .45s; }
+.blog-motion.is-entered ~ .article-figure { transition-delay: .55s; }
+
+@media (max-width: 767px) {
+  .article { padding: 32px 16px 64px; }
+  .article-title { font-size: 36px; }
+  .article-lead { font-size: 18px; }
+  .article-figure { margin-top: 40px; }
+  .article-body { margin-top: 40px; font-size: 17px; }
+  .article-end { margin-top: 56px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .article-rise { transition: none; }
+}
