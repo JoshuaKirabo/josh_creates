@@ -141,9 +141,11 @@
      Page turn — a curved black page sweeps across between pages
      ================================================================ */
   const TURN_KEY = "daq-turn";
+  // Shared with script.js: which way a visitor crossed between index.html and here.
+  const ARRIVAL_KEY = "josh-arrival";
   const PAGE_TITLES = {
     "/": { kicker: "Home", lines: [], name: "Home" },
-    "/blog.html": { kicker: "Blog", lines: ["Josh’s", "Thoughts."], name: "Blog" },
+    "/blog.html": { kicker: "Insights", lines: ["Josh’s", "Thoughts."], name: "Insights" },
     "/case-studies": { kicker: "Company · Outcomes", lines: [], name: "Outcomes" },
     "/data-engineering": { kicker: "Service 01 / 05", eyebrow: "Core Infrastructure", lines: ["Data", "Engineering."] },
     "/ai-engineering": { kicker: "Service 02 / 05", eyebrow: "Autonomous Architecture", lines: ["AI", "Engineering."] },
@@ -166,7 +168,7 @@
     const card = [...document.querySelectorAll("a[href]")].find((a) => a.href === url.href && a.querySelector("h2"));
     if (card) {
       const text = card.querySelector("h2").textContent.trim().replace(/[.,]+$/, "");
-      return { kicker: "Blog", eyebrow: "Article", lines: [text + "."], name: text };
+      return { kicker: "Insights", eyebrow: "Article", lines: [text + "."], name: text };
     }
     const tail = (path.split("/").filter(Boolean).pop() || "").replace(/-/g, " ").replace(/\.html?$/, "");
     return { kicker: tail || "Page", lines: [], name: tail || "the page" };
@@ -495,6 +497,172 @@
   document.querySelectorAll(".OutcomeFields-module__OZp7ua__field").forEach(initField);
 
   /* ================================================================
+     Top bar — the same motion as on index.html (ported from script.js)
+     ================================================================ */
+  // Hovering a link scrambles its label outward from the pointer.
+  function createScramble(label) {
+    const text = label.textContent;
+    const copy = document.createElement("span");
+    copy.className = "scramble-text";
+    copy.textContent = text;
+    const layer = document.createElement("span");
+    layer.className = "scramble-layer";
+    layer.setAttribute("aria-hidden", "true");
+    label.replaceChildren(copy, layer);
+    let frame;
+    function reset() {
+      cancelAnimationFrame(frame);
+      label.classList.remove("is-scrambling");
+      layer.replaceChildren();
+    }
+    return (event) => {
+      if (reduced()) return;
+      reset();
+      const bounds = label.getBoundingClientRect();
+      const range = document.createRange();
+      let offset = 0, origin = 0, nearest = Infinity;
+      const characters = Array.from(text, (real, index) => {
+        range.setStart(copy.firstChild, offset);
+        offset += real.length;
+        range.setEnd(copy.firstChild, offset);
+        const rect = range.getBoundingClientRect();
+        const glyph = document.createElement("span");
+        glyph.className = "scramble-char";
+        glyph.textContent = real;
+        glyph.style.left = `${rect.left - bounds.left}px`;
+        glyph.style.width = `${rect.width}px`;
+        const animated = /[a-z]/i.test(real);
+        if (animated) {
+          const distance = Math.hypot(rect.left + rect.width / 2 - event.clientX, rect.top + rect.height / 2 - event.clientY);
+          if (distance < nearest) (nearest = distance), (origin = index);
+        }
+        return { glyph, real, animated, lastSwap: -Infinity };
+      });
+      layer.replaceChildren(...characters.map((c) => c.glyph));
+      label.classList.add("is-scrambling");
+      const started = performance.now();
+      const tick = (now) => {
+        let complete = true;
+        characters.forEach((c, index) => {
+          if (!c.animated) return;
+          const elapsed = now - started - 28 * Math.abs(index - origin);
+          if (elapsed < 0) return (complete = false);
+          if (elapsed < 260) {
+            if (now - c.lastSwap > 45) {
+              c.glyph.textContent = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+              c.lastSwap = now;
+            }
+            complete = false;
+          } else c.glyph.textContent = c.real;
+        });
+        if (complete) reset();
+        else frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    };
+  }
+
+  // Touch feedback follows contact; ten pixels of drift hands over to scrolling.
+  function enableTouchFeedback(bar) {
+    let press = null;
+    const release = () => {
+      press && press.element.classList.remove("is-touch-pressed");
+      press = null;
+    };
+    document.addEventListener("pointerdown", (e) => {
+      const touch = e.pointerType === "touch" || e.pointerType === "pen";
+      root.classList.toggle("touch-input", touch);
+      release();
+      if (!touch || !e.isPrimary || e.button !== 0) return;
+      const element = e.target.closest && e.target.closest(".section-nav-link, .topbar-wordmark");
+      if (!element || !bar.contains(element)) return;
+      press = { element, id: e.pointerId, x: e.clientX, y: e.clientY };
+      element.classList.add("is-touch-pressed");
+    }, { capture: true, passive: true });
+    document.addEventListener("pointermove", (e) => {
+      if (e.pointerType === "mouse") root.classList.remove("touch-input");
+      if (press && e.pointerId === press.id && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) release();
+    }, { capture: true, passive: true });
+    for (const type of ["pointerup", "pointercancel"]) document.addEventListener(type, release, { capture: true, passive: true });
+    document.addEventListener("scroll", release, { capture: true, passive: true });
+    addEventListener("pagehide", release);
+  }
+
+  function initTopbar() {
+    const bar = document.querySelector(".blog-topbar");
+    if (!bar) return;
+    bar.querySelectorAll(".section-nav-link").forEach((link) => {
+      const label = link.querySelector(".nav-label");
+      if (!label) return;
+      link.setAttribute("aria-label", label.textContent.trim());
+      label.setAttribute("aria-hidden", "true");
+      const scramble = createScramble(label);
+      link.addEventListener("pointerenter", (e) => {
+        if (e.pointerType !== "touch" && matchMedia("(hover: hover) and (pointer: fine)").matches) scramble(e);
+      });
+    });
+    enableTouchFeedback(bar);
+    bar.querySelectorAll(".topbar-wordmark, .section-nav > *").forEach((el, i) => el.style.setProperty("--nav-i", i));
+    // index.html notes where its link was: from the top bar, the bar was
+    // already on screen, so it stays and only the underline draws on; from
+    // Home (or a fresh visit) the bar itself drops in. A page turn between
+    // articles covers the bar, so neither plays under one.
+    let turning = false, from = null;
+    try {
+      turning = !!sessionStorage.getItem(TURN_KEY);
+      from = sessionStorage.getItem(ARRIVAL_KEY);
+      sessionStorage.removeItem(ARRIVAL_KEY);
+    } catch {}
+    if (!reduced() && !turning) {
+      const arrival = from === "bar" ? "nav-line-enter" : "nav-return";
+      root.classList.add(arrival);
+      setTimeout(() => root.classList.remove(arrival), 1000);
+    }
+    initLeave(bar);
+  }
+
+  // Following a top-bar link plays this page out before the next one loads:
+  // the heading unfills, the cards sink and fade, and the bar does what the
+  // next page needs. To Home the bar lifts out, since Home has none; to About,
+  // Projects or Skills it stays and only the underline lifts off, leftward.
+  function initLeave(bar) {
+    let leaving = false;
+    bar.addEventListener("click", (e) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || reduced()) return;
+      const a = e.target.closest("a[href]");
+      if (!a || a.hasAttribute("data-placeholder-link") || a.hasAttribute("aria-current")) return;
+      const url = new URL(a.href, location.href);
+      if (url.href.split("#")[0] === location.href.split("#")[0]) return;
+      e.preventDefault();
+      if (leaving) return;
+      leaving = true;
+      const home = !url.hash || url.hash === "#home";
+      root.classList.add("blog-leaving", ...(home ? ["nav-leave"] : ["nav-line-leave", "nav-line-back"]));
+      try {
+        if (!home) sessionStorage.setItem(ARRIVAL_KEY, "insights");
+      } catch {}
+      setTimeout(() => (location.href = url.href), 380);
+    });
+    // Coming back through the browser's history restores the page as it left.
+    addEventListener("pageshow", (e) => {
+      if (!e.persisted || !leaving) return;
+      leaving = false;
+      root.classList.remove("blog-leaving", "nav-leave", "nav-line-leave", "nav-line-back");
+    });
+  }
+
+  // The first card's caption rises in behind the heading, line by line.
+  function riseFirstCaption() {
+    const caption = document.querySelector(".blog-card .OutcomesGallery-module__0WS_ta__caption");
+    if (!caption || reduced()) return;
+    [...caption.children].forEach((el, i) => el.style.setProperty("--i", i));
+    caption.classList.add("blog-rise");
+    requestAnimationFrame(() => requestAnimationFrame(() => caption.classList.add("is-entered")));
+    // Handed back once risen, so the caption's own hover transitions return.
+    setTimeout(() => caption.classList.remove("blog-rise", "is-entered"), 1500);
+  }
+
+  /* ================================================================
      Boot
      ================================================================ */
   // On narrow screens the link row scrolls; bring this page's link into view.
@@ -502,6 +670,8 @@
   const here = navRow && navRow.querySelector("[aria-current]");
   if (here && navRow.scrollWidth > navRow.clientWidth)
     navRow.scrollLeft = here.offsetLeft - (navRow.clientWidth - here.offsetWidth) / 2;
+  initTopbar();
+  riseFirstCaption();
   // The heading enters like the site's sections: rule, fill, then outline.
   const head = document.querySelector(".blog-head");
   if (head && !reduced()) {

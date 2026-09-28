@@ -16,6 +16,9 @@
 .article-body p { margin: 0; text-wrap: pretty; }
 .article-body p + p, .article-body figure + p { margin-top: 24px; }
 .article-body strong { color: #fff; font-weight: 400; }
+/* Numbered points within an article, e.g. "1. The T-Shaped Developer." */
+.article-body .article-subhead { margin: 48px 0 0; color: #fff; font-family: 'Google Sans', Arial, sans-serif; font-size: 24px; font-weight: 400; line-height: 1.3; letter-spacing: -.02em; }
+.article-body .article-subhead + p { margin-top: 12px; }
 .article-video { margin: 32px 0; aspect-ratio: 16 / 9; border: 1px solid rgba(255, 255, 255, .15); background: #0b0b0b; }
 .article-video iframe { display: block; width: 100%; height: 100%; border: 0; }
 

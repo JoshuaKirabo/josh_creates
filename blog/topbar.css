@@ -51,14 +51,42 @@
 .section-nav-link[aria-current] { --pill: 1; }
 .section-nav { position: relative; }
 
+/* Hovering a link scrambles its label, as on the other pages (blog.js). */
+.blog-topbar .nav-label { position: relative; overflow: hidden; }
+.scramble-layer { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.scramble-char { position: absolute; top: 0; text-align: center; }
+.is-scrambling .scramble-text { opacity: 0; }
+.is-scrambling .scramble-layer { opacity: 1; }
+
+:is(.section-nav-link, .topbar-wordmark) { touch-action: manipulation; }
 .topbar-wordmark span { transition: opacity var(--press-out) var(--ease-out); }
+.section-nav-link:not([aria-current]).is-touch-pressed { background: rgba(255, 255, 255, .12); transition-duration: var(--press-in); }
+.section-nav-link[aria-current].is-touch-pressed::before { opacity: .82; transition-duration: var(--press-in); }
+.topbar-wordmark.is-touch-pressed span { opacity: .6; transition-duration: var(--press-in); }
 @media (hover: hover) and (pointer: fine) {
-  .section-nav-link:not([aria-current]):hover { background: rgba(255, 255, 255, .08); }
-  .section-nav-link:not([aria-current]):active { background: rgba(255, 255, 255, .14); transition-duration: var(--press-in); }
-  .section-nav-link[aria-current]:active::before { opacity: .82; transition-duration: var(--press-in); }
-  .topbar-wordmark:hover span { opacity: .75; }
-  .topbar-wordmark:active span { opacity: .6; transition-duration: var(--press-in); }
+  :root:not(.touch-input) .section-nav-link:not([aria-current]):hover { background: rgba(255, 255, 255, .08); }
+  :root:not(.touch-input) .section-nav-link:not([aria-current]):active { background: rgba(255, 255, 255, .14); transition-duration: var(--press-in); }
+  :root:not(.touch-input) .section-nav-link[aria-current]:active::before { opacity: .82; transition-duration: var(--press-in); }
+  :root:not(.touch-input) .topbar-wordmark:hover span { opacity: .75; }
+  :root:not(.touch-input) .topbar-wordmark:active span { opacity: .6; transition-duration: var(--press-in); }
 }
+/* The bar's comings and goings, as in styles.css. Arriving from the top bar,
+   only the underline draws on; arriving from Home, the wordmark and each link
+   drop in 30ms apart and then the line draws. Leaving for Home they lift out;
+   leaving for About, Projects or Skills the line lifts off leftward, toward
+   them. blog.js adds these only when motion is allowed. */
+.blog-topbar { --ease-in-out: cubic-bezier(.77, 0, .175, 1); }
+html.nav-line-enter .blog-topbar .section-nav-link[aria-current]::before { animation: nav-return-line .45s var(--ease-out) .06s both; }
+html.nav-return .blog-topbar :is(.topbar-wordmark, .section-nav > *) { animation: nav-return .5s var(--ease-out) calc(.06s + var(--nav-i, 0) * 30ms) both; }
+html.nav-return .blog-topbar .section-nav-link[aria-current]::before { animation: nav-return-line .5s var(--ease-out) .35s both; }
+html.nav-leave .blog-topbar :is(.topbar-wordmark, .section-nav > *) { animation: nav-leave .24s var(--ease-in-out) calc(var(--nav-i, 0) * 15ms) both; }
+html.nav-leave .blog-topbar .section-nav-link[aria-current]::before { transform-origin: right; animation: nav-leave-line .24s var(--ease-in-out) both; }
+html.nav-line-leave .blog-topbar .section-nav-link[aria-current]::before { transform-origin: right; animation: nav-leave-line .26s var(--ease-in-out) both; }
+html.nav-line-back.nav-line-leave .blog-topbar .section-nav-link[aria-current]::before { transform-origin: left; }
+@keyframes nav-return { from { opacity: 0; translate: 0 -.75rem; } }
+@keyframes nav-return-line { from { transform: scaleX(0); } }
+@keyframes nav-leave { to { opacity: 0; translate: 0 -.75rem; } }
+@keyframes nav-leave-line { to { transform: scaleX(0); } }
 .section-nav-link:focus-visible { outline-width: 2px; outline-offset: -2px; }
 .topbar-wordmark:focus-visible { outline-width: 2px; outline-offset: 0; }
 @media (max-width: 1100px) {
@@ -91,10 +119,18 @@
 }
 
 /* Blog adjustments: the bar sits at the top of the page itself rather than in
-   .about's padded column, and must stay above the gallery (z-index 10). */
-.blog-topbar { margin: 0; z-index: 100; }
+   .about's padded column, and must stay above the gallery (z-index 10).
+   The hairline sits inside the bar so the fade below it stays clear of the line. */
+.blog-topbar { margin: 0; z-index: 100; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .14); }
+@media (prefers-contrast: more) {
+  .blog-topbar { box-shadow: none; }
+}
 /* DAQ's gallery left room for its overlaid fixed header; this bar takes its
    own space in the flow, so the gallery starts closer. */
 .OutcomesGallery-module__0WS_ta__gallery { padding-top: 48px; }
 @media (max-width: 1023px) { .OutcomesGallery-module__0WS_ta__gallery { padding-top: 72px; } }
 @media (max-width: 767px) { .OutcomesGallery-module__0WS_ta__gallery { padding-top: 48px; } }
+/* Opaque on the Blog: nothing shows through the bar; the fade below starts
+   from the page's own black. */
+.blog-topbar { background: #000; }
+.blog-topbar::after { background: linear-gradient(#000, rgba(0, 0, 0, 0)); }

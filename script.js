@@ -3812,6 +3812,68 @@ function bindAboutNavScrambles() {
 }
 bindAboutNavScrambles();
 
+// Insights is a page of its own. Following a link to it plays the exit of the
+// section on screen, as a turn between sections does, then cuts to it. From
+// the top bar the bar stays, since Insights has the same one, and only its
+// underline lifts off toward Insights; from Home the whole page fades behind
+// the exit. Insights reads which it was from ARRIVAL_KEY and enters to match,
+// and writes it back when it sends a visitor here.
+const ARRIVAL_KEY = 'josh-arrival';
+function initInsightsLeave() {
+  const root = document.documentElement;
+  let leaving = null;
+  const exits = [
+    ['.about-hero', el => el.classList.add('is-leaving')],
+    ['.core-section', el => el.classList.add('is-leaving')],
+    ['.edu-section', el => el.classList.add('is-leaving')],
+    ['.projects-main', () => root.classList.add('projects-leaving')],
+    ['.craft-section', el => el.classList.add('is-leaving')],
+  ];
+  const onScreen = () => {
+    const middle = window.innerHeight / 2;
+    for (const [selector, exit] of exits) {
+      const el = document.querySelector(selector);
+      const box = el?.getBoundingClientRect();
+      if (box && box.height && box.top <= middle && box.bottom > middle) return [el, exit];
+    }
+    return [];
+  };
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || reducedMotion.matches) return;
+    const link = event.target.closest?.('a[href]');
+    if (!link || !/\/blog\.html$/.test(new URL(link.href, location.href).pathname)) return;
+    event.preventDefault();
+    if (leaving) return;
+    const fromBar = Boolean(link.closest('.about-topbar'));
+    const [section, exit] = fromBar ? onScreen() : [];
+    exit?.(section);
+    if (fromBar) root.classList.add('nav-line-leave');
+    // The page fades behind the exit, not over it; the bar is left standing.
+    const targets = fromBar ? [section].filter(Boolean) : [...document.querySelectorAll('body > :not(.site-backdrop)')];
+    const fades = targets.map(el => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 140, easing: 'cubic-bezier(.77, 0, .175, 1)', fill: 'forwards' }));
+    try { sessionStorage.setItem(ARRIVAL_KEY, fromBar ? 'bar' : 'home'); } catch {}
+    leaving = { section, fades, href: link.href };
+    setTimeout(() => { location.href = leaving.href; }, 400);
+  }, true);
+  // Coming back through the browser's history restores the page as it left.
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted || !leaving) return;
+    leaving.fades.forEach(fade => fade.cancel());
+    leaving.section?.classList.remove('is-leaving');
+    root.classList.remove('projects-leaving', 'nav-line-leave');
+    leaving = null;
+  });
+  // Back from Insights by its top bar, the bar stayed and only the underline
+  // moved: it draws on here from the Insights side.
+  let from = null;
+  try {
+    from = sessionStorage.getItem(ARRIVAL_KEY);
+    if (from === 'insights') sessionStorage.removeItem(ARRIVAL_KEY);
+  } catch {}
+  if (from === 'insights' && !reducedMotion.matches) drawNavLine(true);
+}
+initInsightsLeave();
+
 const boundProjectCtaScrambles = new WeakSet();
 function bindProjectCtaScrambles() {
   document.querySelectorAll('.project-cta-label').forEach((label) => {

@@ -43,6 +43,20 @@
 .blog-motion.is-entered .about-title-line { transition: --about-fill 1.6s var(--ease-out) .15s; }
 .blog-motion.is-entered :is(.about-eyebrow, .about-title-outline) { transition: opacity .4s var(--ease-out); }
 
+/* The first card's caption rises in behind the heading, 60ms a line, once
+   the title has begun to fill. blog.js adds .blog-rise only when motion is
+   allowed and takes it off once risen. */
+.blog-rise > * { transition: opacity .5s var(--ease-out) calc(.35s + var(--i, 0) * 60ms), translate .5s var(--ease-out) calc(.35s + var(--i, 0) * 60ms); }
+.blog-rise:not(.is-entered) > * { opacity: 0; translate: 0 .75rem; }
+
+/* Leaving by the top bar: the heading unfills back the way it filled, its
+   rule retracts, and everything below it sinks and fades, before the cut. */
+html.blog-leaving { --ease-in-out: cubic-bezier(.77, 0, .175, 1); }
+html.blog-leaving .blog-head .about-title-line { --about-fill: 0; transition: --about-fill .3s var(--ease-in-out); }
+html.blog-leaving .blog-head :is(.about-eyebrow, .about-title-outline) { opacity: 0; transition: opacity .24s var(--ease-in-out) .06s; }
+html.blog-leaving .blog-head .about-rule::after { transform: scaleX(0); transform-origin: right; transition: transform .28s var(--ease-in-out); }
+html.blog-leaving #content :is(section, .blog-head ~ *) { opacity: 0; translate: 0 .75rem; transition: opacity .28s var(--ease-in-out) .04s, translate .28s var(--ease-in-out) .04s; }
+
 /* First screen: the heading and the first featured card fit together within
    the ~770px one-screen budget (bar 72 + 48 + heading ~125 + card 502). The
    card's drawing is capped at 750x500 instead of spanning two-thirds of the
