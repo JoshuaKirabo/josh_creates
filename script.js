@@ -1714,12 +1714,13 @@ const CRAFT_GEARS = [[-.28, -.18, .5], [.5, .44, -.5 * 10 / 7]];
 // Where a tagged point of a built form sits at `time`: Automation's gears
 // turn about their centres and Cloud's globe turns about the upright.
 // Writes the moved point and normal into `out`.
-function craftMove(name, goal, g, time, out) {
+function craftMove(name, goal, g, time, out, beat = -1) {
   const tag = goal[g + 6];
   let angle = 0, cx = 0, cy = 0, upright = false;
   if (name === 'automation' && tag >= 0) {
     [cx, cy] = CRAFT_GEARS[tag];
     angle = time * CRAFT_GEARS[tag][2];
+
   } else if (name === 'cloud' && tag === 0) {
     angle = time * .35;
     upright = true;
@@ -1733,6 +1734,127 @@ function craftMove(name, goal, g, time, out) {
       out[to] = x * c - y * s + dx; out[to + 1] = x * s + y * c + dy; out[to + 2] = z;
     }
   }
+  if (name === 'frontend' && tag === 1) out[2] += craftClick(beat);
+}
+
+// The shapes that stand still once built each play one beat when they
+// have settled: Frontend's pointer clicks, a signal passes through the
+// network, a query runs down the database, the server's lights blink.
+// `age` is seconds since the shape arrived; the beat starts a second in,
+// once the points have landed, and comes round every three seconds while
+// a cell holds the shape. It is -1 before then.
+function craftBeat(age) {
+  return age >= 1 && age < Infinity ? (age - 1) % 3 : -1;
+}
+
+// How far Frontend's pointer has pushed in: in over 120ms, out over 220ms.
+function craftClick(beat) {
+  if (beat < 0 || beat >= .34) return 0;
+  const t = beat < .12 ? beat / .12 : 1 - (beat - .12) / .22;
+  return -.1 * Math.sin(t * Math.PI / 2);
+}
+
+// A band of light `width` wide, its front at `front`, over a point `tag`
+// along the way: brightest at the front, fading behind it.
+function craftBand(front, tag, width) {
+  const d = front - tag;
+  return d >= 0 && d < width ? (1 - d / width) ** 2 : 0;
+}
+
+// Server lights blink like drive activity: each on for 80ms at a time, on
+// a rhythm of its own so no two keep step.
+const CRAFT_BLINKS = [[.47, 0], [.83, .21], [.61, .37], [.95, .09], [.53, .44], [.71, .28]];
+
+// A tag for points along an open path: `base` plus how far along it, 0 to
+// just under 1, the nearest point of the path sits.
+function craftAlong(path, base) {
+  const parts = path.slice(1).map((end, i) => [path[i], end, Math.hypot(end[0] - path[i][0], end[1] - path[i][1], end[2] - path[i][2])]);
+  const total = parts.reduce((sum, part) => sum + part[2], 0);
+  return (x, y, z) => {
+    let best = Infinity, at = 0, before = 0;
+    parts.forEach(([a, b, length]) => {
+      const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const t = Math.max(0, Math.min(1, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / (length * length)));
+      const gap = Math.hypot(x - a[0] - d[0] * t, y - a[1] - d[1] * t, z - a[2] - d[2] * t);
+      if (gap < best) { best = gap; at = before + t * length; }
+      before += length;
+    });
+    return base + .999 * at / total;
+  };
+}
+
+// Machine Learning's signals: each route runs input node, hidden node,
+// output node. Inputs are 0 to 2, hidden 3 to 6, outputs 7 and 8. The two
+// sets take turns.
+const CRAFT_ROUTES = [
+  [[0, 3, 7], [2, 5, 8], [1, 4, 8], [1, 6, 7]],
+  [[1, 3, 8], [0, 6, 8], [2, 4, 7], [0, 5, 7]]
+];
+
+// How brightly a tagged point of a still shape is lit by its beat, 0 to 1.
+function craftGlow(name, tag, beat, age) {
+  if (tag < 0 || beat < 0) return 0;
+  if (name === 'frontend') {
+    // The clicked card flashes as the pointer lands and fades over 400ms.
+    return tag === 2 && beat >= .12 && beat < .52 ? 1 - (beat - .12) / .4 : 0;
+  }
+  if (name === 'ml') {
+    // Signals leave input nodes a moment apart and hop node to node along
+    // their routes: a short run of light down each wire, 350ms a hop, and
+    // each node flashes as a signal leaves or reaches it, fading over 300ms.
+    // The routes change each time the beat comes round.
+    const routes = CRAFT_ROUTES[Math.floor((age - 1) / 3) % CRAFT_ROUTES.length];
+    let glow = 0;
+    routes.forEach(([from, middle, to], r) => {
+      const start = r * .22;
+      [[from, middle], [middle, to]].forEach(([a, b], hop) => {
+        const at = beat - start - hop * .43;
+        if (tag >= 100) {
+          const wire = a < 3 ? a * 4 + b - 3 : 12 + (a - 3) * 2 + b - 7;
+          if (Math.floor(tag) - 100 === wire && at >= 0 && at < .5) glow = Math.max(glow, craftBand(at / .35, tag % 1, .3));
+        } else {
+          const flash = t => (t >= 0 && t < .3 ? 1 - t / .3 : 0);
+          if (tag === 10 + a) glow = Math.max(glow, flash(at));
+          if (tag === 10 + b) glow = Math.max(glow, flash(at - .35));
+        }
+      });
+    });
+    return glow;
+  }
+  if (name === 'ai') {
+    // A run of light along a pin, ring or stroke that starts at `start`
+    // and takes `length` seconds to cover it.
+    const run = (start, length) => {
+      const at = beat - start;
+      return at >= 0 && at < length * 1.4 ? craftBand(at / length * 1.3, tag % 1, .3) : 0;
+    };
+    // Input: the left and top pins in turn, 40ms apart, running inward.
+    if (tag >= 200 && tag < 208) return run(Math.floor(tag - 200) * .04, .12);
+    // Output: the right and bottom pins in turn, running outward.
+    if (tag >= 210 && tag < 218) return run(.9 + Math.floor(tag - 210) * .04, .12);
+    // The package, then the die, closing in.
+    if (tag >= 3 && tag < 4) return run(.3, .2);
+    // The answer, written a stroke every 80ms, stays lit once written.
+    if (tag >= 400 && tag < 405) {
+      const start = .5 + Math.floor(tag - 400) * .08;
+      const written = beat < 2.9 && (beat - start) / .08 >= tag % 1 ? .6 : 0;
+      return Math.max(run(start, .08), written);
+    }
+    return 0;
+  }
+  if (name === 'database') {
+    // The query falls through the stack in 600ms, twice, and the middle
+    // disc's light comes on as it is found and stays on.
+    if (tag === 3) return beat >= .3 && beat < 2.9 ? 1 : 0;
+    if (tag > 1) return 0;
+    const pass = beat < 1 ? beat : beat - 1;
+    return pass < .6 && beat < 1.6 ? craftBand(pass / .6 * 1.15, tag, .15) : 0;
+  }
+  if (name === 'server' && tag < CRAFT_BLINKS.length) {
+    const [period, offset] = CRAFT_BLINKS[tag];
+    return (age + offset) % period < .08 ? 1 : 0;
+  }
+  return 0;
 }
 
 const CRAFT_FORMS = {
@@ -1748,7 +1870,13 @@ const CRAFT_FORMS = {
     [-.78, -.64, -.5].forEach(x => kit.sphere(x * k, .63 * k, 0, .045 * k));
     tube([[-.66, .3, .16], [.1, .3, .16]], .05);
     tube([[-.66, .14, .16], [.34, .14, .16]], .028);
-    [-.46, 0, .46].forEach(x => tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true));
+    [-.46, 0, .46].forEach((x) => {
+      kit.tag = x > 0 ? 2 : -1;
+      tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true);
+    });
+    // The pointer and the card it clicks are tagged for the click; see
+    // craftClick and craftGlow.
+    kit.tag = 1;
     const pointer = [[0, 0], [0, -.5], [.12, -.38], [.21, -.56], [.29, -.52], [.2, -.35], [.36, -.35], [0, 0]];
     tube(pointer.map(([x, y]) => [.5 + x, -.2 + y, .52]), .04);
   },
@@ -1760,31 +1888,53 @@ const CRAFT_FORMS = {
   },
   // A database as a solid stack: three thick discs with a sliver of air
   // between them, so the lid of each one below catches the light, and a
-  // status light set into the front of each.
+  // status light set into the front of each. The discs know how far down
+  // the stack they sit, 0 at the top, for the query that runs down it; the
+  // lights are tagged 2, 3 and 4 from the top.
   database(kit) {
-    [.5, 0, -.5].forEach((y) => {
+    [.5, 0, -.5].forEach((y, i) => {
+      kit.tag = (x, py) => Math.min(1, Math.max(0, (.68 - py) / 1.36));
       kit.cylinder(0, y, 0, .7, .36);
+      kit.tag = 2 + i;
       kit.sphere(.4, y, .57, .06);
     });
   },
 
   // AI as a chip: the package and its pins, the die raised off it, and the
-  // letters AI standing in front.
+  // letters AI standing in front. For its beat, input comes in on the left
+  // and top pins, closes in on the die, the letters are written stroke by
+  // stroke and the answer leaves by the right and bottom pins; see
+  // craftGlow. Input pins are tagged 200 plus their number, output pins 210
+  // plus theirs, strokes 400 plus theirs, each plus how far along it a
+  // point sits in the direction the signal runs. The package and die are
+  // tagged 3 to 4 from the outside in.
   ai(kit) {
+    kit.tag = (x, y) => 3 + .999 * Math.min(1, Math.max(0, (.6 - Math.max(Math.abs(x), Math.abs(y))) / .25));
     kit.tube(craftRoundRect(0, 0, 0, .56, .56, .1), .045, true);
-    [-.33, -.11, .11, .33].forEach((p) => {
-      kit.tube([[p, .6, 0], [p, .8, 0]], .035);
-      kit.tube([[p, -.6, 0], [p, -.8, 0]], .035);
-      kit.tube([[.6, p, 0], [.8, p, 0]], .035);
-      kit.tube([[-.6, p, 0], [-.8, p, 0]], .035);
+    const pin = (base, from, to) => {
+      kit.tag = craftAlong([from, to], base);
+      kit.tube([from, to], .035);
+    };
+    [-.33, -.11, .11, .33].forEach((p, i) => {
+      pin(200 + i, [-.8, -p, 0], [-.6, -p, 0]);
+      pin(204 + i, [p, .8, 0], [p, .6, 0]);
+      pin(210 + i, [.6, -p, 0], [.8, -p, 0]);
+      pin(214 + i, [p, -.6, 0], [p, -.8, 0]);
     });
+    kit.tag = (x, y) => 3 + .999 * Math.min(1, Math.max(0, (.6 - Math.max(Math.abs(x), Math.abs(y))) / .25));
     kit.tube(craftRoundRect(0, 0, .14, .38, .38, .06), .03, true);
     const z = .3;
-    kit.tube([[-.25, -.2, z], [-.12, .2, z], [.01, -.2, z]], .05);
-    kit.tube([[-.2, -.06, z], [-.04, -.06, z]], .045);
-    kit.tube([[.17, .2, z], [.17, -.2, z]], .05);
-    kit.tube([[.08, .2, z], [.26, .2, z]], .045);
-    kit.tube([[.08, -.2, z], [.26, -.2, z]], .045);
+    [
+      [[[-.25, -.2, z], [-.12, .2, z], [.01, -.2, z]], .05],
+      [[[-.2, -.06, z], [-.04, -.06, z]], .045],
+      [[[.08, .2, z], [.26, .2, z]], .045],
+      [[[.17, .2, z], [.17, -.2, z]], .05],
+      [[[.08, -.2, z], [.26, -.2, z]], .045]
+    ].forEach(([path, r], stroke) => {
+      kit.tag = craftAlong(path, 400 + stroke);
+      kit.tube(path, r);
+    });
+    kit.tag = -1;
   },
   // A small neural network: three layers of nodes set round in depth, every
   // node wired to each one in the next layer.
@@ -1794,8 +1944,21 @@ const CRAFT_FORMS = {
         const a = i / count * Math.PI * 2 + (count === 4 ? Math.PI / 4 : Math.PI / 2);
         return [x, Math.sin(a) * spread, Math.cos(a) * spread];
       }));
-    layers.flat().forEach(([x, y, z]) => kit.sphere(x, y, z, .11));
-    layers.slice(0, -1).forEach((layer, l) => layer.forEach(a => layers[l + 1].forEach(b => kit.tube([a, b], .016))));
+    // Signals travel the graph node to node; see CRAFT_ROUTES. Each node is
+    // tagged 10 plus its number, inputs first. Each wire is tagged 100 plus
+    // its number, plus how far along it a point sits from its input end.
+    layers.flat().forEach(([x, y, z], n) => {
+      kit.tag = 10 + n;
+      kit.sphere(x, y, z, .11);
+    });
+    let wire = 0;
+    layers.slice(0, -1).forEach((layer, l) => layer.forEach(a => layers[l + 1].forEach((b) => {
+      const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const length = d[0] ** 2 + d[1] ** 2 + d[2] ** 2;
+      const base = 100 + wire++;
+      kit.tag = (x, y, z) => base + .999 * Math.min(1, Math.max(0, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / length));
+      kit.tube([a, b], .016);
+    })));
   },
   // A cloud as a thick slab with a rounded rim, held in a glass globe of
   // sparse points that turns slowly round it once built. The globe is kept
@@ -1884,11 +2047,16 @@ const CRAFT_FORMS = {
     kit.tag = 1;
     gear(...CRAFT_GEARS[1].slice(0, 2), -.12, .38, .3, 7, .22, .13);
   },
-  // A server rack: three units, each with two lights and a vent.
+  // A server rack: three units, each with two lights and a vent. The six
+  // lights are tagged 0 to 5 so each can blink on its own.
   server(kit) {
-    [.46, 0, -.46].forEach((y) => {
+    [.46, 0, -.46].forEach((y, i) => {
       kit.box(0, y, 0, .7, .16, .44);
-      [-.5, -.34].forEach(x => kit.sphere(x, y, .45, .06));
+      [-.5, -.34].forEach((x, j) => {
+        kit.tag = i * 2 + j;
+        kit.sphere(x, y, .45, .06);
+        kit.tag = -1;
+      });
       kit.tube([[-.1, y, .46], [.5, y, .46]], .03);
     });
   }
@@ -2214,13 +2382,15 @@ function initCraftField(craft) {
     const turnTo = step ? 1 - Math.exp(-step * 9) : 1;
     // CI/CD's loop carries a pulse of light round it, a run going through.
     const pulse = shape === 'devops' && !still ? (time * .4) % 1 : -1;
+    const age = time - sweepAt;
+    const beat = still ? -1 : craftBeat(age);
     const spot = [0, 0, 0, 0, 0, 0];
     let paint = null;
     for (let i = 0; i < COUNT; i++) {
       const k = i * 3;
       const g = i * 7;
       const set = step === 0 || time >= setOff[i];
-      craftMove(shape, goal, g, still ? 0 : time, spot);
+      craftMove(shape, goal, g, still ? 0 : time, spot, set ? beat : -1);
       if (step === 0) {
         for (let a = 0; a < 3; a++) { now[k + a] = spot[a]; speed[k + a] = 0; facing[k + a] = spot[3 + a]; }
       } else if (set) {
@@ -2247,7 +2417,8 @@ function initCraftField(craft) {
       // what it has just passed.
       const toward = (facing[k + 2] * cosYaw - facing[k] * sinYaw) * cosPitch + facing[k + 1] * sinPitch;
       const behind = pulse >= 0 && set && goal[g + 6] >= 0 ? ((pulse - goal[g + 6]) % 1 + 1) % 1 : 1;
-      const glow = behind < .22 ? (1 - behind / .22) ** 2 : 0;
+      let glow = behind < .22 ? (1 - behind / .22) ** 2 : 0;
+      if (set && beat >= 0) glow = Math.max(glow, craftGlow(shape, goal[g + 6], beat, age));
       const lit = (sweep - sy >= 0 && sweep - sy < 70) || glow > .35;
       let alpha = ((1 + toward) / 2) ** 2 * (.55 + .45 * Math.min(1, Math.max(0, (scale - .8) / .5)));
       if (!still) alpha *= 1 + .14 * Math.sin(time * 2.6 + lag[i] * 6.28);
