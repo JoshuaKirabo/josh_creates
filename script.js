@@ -16,6 +16,30 @@ const backdrop = document.querySelector('.site-backdrop');
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
+// A turn cuts mid-flick, and a trackpad keeps sending that flick's momentum
+// to wherever the page lands. Left alone it carried on past the cut: landing
+// on Projects' last card from Skills, it stepped the track back a card, so
+// getting back to Skills took three flicks. The tail is spent here, ahead of
+// every other wheel listener, until it dies away or the reader turns the
+// other way.
+let turnMomentum = null;
+window.addEventListener('wheel', (event) => {
+  if (!turnMomentum) return;
+  const now = performance.now();
+  const direction = Math.sign(event.deltaY);
+  if (now > turnMomentum.until || now - turnMomentum.last > 180 || (direction && direction !== turnMomentum.direction)) {
+    turnMomentum = null;
+    return;
+  }
+  turnMomentum.last = now;
+  if (event.cancelable) event.preventDefault();
+  event.stopImmediatePropagation();
+}, { passive: false, capture: true });
+function spendTurnMomentum(direction) {
+  const now = performance.now();
+  turnMomentum = { direction, last: now, until: now + 2500 };
+}
+
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
@@ -286,7 +310,15 @@ function createGrainParticles(container) {
     { radius: 16, duration: 4000, phase: 205, direction: 1 },
     { radius: 10, duration: 4500, phase: 290, direction: -1 }
   ];
-  const layers = [null, ...drifts].map((drift) => {
+  // The sky carries over from the page before: the same stars, each layer at
+  // the point of its orbit it had reached, still moving, and leaning the same
+  // way toward the pointer. Without it every page opened on a new sky that
+  // stood still and then slowly got going.
+  let carried = null;
+  try { carried = JSON.parse(sessionStorage.getItem('grain-state')); } catch {}
+  // Only a page turn carries the motion on; the same sky is kept regardless.
+  const turned = !!carried && Date.now() - carried.at < 3000;
+  const layers = [null, ...drifts].map((drift, index) => {
     const canvas = document.createElement('canvas');
     canvas.className = drift ? 'grain-surface grain-drift' : 'grain-surface';
     const shell = drift ? document.createElement('div') : null;
@@ -300,7 +332,7 @@ function createGrainParticles(container) {
       context: canvas.getContext('2d'),
       drift,
       depth: drift ? drift.radius / 16 : 0,
-      seed: (Math.random() * 0xffffffff) >>> 0 || 1
+      seed: carried?.seeds?.[index] || (Math.random() * 0xffffffff) >>> 0 || 1
     };
   });
   if (layers.some((layer) => !layer.context)) {
@@ -314,6 +346,8 @@ function createGrainParticles(container) {
   let playing = false;
   let rampFrame = null;
   let rampStarted = null;
+  // A sky that was moving when the last page left starts at full speed.
+  let cruise = turned && !!carried.playing;
   const animations = [];
   const omega = 2 * Math.PI / 2; // Critically damped speed, response 2 s, no overshoot.
 
@@ -390,7 +424,9 @@ function createGrainParticles(container) {
       { transform: transform(drift.phase + drift.direction * 360) }
     ], { duration: drift.duration, iterations: Infinity, easing: 'linear', fill: 'both' });
     animation.pause();
-    animation.currentTime = 0;
+    const clock = turned ? carried.clocks?.[animations.length] : null;
+    const since = carried?.playing ? Math.max(0, Date.now() - carried.at) : 0;
+    animation.currentTime = Number.isFinite(clock) ? (clock + since) % drift.duration : 0;
     animation.playbackRate = 0;
     animations.push(animation);
   });
@@ -408,7 +444,10 @@ function createGrainParticles(container) {
     if (!settled) rampFrame = requestAnimationFrame(ramp);
   }
 
+  const shown = { x: 0, y: 0 };
   function paintField(position) {
+    shown.x = position.x;
+    shown.y = position.y;
     const shiftX = fieldTravel * Math.tanh(position.x / Math.max(width / 2, 1));
     const shiftY = fieldTravel * Math.tanh(position.y / Math.max(height / 2, 1));
     layers.forEach(({ shell, depth }) => {
@@ -418,6 +457,24 @@ function createGrainParticles(container) {
   }
   // Heavier than the spotlight so motes trail the pointer instead of locking to it.
   const field = createSpring2D(.5, paintField);
+  if (turned && Number.isFinite(carried.x) && Number.isFinite(carried.y)) {
+    field.jumpTo(carried.x, carried.y);
+    paintField(carried);
+  }
+  // Registered ahead of the ambient pause on pagehide, so it records the sky
+  // as it was still moving.
+  window.addEventListener('pagehide', () => {
+    try {
+      sessionStorage.setItem('grain-state', JSON.stringify({
+        seeds: layers.map(layer => layer.seed),
+        clocks: animations.map(animation => animation.currentTime),
+        playing,
+        at: Date.now(),
+        x: shown.x,
+        y: shown.y
+      }));
+    } catch {}
+  });
 
   if ('ResizeObserver' in window) new ResizeObserver(resize).observe(container);
   else window.addEventListener('resize', resize, { passive: true });
@@ -429,14 +486,16 @@ function createGrainParticles(container) {
       if (rampFrame !== null) cancelAnimationFrame(rampFrame);
       rampFrame = null;
       rampStarted = null;
+      const full = playing && cruise;
+      cruise = false;
       animations.forEach((animation) => {
         if (playing) {
-          animation.updatePlaybackRate(0);
+          animation.updatePlaybackRate(full ? 1 : 0);
           animation.play();
         } else animation.pause();
       });
       // Pausing holds each layer's current position. Resuming accelerates from it.
-      if (playing && animations.length) rampFrame = requestAnimationFrame(ramp);
+      if (playing && !full && animations.length) rampFrame = requestAnimationFrame(ramp);
     },
     setPointer(x, y) {
       field.setTarget(x, y);
@@ -1188,7 +1247,7 @@ if (window.sitePagesReady) {
   window.sitePagesReady.then(enableSectionScroll);
   window.sitePagesReady.then(initAboutContent);
   window.sitePagesReady.then(initAboutPages);
-  window.sitePagesReady.then(() => { bindProjectCtaScrambles(); initProjectsTrack(); initProjectsNav(); });
+  window.sitePagesReady.then(() => { bindProjectCtaScrambles(); initProjectsTrack(); initProjectsNav(); initCraft(); });
 } else {
   enableSectionScroll();
   initAboutContent();
@@ -1204,6 +1263,16 @@ let coreJobStops = [];
 let aboutStop = 0;
 
 const pageStops = () => [...document.querySelectorAll('.page-snap')].map(marker => parseFloat(marker.style.top)).sort((a, b) => a - b);
+
+// Turning between Projects and Skills, the top bar stays put and only its
+// underline moves: it lifts off the page being left, toward the next one, and
+// draws on under the page that lands. Back toward Projects runs leftward.
+function drawNavLine(back = false) {
+  const root = document.documentElement;
+  root.classList.add('nav-line-enter');
+  root.classList.toggle('nav-line-back', back);
+  setTimeout(() => root.classList.remove('nav-line-enter', 'nav-line-back'), 900);
+}
 
 // Scrolling on past a section's last resting place holds the page long
 // enough for its exit to be seen, then turns it. Like the fold, the flick
@@ -1452,7 +1521,8 @@ function initAboutScene(about) {
 // What I do's field of points. Each discipline gathers them into a solid of
 // its own, built in three dimensions: a browser window with a pointer,
 // code brackets, a stack of database discs, an AI chip, a neural network,
-// a cloud with an upload arrow, an endless loop, two gears, a server rack. Every point
+// a cloud in a turning globe, an endless loop running with light, two
+// turning gears, a server rack. Every point
 // sits on the solid's skin at an even spacing and knows which way that skin
 // faces, so faces turned away fall dark and the shape reads as a body, not
 // a picture. A change sweeps through as a scan line, and each point only
@@ -1484,7 +1554,10 @@ function craftKit(gap) {
   const points = [];
   const solids = [];
   const solid = (inside) => { solids.push(inside); return solids.length - 1; };
-  const put = (owner, x, y, z, nx, ny, nz) => points.push([x, y, z, nx, ny, nz, owner]);
+  // A tag rides with each point for forms that move once built: which gear
+  // it belongs to, or how far round a loop it sits. A function works it
+  // out from the point.
+  const put = (owner, x, y, z, nx, ny, nz) => points.push([x, y, z, nx, ny, nz, owner, typeof kit.tag === 'function' ? kit.tag(x, y, z) : kit.tag]);
   const along = (length) => Math.max(1, Math.round(length / gap));
   // A flat patch: a centre, two unit axes and their half-lengths.
   const patch = (owner, [cx, cy, cz], u, v, hu, hv, n) => {
@@ -1501,6 +1574,7 @@ function craftKit(gap) {
   // Points on a sphere by the golden angle, so they sit evenly with no seams.
   const golden = Math.PI * (3 - Math.sqrt(5));
   const kit = {
+    tag: -1,
     box(cx, cy, cz, hx, hy, hz) {
       const owner = solid((x, y, z, e) => Math.abs(x - cx) < hx - e && Math.abs(y - cy) < hy - e && Math.abs(z - cz) < hz - e);
       const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
@@ -1511,9 +1585,11 @@ function craftKit(gap) {
       patch(owner, [cx + hx, cy, cz], Y, Z, hy, hz, [1, 0, 0]);
       patch(owner, [cx - hx, cy, cz], Y, Z, hy, hz, [-1, 0, 0]);
     },
-    sphere(cx, cy, cz, r) {
-      const owner = solid((x, y, z, e) => Math.hypot(x - cx, y - cy, z - cz) < r - e);
-      const count = Math.max(6, Math.round(4 * Math.PI * r * r / (gap * gap)));
+    // A hollow sphere is only a shell of points, `spread` times the usual
+    // spacing apart, and hides nothing inside it.
+    sphere(cx, cy, cz, r, hollow = false, spread = 1) {
+      const owner = solid((x, y, z, e) => !hollow && Math.hypot(x - cx, y - cy, z - cz) < r - e);
+      const count = Math.max(6, Math.round(4 * Math.PI * r * r / (gap * spread) ** 2));
       for (let i = 0; i < count; i++) {
         const ny = 1 - (i + .5) / count * 2;
         const ring = Math.sqrt(1 - ny * ny);
@@ -1630,19 +1706,51 @@ function craftRoundRect(cx, cy, z, hw, hh, r, steps = 6) {
   return path;
 }
 
+// Automation's gears as centre x, centre y and how fast each turns. The
+// small one has seven teeth to the large one's ten, so it runs 10/7 as fast
+// the other way and the teeth stay meshed.
+const CRAFT_GEARS = [[-.28, -.18, .5], [.5, .44, -.5 * 10 / 7]];
+
+// Where a tagged point of a built form sits at `time`: Automation's gears
+// turn about their centres and Cloud's globe turns about the upright.
+// Writes the moved point and normal into `out`.
+function craftMove(name, goal, g, time, out) {
+  const tag = goal[g + 6];
+  let angle = 0, cx = 0, cy = 0, upright = false;
+  if (name === 'automation' && tag >= 0) {
+    [cx, cy] = CRAFT_GEARS[tag];
+    angle = time * CRAFT_GEARS[tag][2];
+  } else if (name === 'cloud' && tag === 0) {
+    angle = time * .35;
+    upright = true;
+  }
+  const c = Math.cos(angle), s = Math.sin(angle);
+  for (const [from, to, dx, dy] of [[0, 0, cx, cy], [3, 3, 0, 0]]) {
+    const x = goal[g + from] - dx, y = goal[g + from + 1] - dy, z = goal[g + from + 2];
+    if (upright) {
+      out[to] = x * c + z * s; out[to + 1] = y; out[to + 2] = z * c - x * s;
+    } else {
+      out[to] = x * c - y * s + dx; out[to + 1] = x * s + y * c + dy; out[to + 2] = z;
+    }
+  }
+}
+
 const CRAFT_FORMS = {
   // A browser window drawn in tubes: its frame, the bar with its three
   // lights, a heading and a line of text, then three cards floating forward
-  // and a pointer in front of them all, clicking the last.
+  // and a pointer in front of them all, clicking the last. The window is
+  // wider than the other solids, so the whole of it is drawn at `k`.
   frontend(kit) {
-    kit.tube(craftRoundRect(0, .06, 0, .94, .7, .12), .045, true);
-    kit.tube([[-.94, .5, 0], [.94, .5, 0]], .03);
-    [-.78, -.64, -.5].forEach(x => kit.sphere(x, .63, 0, .045));
-    kit.tube([[-.66, .3, .16], [.1, .3, .16]], .05);
-    kit.tube([[-.66, .14, .16], [.34, .14, .16]], .028);
-    [-.46, 0, .46].forEach(x => kit.tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true));
+    const k = .78;
+    const tube = (path, r, closed) => kit.tube(path.map(p => p.map(c => c * k)), r * k, closed);
+    tube(craftRoundRect(0, .06, 0, .94, .7, .12), .045, true);
+    tube([[-.94, .5, 0], [.94, .5, 0]], .03);
+    [-.78, -.64, -.5].forEach(x => kit.sphere(x * k, .63 * k, 0, .045 * k));
+    tube([[-.66, .3, .16], [.1, .3, .16]], .05);
+    tube([[-.66, .14, .16], [.34, .14, .16]], .028);
+    [-.46, 0, .46].forEach(x => tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true));
     const pointer = [[0, 0], [0, -.5], [.12, -.38], [.21, -.56], [.29, -.52], [.2, -.35], [.36, -.35], [0, 0]];
-    kit.tube(pointer.map(([x, y]) => [.5 + x, -.2 + y, .52]), .04);
+    tube(pointer.map(([x, y]) => [.5 + x, -.2 + y, .52]), .04);
   },
   // Code: the APIs behind the page, as a pair of brackets and a slash.
   backend(kit) {
@@ -1650,12 +1758,14 @@ const CRAFT_FORMS = {
     kit.tube([[.28, .46, 0], [.72, 0, 0], [.28, -.46, 0]], .09);
     kit.tube([[.14, .58, 0], [-.14, -.58, 0]], .09);
   },
-  // A database drawn in tubes: three rings stacked into a drum, joined at
-  // the sides.
+  // A database as a solid stack: three thick discs with a sliver of air
+  // between them, so the lid of each one below catches the light, and a
+  // status light set into the front of each.
   database(kit) {
-    const ring = y => Array.from({ length: 48 }, (_, i) => [Math.cos(i / 48 * Math.PI * 2) * .72, y, Math.sin(i / 48 * Math.PI * 2) * .72]);
-    [.62, .1, -.42].forEach(y => kit.tube(ring(y), .04, true));
-    [-1, 1].forEach(side => kit.tube([[side * .72, .62, 0], [side * .72, -.42, 0]], .04));
+    [.5, 0, -.5].forEach((y) => {
+      kit.cylinder(0, y, 0, .7, .36);
+      kit.sphere(.4, y, .57, .06);
+    });
   },
 
   // AI as a chip: the package and its pins, the die raised off it, and the
@@ -1687,22 +1797,30 @@ const CRAFT_FORMS = {
     layers.flat().forEach(([x, y, z]) => kit.sphere(x, y, z, .11));
     layers.slice(0, -1).forEach((layer, l) => layer.forEach(a => layers[l + 1].forEach(b => kit.tube([a, b], .016))));
   },
-  // A cloud's outline as one tube, with an upload arrow rising through it
-  // a little in front.
+  // A cloud as a thick slab with a rounded rim, held in a glass globe of
+  // sparse points that turns slowly round it once built. The globe is kept
+  // smaller than the other solids: its near side swells in perspective, and
+  // it needs air above and below it in the field.
   cloud(kit) {
-    const path = [];
-    const arc = (cx, cy, r, from, to, steps) => {
-      for (let i = 0; i <= steps; i++) {
-        const a = from + (to - from) * i / steps;
-        path.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0]);
+    const k = .64;
+    const puffs = [[-.36, -.14, .24], [.02, .08, .34], [.38, -.1, .25]];
+    const inside = (x, y) => puffs.some(([px, py, r]) => Math.hypot(x - px, y - py) < r) ||
+      (x > -.36 && x < .38 && y > -.38 && y < -.14);
+    // The outline, found by walking out from the middle along each bearing.
+    const loop = Array.from({ length: 144 }, (_, i) => {
+      const a = i / 144 * Math.PI * 2;
+      let lo = 0, hi = 1;
+      for (let n = 0; n < 20; n++) {
+        const mid = (lo + hi) / 2;
+        if (inside(Math.cos(a) * mid, -.08 + Math.sin(a) * mid)) lo = mid; else hi = mid;
       }
-    };
-    arc(-.52, -.12, .3, -Math.PI / 2, -Math.PI * 1.5 + .35, 14);
-    arc(-.02, .12, .44, Math.PI * .92, Math.PI * .12, 20);
-    arc(.56, -.1, .32, Math.PI * .62, -Math.PI / 2, 14);
-    kit.tube(path, .05, true);
-    kit.tube([[0, -.5, .3], [0, .16, .3]], .05);
-    kit.tube([[-.2, -.04, .3], [0, .18, .3], [.2, -.04, .3]], .05);
+      return [Math.cos(a) * lo * k, (-.08 + Math.sin(a) * lo) * k];
+    });
+    kit.slab(0, 0, 0, .18, [loop], (x, y) => inside(x / k, y / k));
+    [.09, -.09].forEach(z => kit.tube(loop.map(([x, y]) => [x, y, z]), .045, true));
+    kit.tag = 0;
+    kit.sphere(0, 0, 0, .72, true, 2.2);
+    kit.tag = -1;
   },
   // DevOps' endless loop in two halves, each running into an arrowhead at
   // the top of its lobe where it hands over to the other. The halves pass
@@ -1713,6 +1831,21 @@ const CRAFT_FORMS = {
       return [.95 * Math.cos(t) / d, .95 * Math.sin(t) * Math.cos(t) / d, .16 * Math.sin(t)];
     };
     const gap = .22;
+    // Each point knows how far round the loop it sits, 0 to 1, for the
+    // pulse that runs through it.
+    const samples = Array.from({ length: 96 }, (_, i) => {
+      const half = i < 48 ? .62 : Math.PI + .62;
+      const t = half + gap / 2 + (Math.PI - gap) * (i % 48) / 47;
+      return [...at(t), t];
+    });
+    kit.tag = (x, y, z) => {
+      let best = samples[0], near = Infinity;
+      samples.forEach((sample) => {
+        const d = (sample[0] - x) ** 2 + (sample[1] - y) ** 2 + (sample[2] - z) ** 2;
+        if (d < near) { near = d; best = sample; }
+      });
+      return ((best[3] - .62 - gap / 2) / (Math.PI * 2) + 1) % 1;
+    };
     [.62, Math.PI + .62].forEach((start) => {
       const from = start + gap / 2;
       const to = start + Math.PI - gap / 2;
@@ -1725,7 +1858,8 @@ const CRAFT_FORMS = {
       kit.tube([wing(1), [px + tx * .06, py + ty * .06, pz], wing(-1)], .05);
     });
   },
-  // Two meshed gears with depth, the small one set a little behind.
+  // Two meshed gears with depth, the small one set a little behind. They
+  // turn once built; see CRAFT_GEARS.
   automation(kit) {
     const gear = (cx, cy, cz, outer, inner, teeth, turn, hole) => {
       const rim = Array.from({ length: teeth * 4 }, (_, i) => {
@@ -1745,8 +1879,10 @@ const CRAFT_FORMS = {
       };
       kit.slab(cx, cy, cz, .2, [rim, bore], inside);
     };
-    gear(-.28, -.18, 0, .62, .5, 10, 0, .24);
-    gear(.5, .44, -.12, .38, .3, 7, .22, .13);
+    kit.tag = 0;
+    gear(...CRAFT_GEARS[0].slice(0, 2), 0, .62, .5, 10, 0, .24);
+    kit.tag = 1;
+    gear(...CRAFT_GEARS[1].slice(0, 2), -.12, .38, .3, 7, .22, .13);
   },
   // A server rack: three units, each with two lights and a vent.
   server(kit) {
@@ -1758,8 +1894,8 @@ const CRAFT_FORMS = {
   }
 };
 
-// Builds a form as exactly `count` points, each with its normal, as a flat
-// run of x, y, z, nx, ny, nz. The spacing is tuned until the skin holds
+// Builds a form as exactly `count` points, each with its normal and tag, as
+// a flat run of x, y, z, nx, ny, nz, tag. The spacing is tuned until the skin holds
 // about that many; the last few are then dropped or doubled evenly.
 function buildCraftForm(name, count) {
   let gap = .05;
@@ -1771,10 +1907,11 @@ function buildCraftForm(name, count) {
     if (Math.abs(found.length - count) < count * .01) break;
     gap *= Math.sqrt(found.length / count);
   }
-  const form = new Float32Array(count * 6);
+  const form = new Float32Array(count * 7);
   for (let i = 0; i < count; i++) {
     const point = found[Math.floor(i * found.length / count)];
-    for (let a = 0; a < 6; a++) form[i * 6 + a] = point[a];
+    for (let a = 0; a < 6; a++) form[i * 7 + a] = point[a];
+    form[i * 7 + 6] = point[7];
   }
   return form;
 }
@@ -1891,25 +2028,24 @@ const CRAFT_GLYPHS = {
       context.stroke();
     }));
   },
-  // A cloud outline with an upload arrow inside.
+  // A cloud outline inside its globe.
   cloud(context) {
+    context.lineWidth = 12;
+    context.beginPath();
+    context.arc(200, 200, 176, 0, Math.PI * 2);
+    context.stroke();
     const puffs = (inset) => {
       context.beginPath();
-      context.arc(128, 232, 62 - inset, 0, Math.PI * 2);
-      context.arc(204, 186, 84 - inset, 0, Math.PI * 2);
-      context.arc(284, 228, 64 - inset, 0, Math.PI * 2);
+      context.arc(128, 222, 50 - inset, 0, Math.PI * 2);
+      context.arc(203, 181, 70 - inset, 0, Math.PI * 2);
+      context.arc(276, 218, 52 - inset, 0, Math.PI * 2);
       context.fill();
-      context.fillRect(128, 232, 156, 62 - inset);
+      context.fillRect(128, 222, 148, 50 - inset);
     };
     puffs(0);
     context.globalCompositeOperation = 'destination-out';
-    puffs(15);
+    puffs(16);
     context.globalCompositeOperation = 'source-over';
-    context.lineWidth = 15;
-    context.beginPath();
-    context.moveTo(204, 266); context.lineTo(204, 176);
-    context.moveTo(172, 206); context.lineTo(204, 174); context.lineTo(236, 206);
-    context.stroke();
   },
   // DevOps' endless loop in two halves, each ending in an arrowhead at the
   // top of its lobe: build, release, run, and round again.
@@ -2005,6 +2141,10 @@ function initCraftField(craft) {
   const COUNT = window.innerWidth < 640 ? 3000 : 7000;
   const forms = {};
   const form = name => forms[name] || (forms[name] = buildCraftForm(name, COUNT));
+  // The first solid takes about 90ms to build. Built here, before the page
+  // first paints, it costs a beat of the blank screen the turn cuts to;
+  // built on the entrance's first frame, it froze the heading mid-draw.
+  form(CRAFT_ORDER[0]);
   const now = new Float32Array(COUNT * 3);
   // Which way each point's patch of skin faces. It turns toward the new
   // solid's as the point flies, so a point in flight is lit half way.
@@ -2072,21 +2212,25 @@ function initCraftField(craft) {
     const slices = step ? Math.ceil(step / (1 / 120)) : 0;
     const slice = slices ? step / slices : 0;
     const turnTo = step ? 1 - Math.exp(-step * 9) : 1;
+    // CI/CD's loop carries a pulse of light round it, a run going through.
+    const pulse = shape === 'devops' && !still ? (time * .4) % 1 : -1;
+    const spot = [0, 0, 0, 0, 0, 0];
     let paint = null;
     for (let i = 0; i < COUNT; i++) {
       const k = i * 3;
-      const g = i * 6;
+      const g = i * 7;
       const set = step === 0 || time >= setOff[i];
+      craftMove(shape, goal, g, still ? 0 : time, spot);
       if (step === 0) {
-        for (let a = 0; a < 3; a++) { now[k + a] = goal[g + a]; speed[k + a] = 0; facing[k + a] = goal[g + 3 + a]; }
+        for (let a = 0; a < 3; a++) { now[k + a] = spot[a]; speed[k + a] = 0; facing[k + a] = spot[3 + a]; }
       } else if (set) {
         for (let n = 0; n < slices; n++) {
           for (let a = 0; a < 3; a++) {
-            speed[k + a] += ((goal[g + a] - now[k + a]) * STIFFNESS - speed[k + a] * DAMPING) * slice;
+            speed[k + a] += ((spot[a] - now[k + a]) * STIFFNESS - speed[k + a] * DAMPING) * slice;
             now[k + a] += speed[k + a] * slice;
           }
         }
-        for (let a = 0; a < 3; a++) facing[k + a] += (goal[g + 3 + a] - facing[k + a]) * turnTo;
+        for (let a = 0; a < 3; a++) facing[k + a] += (spot[3 + a] - facing[k + a]) * turnTo;
       }
       // Turn about the upright, then tip the top toward the viewer.
       const x = now[k] * cosYaw + now[k + 2] * sinYaw;
@@ -2102,10 +2246,13 @@ function initCraftField(craft) {
       // little brighter, each one flickers faintly, and the scan line lights
       // what it has just passed.
       const toward = (facing[k + 2] * cosYaw - facing[k] * sinYaw) * cosPitch + facing[k + 1] * sinPitch;
-      const lit = sweep - sy >= 0 && sweep - sy < 70;
+      const behind = pulse >= 0 && set && goal[g + 6] >= 0 ? ((pulse - goal[g + 6]) % 1 + 1) % 1 : 1;
+      const glow = behind < .22 ? (1 - behind / .22) ** 2 : 0;
+      const lit = (sweep - sy >= 0 && sweep - sy < 70) || glow > .35;
       let alpha = ((1 + toward) / 2) ** 2 * (.55 + .45 * Math.min(1, Math.max(0, (scale - .8) / .5)));
       if (!still) alpha *= 1 + .14 * Math.sin(time * 2.6 + lag[i] * 6.28);
       if (lit) alpha = alpha * 1.6 + .12;
+      alpha += glow * .3;
       if (alpha < .04) continue;
       const fill = paints[set ? shape : previous][lit ? 1 : 0];
       if (fill !== paint) { context.fillStyle = fill; paint = fill; }
@@ -2277,14 +2424,17 @@ function initCraftField(craft) {
   };
 }
 
-// The Skills page's panel. It arrives once it is on screen: the frame draws
-// round, the hairlines grow, the copy rises and the points gather into the
-// first discipline. It leaves the same way backwards if it scrolls away, and arrives
-// again when it returns.
+let craftStage = { enter() {}, leave() {} };
+// Skills' panel. It arrives once it is on screen: the frame draws round, the
+// hairlines grow, the copy rises and the points gather into the first
+// discipline. It leaves the same way backwards if it scrolls away, and arrives
+// again when it returns. The turns to and from Projects belong to the track.
 function initCraft() {
   const craft = document.querySelector('.craft-section');
   const panel = craft?.querySelector('[data-craft]');
-  if (!panel) return;
+  // About joins Skills in after load, so this can be called a second time.
+  if (!panel || panel.dataset.ready !== undefined) return;
+  panel.dataset.ready = '';
   // The frame is one plain rectangle, drawn as a path so it can trace itself in.
   const outline = panel.querySelector('.craft-frame path');
   const frame = () => {
@@ -2297,39 +2447,29 @@ function initCraft() {
   frame();
   panel.querySelectorAll('.craft-cell').forEach((cell, i) => cell.style.setProperty('--i', i));
   const points = initCraftField(panel);
-  // Projects comes before Skills. Scrolling up from the top plays the exit
-  // in place, then cuts back to Projects, which opens on its last card.
-  let turning = false;
-  holdPageTurns((direction) => {
-    if (direction > 0 || turning || window.scrollY > 2) return;
-    return 'projects.html';
-  }, (href) => {
-    turning = true;
-    try { sessionStorage.setItem('projects-from', 'skills'); } catch {}
-    if (reducedMotion.matches) { location.href = href; return; }
-    craft.classList.add('is-leaving');
-    setTimeout(() => { location.href = href; }, 360);
-  }, { fresh: true });
-  window.addEventListener('pageshow', (event) => {
-    if (!event.persisted || !turning) return;
-    turning = false;
-    craft.classList.remove('is-leaving');
-  });
   if (reducedMotion.matches || !('IntersectionObserver' in window)) {
     points?.enter();
     return;
   }
   craft.classList.add('craft-motion');
+  const enter = () => {
+    if (craft.classList.contains('is-entered')) return;
+    craft.classList.remove('is-leaving');
+    craft.classList.add('is-entered');
+    points?.enter();
+  };
+  const leave = () => {
+    if (!craft.classList.contains('is-entered')) return;
+    craft.classList.remove('is-entered', 'is-leaving');
+    points?.leave();
+  };
+  // On Projects' last card Skills can sit just inside the screen's foot, so
+  // the observer never sees it go. The turns set it directly at their cuts.
+  craftStage = { enter, leave };
   new IntersectionObserver((entries) => {
     const entry = entries[entries.length - 1];
-    if (!craft.classList.contains('is-entered') && entry.intersectionRatio >= .35) {
-      craft.classList.remove('is-leaving');
-      craft.classList.add('is-entered');
-      points?.enter();
-    } else if (craft.classList.contains('is-entered') && !entry.isIntersecting) {
-      craft.classList.remove('is-entered', 'is-leaving');
-      points?.leave();
-    }
+    if (entry.intersectionRatio >= .35) enter();
+    else if (!entry.isIntersecting) leave();
   }, { threshold: [0, .35] }).observe(craft);
 }
 
@@ -2973,15 +3113,23 @@ function initAboutPages() {
 
 // Projects continues on from Education in the same scroll. The top bar's
 // underline travels from About me to Projects as it arrives, and back again.
+// The underline follows the reader down the page: About, then Projects, then
+// Skills. It runs inside About, where Projects and Skills are joined in, and
+// on the Projects page, where Skills follows the track.
+let syncProjectsNav = () => {};
 function initProjectsNav() {
   const about = document.querySelector('#about');
-  const nav = about?.querySelector('.about-topbar .section-nav');
-  const aboutLink = nav?.querySelector('.section-nav-link[href$="#about"]');
+  const runway = document.querySelector('[data-projects-runway]');
+  const nav = runway?.closest('.about')?.querySelector('.about-topbar .section-nav');
+  const aboutLink = about && nav?.querySelector('.section-nav-link[href$="#about"]');
   const projectsLink = nav?.querySelector('.section-nav-link[href="projects.html"]');
-  const runway = about?.querySelector('[data-projects-runway]');
-  if (!aboutLink || !projectsLink || !runway) return;
+  const skillsLink = nav?.querySelector('.section-nav-link[href="projects.html#skills"]');
+  const skills = document.querySelector('.skills-main');
+  // About joins Projects in after load, so this can be called a second time.
+  if (!projectsLink || !runway || nav.dataset.tracked !== undefined) return;
+  nav.dataset.tracked = '';
   const frame = runway.querySelector('.projects-frame') || runway;
-  let shown = aboutLink;
+  let shown = nav.querySelector('.section-nav-link[aria-current]') || aboutLink || projectsLink;
   let glide = null;
   let glideY = 0;
   let frameId = 0;
@@ -3017,8 +3165,15 @@ function initProjectsNav() {
     from.removeAttribute('aria-current');
     link.setAttribute('aria-current', 'location');
     // About's underline can carry the fold's inline --pill, so it is hidden
-    // outright while Projects is current.
-    nav.classList.toggle('is-projects', link === projectsLink);
+    // outright while Projects or Skills is current.
+    nav.classList.toggle('is-projects', Boolean(aboutLink) && link !== aboutLink);
+    // Projects and Skills turn by a cut, so the underline does not glide
+    // between them: it draws on under the one that landed, from the side it
+    // came from. The turn has already lifted it off the one it left.
+    if (link === skillsLink || from === skillsLink) {
+      if (!instant && !reducedMotion.matches) drawNavLine(link !== skillsLink);
+      instant = true;
+    }
     if (instant || reducedMotion.matches) {
       if (glide) {
         spring.stop();
@@ -3046,15 +3201,21 @@ function initProjectsNav() {
     spring.setTarget(end.x, end.x + end.width);
   }
 
-  // Projects is current once its frame fills the lower half of the screen.
+  // Projects is current once its frame fills the lower half of the screen,
+  // and Skills once its own top does.
   function update(instant = false) {
     frameId = 0;
-    const arrived = frame.getBoundingClientRect().top < window.innerHeight / 2;
-    show(arrived ? projectsLink : aboutLink, instant);
+    const half = window.innerHeight / 2;
+    if (skillsLink && skills && skills.getBoundingClientRect().top < half) show(skillsLink, instant);
+    else if (!aboutLink || frame.getBoundingClientRect().top < half) show(projectsLink, instant);
+    else show(aboutLink, instant);
   }
+  // A turn calls this straight after its cut, so the underline lands with
+  // the page rather than a frame later.
+  syncProjectsNav = () => update();
 
-  // The link scrolls on to Projects rather than leaving the page.
-  projectsLink.addEventListener('click', (event) => {
+  // Inside About the link scrolls on to Projects rather than leaving the page.
+  if (aboutLink) projectsLink.addEventListener('click', (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     const top = window.scrollY + runway.getBoundingClientRect().top - (parseFloat(getComputedStyle(frame).top) || 0);
@@ -4151,6 +4312,8 @@ function initProjectsTrack() {
   const railLinks = [...runway.querySelectorAll('[data-project-jump]')];
   const rail = runway.querySelector('.projects-rail');
   const topbar = document.querySelector('.about-topbar');
+  const skills = document.querySelector('.skills-main');
+  const craft = skills?.querySelector('.craft-section');
   const phone = window.matchMedia('(max-width: 700px)');
   // Scroll pixels per pixel of horizontal travel.
   const PACE = 1.15;
@@ -4174,6 +4337,8 @@ function initProjectsTrack() {
     // wider screens where the bar floats.
     const barEnd = topbar ? (parseFloat(getComputedStyle(topbar).top) || 0) + topbar.offsetHeight : 0;
     main.style.setProperty('--projects-top', `${barEnd + (phone.matches ? 0 : 12)}px`);
+    // Skills rests with its top against the bar and fills the screen below it.
+    skills?.style.setProperty('--skills-top', `${barEnd}px`);
     const viewWidth = viewport.clientWidth;
     const last = cards[cards.length - 1];
     // Travel ends with the last card centred, so every card has its turn.
@@ -4182,6 +4347,7 @@ function initProjectsTrack() {
     runway.style.height = `${frame.offsetHeight + distance}px`;
     const stickyTop = parseFloat(getComputedStyle(frame).top) || 0;
     geometry = {
+      barEnd,
       viewWidth,
       travel,
       distance,
@@ -4198,15 +4364,16 @@ function initProjectsTrack() {
 
   // Inside About the section is pinned for the fold, so its box is not where
   // it scrolls to. Past the fold About scrolls in flow from the fold distance.
-  function runwayOffset() {
+  function pageTop(element) {
     const root = document.documentElement;
     if (!about || !root.classList.contains('section-scroll-ready') || reducedMotion.matches) {
-      return runway.getBoundingClientRect().top + window.scrollY;
+      return element.getBoundingClientRect().top + window.scrollY;
     }
     let top = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
-    for (let node = runway; node && node !== about; node = node.offsetParent) top += node.offsetTop;
+    for (let node = element; node && node !== about; node = node.offsetParent) top += node.offsetTop;
     return top;
   }
+  const runwayOffset = () => pageTop(runway);
 
   function target() {
     if (!geometry.distance) return 0;
@@ -4298,42 +4465,106 @@ function initProjectsTrack() {
   }, (to) => {
     window.scrollTo({ top: to, behavior: to < geometry.start ? 'smooth' : 'instant' });
   }, { wheelOnly: true });
-  // Skills comes next. Scrolling on from the last card plays Projects' exit
-  // in place, then cuts to the Skills page. The top bar stays, since Skills
-  // shares it.
+  // Skills follows on this page. Scrolling on from the last card plays
+  // Projects' exit in place, cuts to Skills and lets Skills enter; scrolling
+  // up from Skills' top plays Skills' exit and cuts back to the last card,
+  // where Projects enters from the Skills side. The top bar stays, and only
+  // its underline moves: it lifts off during the exit and draws on after the
+  // cut. Each entrance belongs to its own section's observer, so the cut only
+  // has to move the page.
+  const root = document.documentElement;
   let turning = false;
-  holdPageTurns((direction) => {
-    if (direction < 0 || turning || !geometry) return;
-    const stops = cardStops();
-    if (window.scrollY >= stops[stops.length - 1] - 2) return 'skills.html';
-  }, (href) => {
+  const skillsStop = () => Math.min(pageTop(skills) - geometry.barEnd, root.scrollHeight - window.innerHeight);
+  const onSkills = () => skills.getBoundingClientRect().top < window.innerHeight / 2;
+  // The standalone page keeps Skills in its address, so a reload lands there.
+  const markSkills = (shown) => {
+    if (!about) history.replaceState(history.state, '', shown ? '#skills' : location.pathname + location.search);
+  };
+  function cut(top, direction) {
+    spendTurnMomentum(direction);
+    window.scrollTo({ top, behavior: 'instant' });
+  }
+  function turnToSkills() {
+    if (turning || !skills) return;
     turning = true;
-    if (reducedMotion.matches) { location.href = href; return; }
-    document.documentElement.classList.add('projects-leaving');
-    setTimeout(() => { location.href = href; }, 320);
-  }, { fresh: true });
-  // Coming back through the browser's history finds Projects as it left.
-  window.addEventListener('pageshow', (event) => {
-    if (!event.persisted || !turning) return;
-    turning = false;
-    document.documentElement.classList.remove('projects-leaving');
-  });
-  // Turning back up from Skills lands on the last card, where the reader left.
-  let fromSkills = false;
-  try {
-    fromSkills = sessionStorage.getItem('projects-from') === 'skills';
-    sessionStorage.removeItem('projects-from');
-  } catch {}
-  if (fromSkills && !about) {
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    const land = () => {
-      measure();
-      const stops = cardStops();
-      window.scrollTo({ top: stops[stops.length - 1], behavior: 'instant' });
+    const leave = !reducedMotion.matches && main.classList.contains('projects-entered');
+    if (leave) root.classList.add('projects-leaving', 'nav-line-leave');
+    // The exit clears at 320ms; the cut waits one empty beat after it.
+    setTimeout(() => {
+      // Reduced motion has no entrance to replay, so Projects stays entered.
+      if (!reducedMotion.matches) main.classList.remove('projects-entered');
+      cut(skillsStop(), 1);
+      craftStage.enter();
+      root.classList.remove('projects-leaving', 'nav-line-leave');
+      syncProjectsNav();
+      markSkills(true);
+      turning = false;
+    }, leave ? 380 : 0);
+  }
+  function turnToProjects(index) {
+    if (turning || !geometry) return;
+    turning = true;
+    const leave = !reducedMotion.matches && craft?.classList.contains('is-entered');
+    if (leave) {
+      craft.classList.add('is-leaving');
+      root.classList.add('nav-line-leave', 'nav-line-back');
+    }
+    setTimeout(() => {
+      // Projects enters from the Skills side: the lines drop in from above and
+      // the cards come from the left. The class stays only for the entrance,
+      // so any later one plays forward again.
+      if (!reducedMotion.matches) {
+        root.classList.add('turn-back');
+        setTimeout(() => root.classList.remove('turn-back'), 1500);
+      }
+      if (!reducedMotion.matches) main.classList.remove('projects-entered');
+      craftStage.leave();
+      cut(cardStops()[index], -1);
       refresh();
-    };
-    land();
-    document.fonts?.ready.then(land);
+      root.classList.remove('nav-line-leave', 'nav-line-back');
+      syncProjectsNav();
+      markSkills(false);
+      turning = false;
+    }, leave ? 360 : 0);
+  }
+  if (skills) {
+    holdPageTurns((direction) => {
+      if (direction < 0 || turning || !geometry) return;
+      const stops = cardStops();
+      if (Math.abs(window.scrollY - stops[stops.length - 1]) <= 2) return 'skills';
+    }, turnToSkills, { fresh: true });
+    holdPageTurns((direction) => {
+      if (direction > 0 || turning || !geometry) return;
+      if (Math.abs(window.scrollY - skillsStop()) <= 2) return 'projects';
+    }, () => turnToProjects(cards.length - 1), { fresh: true });
+    // The top bar's links take the same turns. Projects opens on its first
+    // card when asked for by name.
+    document.querySelectorAll('.section-nav-link[href="projects.html#skills"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        turnToSkills();
+      });
+    });
+    document.querySelectorAll('.section-nav-link[href="projects.html"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !onSkills()) return;
+        event.preventDefault();
+        turnToProjects(0);
+      });
+    });
+    // Arriving at #skills, the page lands on Skills once the runway has its
+    // height, since the browser's own jump came before it did.
+    if (!about && location.hash === '#skills') {
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      const land = () => {
+        measure();
+        window.scrollTo({ top: skillsStop(), behavior: 'instant' });
+        refresh();
+      };
+      land();
+      document.fonts?.ready.then(land);
+    }
   }
   // Keyboard focus lands on the card at once; the track follows without a glide.
   track.addEventListener('focusin', (event) => {
@@ -4352,9 +4583,9 @@ function initProjectsTrack() {
 
   if (reducedMotion.matches) {
     main.classList.add('projects-entered');
-  } else if (about && 'IntersectionObserver' in window) {
-    // Below About the entrance waits for the reader, and replays each time
-    // they come back down to it, as About's own sections do.
+  } else if ((about || skills) && 'IntersectionObserver' in window) {
+    // Below About, or with Skills after it, the entrance waits for the reader
+    // and replays each time they come back to it, as About's own sections do.
     new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) main.classList.remove('projects-entered');
       else if (entry.intersectionRatio >= .35) main.classList.add('projects-entered');
@@ -4364,7 +4595,9 @@ function initProjectsTrack() {
   }
 }
 initProjectsTrack();
-// Skills is a standalone page; its panel starts once everything above is defined.
+// Inside About the underline waits for the fold, which starts once About is joined in.
+if (!document.querySelector('#about')) initProjectsNav();
+// Skills follows Projects; its panel starts once everything above is defined.
 initCraft();
 
 playIntro();

@@ -37,16 +37,19 @@ window.sitePagesReady = (async () => {
     // documents stay readable and their links continue as native navigation.
   }
   // Projects continues straight on from Education, under About's own top bar
-  // and above its footer, so the page scrolls on into it.
+  // and above its footer, so the page scrolls on into it. Skills comes with
+  // it, so the turn from the last card is a cut within this page too.
   try {
     const page = await projectsPage;
     const about = document.querySelector('#about');
     const footer = about?.querySelector(':scope > .about-footer:not(.about-footer-fold)');
     const projects = page?.querySelector('#projects-main');
+    const skills = page?.querySelector('#skills');
     const sprite = page?.querySelector('.project-logo-sprite');
     if (!footer || !projects || !sprite) return;
     document.body.prepend(document.importNode(sprite, true));
     footer.before(document.importNode(projects, true));
+    if (skills) footer.before(document.importNode(skills, true));
   } catch {
     // The Projects link still opens its own page.
   }

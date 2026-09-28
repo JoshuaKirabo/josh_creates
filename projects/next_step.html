@@ -11,7 +11,7 @@
     html { min-height: 100%; background: #060606; color-scheme: dark; }
     body { margin: 0; isolation: isolate; }
     .site-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #060606; }
-    .grain-particles { position: absolute; inset: 0; background: url('../assets/background-grain.png') center top / 480px auto repeat; }
+    .grain-particles { position: absolute; inset: 0; background: url('../assets/grain-fallback.png') 0 0 / 256px 256px repeat; }
     @media (max-width: 700px) {
       /* The grain eases in and out of #060606 at both edges so Safari's bars
          read as part of the page, as on the other pages. */
@@ -24,8 +24,8 @@
   </style>
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="../assets/fonts/google-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="stylesheet" href="../styles.css?v=about68">
-  <script src="../script.js?v=about50" defer></script>
+  <link rel="stylesheet" href="../styles.css?v=onepage1">
+  <script src="../script.js?v=onepage1" defer></script>
 </head>
 <body>
   <div class="site-backdrop" aria-hidden="true">

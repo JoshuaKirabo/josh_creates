@@ -68,7 +68,10 @@
 * { box-sizing: border-box; }
 /* One screen-wide backdrop sits outside the hero's portrait clipping. Its critical
    styles live in the head so Safari sees the same background on the first paint. */
-html { min-height: 100%; scroll-behavior: auto; scroll-padding-top: 0; background: var(--background); }
+html { min-height: 100%; scroll-behavior: auto; scroll-padding-top: 0; scrollbar-gutter: stable; background: var(--background); }
+/* Skills fits in one screen, but it keeps the scrollbar Projects has, so the
+   turn between them changes nothing at the window's edge. */
+html:has(.craft-section) { overflow-y: scroll; }
 body { margin: 0; }
 /* Anchored fine grain with four sparse, prepainted particle layers. */
 .section { position: relative; isolation: isolate; }
@@ -677,10 +680,22 @@ html.menu-open, html.menu-open body { overflow: hidden; overscroll-behavior: non
 .projects-title { display: block; margin: 0; text-align: left; font-family: 'Bounded', Arial, sans-serif; font-size: min(clamp(2.4rem, 5.2vw, 5.6rem), 11svh); font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
 .projects-title-line { display: block; }
 .projects-title-strong { font-weight: 800; }
-/* Entrance: the lines rise a fraction of an em, then the cards settle in. */
-.projects-pinned:not(.projects-entered) :is(.projects-title-line, .project-card) { opacity: 0; transform: translateY(.35em); }
-.projects-pinned:not(.projects-entered) .project-card { transform: translateX(2.5rem); }
+/* Entrance: the eyebrow fades up as About's do, the lines rise a fraction of
+   an em, then the cards settle in. Turning back from Skills flips both
+   offsets, as Education's do: the lines drop in from above and the cards
+   come from the left, the way the track runs back. */
+.projects-main { --projects-from-y: .35em; --projects-from-x: 2.5rem; }
+html.turn-back .projects-main { --projects-from-y: -.35em; --projects-from-x: -2.5rem; }
+.projects-pinned:not(.projects-entered) .projects-eyebrow { opacity: 0; }
+.projects-entered .projects-eyebrow { transition: opacity .4s var(--ease-out); }
+.projects-pinned:not(.projects-entered) :is(.projects-title-line, .project-card) { opacity: 0; transform: translateY(var(--projects-from-y)); }
+.projects-pinned:not(.projects-entered) .project-card { transform: translateX(var(--projects-from-x)); }
 .projects-entered :is(.projects-title-line, .project-card) { transition: opacity .9s var(--ease-out), transform .9s var(--ease-out); }
+/* The rail waits for the entrance too, so it never shows a stale stop, or
+   shows through the top bar above Skills while Projects is away. It returns
+   the way it left: up the half rem it dropped. */
+.projects-pinned:not(.projects-entered) .projects-rail { opacity: 0; translate: 0 .5rem; }
+.projects-entered .projects-rail { transition: opacity .6s var(--ease-out) .36s, translate .6s var(--ease-out) .36s; }
 .projects-entered .projects-title-strong { transition-delay: .08s; }
 .projects-entered .project-card:nth-child(1) { transition-delay: .2s; }
 .projects-entered .project-card:nth-child(2) { transition-delay: .28s; }
@@ -731,7 +746,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 
 /* The name is drawn twice: a hairline outline, and a solid copy revealed
    through a soft 100deg edge as --fill runs 0 to 1. The numeral does the same. */
-.project-name { position: relative; margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(1.9rem, 3.2vw, 3.4rem); font-weight: 300; line-height: 1.05; letter-spacing: -.04em; }
+.project-name { position: relative; margin: 0; font-family: 'Google Sans', Arial, sans-serif; font-size: clamp(1.9rem, 3.2vw, 3.4rem); font-weight: 300; line-height: 1.05; letter-spacing: -.04em; }
 .project-name-outline { display: block; color: transparent; -webkit-text-stroke: 1px rgba(255, 255, 255, .3); }
 .project-name-fill, .project-numeral-fill { position: absolute; inset: 0; display: block; --edge-at: calc(var(--fill) * 124% - 12%); -webkit-mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); mask-image: linear-gradient(100deg, #000 var(--edge-at), transparent calc(var(--edge-at) + 10%)); }
 .project-name-fill { color: var(--white); }
@@ -931,6 +946,9 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .about-title { display: block; justify-items: start; margin: 0; font-family: 'Bounded', Arial, sans-serif; font-size: clamp(2.75rem, 9.5vw, 8.5rem); font-weight: 200; line-height: .92; letter-spacing: -.06em; text-transform: uppercase; }
 .about-title-line { --about-fill: 1; position: relative; display: block; width: fit-content; }
 .about-title-strong { font-weight: 800; }
+/* Keep the two main display headings in Bounded; section/card headings use Google Sans. */
+#meet-josh .about-title, #meet-josh .about-title span,
+#projects-title, #projects-title .projects-title-line { font-family: 'Bounded', Arial, sans-serif; }
 /* The stroke is the resting state; the fill sweeps across it on a 100° edge,
    the same cut the project cards use. */
 /* Tight tracking lets the last glyph's ink run past its advance; the padding
@@ -992,7 +1010,7 @@ html.projects-snapping { scroll-snap-type: y mandatory; }
 .core-pinned .core-section { display: block; height: calc(var(--core-steps) * 100svh); padding-block: 0; }
 .core-pinned .core-stage { position: sticky; top: 0; height: 100vh; height: 100svh; padding-block: 5rem var(--footer-room); }
 .core-section .about-block-head { margin-bottom: clamp(1.5rem, 4svh, 3.5rem); }
-.core-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+.core-section .about-heading { font-family: 'Google Sans', Arial, sans-serif; font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
 /* About ends with Experience, so its screen is the last one and the footer
    sits on it; the section reserves that room instead of the page. */
 .about:has(.core-section) { --footer-room: calc(var(--footer-bottom) + 3.5rem); padding-bottom: 0; }
@@ -1145,7 +1163,7 @@ html.about-paging { scroll-snap-type: y mandatory; }
    dashed draft. It is the
    last screen, so it reserves the footer's room like Experience does. */
 .edu-section { display: flex; flex-direction: column; justify-content: center; min-height: 100vh; min-height: 100svh; padding-block: 5rem var(--footer-room); }
-.edu-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+.edu-section .about-heading { font-family: 'Google Sans', Arial, sans-serif; font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
 .edu-sheets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .edu-sheet { position: relative; display: grid; grid-template-rows: auto auto auto; align-items: start; gap: 20px; min-width: 0; padding: 24px; border: 1px solid rgba(255, 255, 255, .3); }
 .edu-sheet-draft { border-style: dashed; border-color: rgba(255, 255, 255, .15); color: #a5a5a0; }
@@ -1279,15 +1297,25 @@ html.about-paging { scroll-snap-type: y mandatory; }
    frame. The field is the hero and takes whatever the three 260px columns of
    cells leave, about 650px on a laptop; the cells stay compact. Script draws
    the frame to the panel's size; without it the panel keeps a plain border. */
-/* The top bar sits in the page's flow above it, so the section only has to
-   fill what is left and centre the panel there. */
-.skills { padding-bottom: calc(var(--footer-bottom) + 40px); }
-.skills-main { display: flex; flex-direction: column; }
+/* Skills follows Projects under the same top bar. Script sets --skills-top
+   to where the bar ends; Skills rests there, fills the screen down to the
+   footer and centres the panel in it. It is the track's last snap point.
+   Nothing follows it, so it carries the room above the footer as its own
+   padding; without it the page ends short and Skills can't scroll up to
+   the bar. */
+.skills-main { display: flex; flex-direction: column; min-height: calc(100svh - var(--skills-top, 0px)); padding-bottom: calc(var(--footer-bottom) + 4rem); scroll-margin-top: var(--skills-top, 0px); }
+html.projects-snapping .skills-main { scroll-snap-align: start; }
 .skills-main:focus { outline: none; }
-.craft-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 8px 24px; }
+.craft-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 48px 24px; }
 .craft-section .about-block-head { margin-bottom: 24px; }
-.craft-section .about-heading { font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
+.craft-section .about-heading { font-family: 'Google Sans', Arial, sans-serif; font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
 .craft { --craft-line: rgba(255, 255, 255, .2); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 260px); grid-template-rows: repeat(3, 155px); color: var(--white); }
+/* Beside the field, the panel takes the height the screen has left, so a
+   tall window gives the points more room instead of empty space above the
+   heading. The rows never drop below 155px and stop growing at 240px. */
+@media (min-width: 1181px) {
+  .craft { flex: 1 1 auto; max-height: 720px; grid-template-rows: repeat(3, minmax(155px, 1fr)); }
+}
 .craft:not(.has-frame) { border: 1px solid var(--craft-line); }
 .craft-frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; fill: none; stroke: var(--craft-line); stroke-width: 1; }
 .craft-frame path { stroke-dasharray: 1 1; stroke-dashoffset: 0; }
@@ -1409,7 +1437,9 @@ html.about-paging { scroll-snap-type: y mandatory; }
 .craft-motion.is-entered.is-leaving .craft-frame path { stroke-dashoffset: 1; transition: stroke-dashoffset .34s var(--ease-in-out-cubic); }
 .craft-motion.is-entered.is-leaving .craft-cell::before { transform: scaleY(0); transition: transform .26s var(--ease-out); }
 .craft-motion.is-entered.is-leaving .craft-cell::after { transform: scaleX(0); transition: transform .26s var(--ease-out); }
-.craft-motion.is-entered.is-leaving .craft-copy { opacity: 0; transform: translateY(-10px); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
+/* Skills only ever turns back up to Projects, so its copy drops as it goes,
+   with the page, as Education's does when it turns up. */
+.craft-motion.is-entered.is-leaving .craft-copy { opacity: 0; transform: translateY(10px); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
 .craft-motion.is-entered.is-leaving .craft-field { opacity: 0; transition: opacity .26s var(--ease-out); }
 .craft-motion.is-entered.is-leaving .craft-meter { opacity: 0; transition: opacity .2s var(--ease-out); }
 /* Reduced motion lands on the finished state; the global rule already drops
@@ -1457,8 +1487,19 @@ html.projects-leaving .projects-main .project-card { transform: translateX(-2.5r
 html.projects-leaving .projects-main .project-card.is-opening { transform: none; transition: opacity .2s var(--ease-in-out) .12s; }
 html.projects-leaving .projects-main .project-card.is-opening .project-link { border-color: rgba(255, 255, 255, .6); transition-duration: .15s; }
 html.projects-leaving .projects-main .projects-rule::after { transform: scaleX(0); transform-origin: right; transition: transform .28s var(--ease-in-out); }
+/* The eyebrow goes whole, its faint track too, so no hairline is left to jump
+   to wherever the next page draws its own. */
+html.projects-leaving .projects-main .projects-eyebrow { opacity: 0; transition: opacity .28s var(--ease-in-out); }
+html.projects-leaving .projects-main .projects-rail { opacity: 0; translate: 0 .5rem; transition: opacity .28s var(--ease-in-out) .04s, translate .28s var(--ease-in-out) .04s; }
 html.nav-leave .about-topbar :is(.topbar-wordmark, .section-nav > *) { animation: nav-leave .24s var(--ease-in-out) calc(var(--nav-i, 0) * 15ms) both; }
 html.nav-leave .about-topbar .section-nav-link[aria-current]::before { transform-origin: right; animation: nav-leave-line .24s var(--ease-in-out) both; }
+/* Between Projects and Skills the bar stays and only the underline travels:
+   it lifts off toward the next page during the exit and draws on from that
+   side once the next page lands. Script adds these only when motion is on. */
+html.nav-line-leave .about-topbar .section-nav-link[aria-current]::before { transform-origin: right; animation: nav-leave-line .26s var(--ease-in-out) both; }
+html.nav-line-enter .about-topbar .section-nav-link[aria-current]::before { animation: nav-return-line .45s var(--ease-out) .06s both; }
+html.nav-line-back.nav-line-leave .about-topbar .section-nav-link[aria-current]::before { transform-origin: left; }
+html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]::before { transform-origin: right; }
 @keyframes nav-leave { to { opacity: 0; translate: 0 -.75rem; } }
 @keyframes nav-leave-line { to { transform: scaleX(0); } }
 /* Back sits where a way out is expected, in the site's nav type. */

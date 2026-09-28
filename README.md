@@ -7,7 +7,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `index.html` — homepage and mobile navigation
 - `about_me.html` — standalone About page; the single source of its section markup
 - `projects.html` — Projects page, built on the About layout and reached by ordinary navigation
-- `skills.html` — Skills page (“What I do”): a field of points that takes the shape of each discipline beside a grid of the disciplines, reached by ordinary navigation
+- `skills.html` — redirect to `projects.html#skills`. Skills (“What I do”: a field of points that takes the shape of each discipline beside a grid of the disciplines) now follows Projects on the same page, and page-shell.js joins both into About
 - `page-shell.js` — joins the two documents for continuous scrolling with native page links as fallback
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
