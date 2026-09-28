@@ -4,11 +4,8 @@ Joshua Kirabo’s homepage. Plain HTML, CSS and JavaScript, with no frameworks o
 
 Open `index.html` directly, or serve this directory with any static web server.
 
-- `index.html` — homepage and mobile navigation
-- `about_me.html` — standalone About page; the single source of its section markup
-- `projects.html` — Projects page, built on the About layout and reached by ordinary navigation
-- `skills.html` — redirect to `projects.html#skills`. Skills (“What I do”: a field of points that takes the shape of each discipline beside a grid of the disciplines) now follows Projects on the same page, and page-shell.js joins both into About
-- `page-shell.js` — joins the two documents for continuous scrolling with native page links as fallback
+- `index.html` — the whole site in one document: Home, then About (Meet Josh, The Core, Education), Projects and Skills as sections, plus the mobile navigation
+- `projects/` — one page per project, opened in a sheet over the site
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
 - `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
@@ -23,7 +20,7 @@ Home, About me, and Meet Josh now navigate between the two sections, and Project
 
 The opening composition is inspired by https://heynesh.com/. Copy, branding and implementation are written for Josh. The original portrait is retained as source material for the homepage; the live page uses the cartoon version. Font licenses and grain attribution are stored beside their assets.
 
-For the private Sites preview, copy `index.html`, `about_me.html`, `projects.html`, `skills.html`, `page-shell.js`, `styles.css`, `script.js`, `assets/workplace-logos/`, and the other referenced assets into `dist/`. No compilation is needed.
+For the private Sites preview, copy `index.html`, `projects/`, `styles.css`, `script.js`, `assets/`, and the other referenced assets into `dist/`. No compilation is needed.
 
 ## Opening animation
 
@@ -75,11 +72,11 @@ Run `node --test tests/section-scroll.test.cjs` for one-flick completion, moment
 
 ## About page
 
-Edit the About section in `about_me.html`. Both HTML files are complete documents and share the stylesheet and interaction script. The existing compact profile rail, navigation, blank content area and mobile arrangement are retained.
+Edit every section in `index.html`. All of the site's markup is in that one document, so every section is in place from first paint: nothing is fetched or imported after load, and the fold, the About turns and the Projects track all measure one finished layout.
 
-When served over HTTP, `page-shell.js` eagerly loads the other document and imports only its required content. Home's intro starts independently of that request. The combined surface preserves continuous scrolling and the reverse transition; an About URL opens at its landing without replaying the Home intro. Explicit links update the address and title, so refresh, bookmarks and opening either page directly work.
+Section links are in-page anchors (`#home`, `#about`, `#experience`, `#education`, `#projects`, `#skills`). The address and tab title follow the section on screen as the reader scrolls, replacing the current history entry rather than adding one; Home keeps a bare address so a reload there still plays the intro. Opening one of them directly skips the Home intro and lands on that section; Projects and Skills land again once the webfonts have settled the layout.
 
-If JavaScript is disabled, a request fails, or the files are opened through `file://`, ordinary links still navigate between the standalone pages. Serve the directory to use the continuous transition. The loader times out after four seconds without hiding either page.
+Without JavaScript the anchors are ordinary in-page links, and the page works from `file://` too.
 
 ## About content
 
@@ -87,11 +84,11 @@ Below the top bar, About follows the layout and motion of daqconsulting.com/abou
 
 “The Core” is a vertical tab list of five subjects beside a light reading panel. Click or arrow keys switch subjects. The panels share one grid cell, so the page height never changes, and they crossfade in 240ms. Each panel names its tools and links to one real project. The first time the page turns to Experience, it arrives the way Meet Josh does: the eyebrow rule draws, the outlined heading fills, the jobs fade in 60ms apart and the card wipes up. A marker on a rail beside the list slides and stretches to the open job, and while the section is pinned a fainter fill tracks the scroll through the jobs. Cards change in place and never slide. The title sweeps in on the same 100° edge as the About title, running from the right when the scroll runs back. The workplace draws its letter outlines word by word and fills in, and the words along the bottom decode in place from scrambled glyphs while their icons hold still. Each detail keeps a slot as wide as its longest value across all the jobs, so the icons sit in the same spot on every card. A promotion within one job keeps the card still: the old title wipes away, the new one sweeps in, and only details that changed decode. Below 640px of width the panel moves under the list. A pager at the end shows where About sits and links on to Projects. Without JavaScript the title is filled and all five panels are listed in order. Reduced motion shows the finished state.
 
-Edit the subjects in `about_me.html`: each tab's `aria-controls` must match its panel's `id`.
+Edit the subjects in `index.html`: each tab's `aria-controls` must match its panel's `id`.
 
 ## Projects page
 
-`projects.html` reuses the About top bar, with Projects as the current page, and puts its own content beneath it. It does not load `page-shell.js`: that script only joins Home and About for the fold, so Projects is an ordinary page link from both. The bar sits in the same place as on About, so moving between them changes only the content below it. The backdrop grain, top bar hover scrambles and touch feedback run here as on About; the Home intro and fold do not. Home and About me links return with their fragments, so Home skips the intro and About opens at its landing.
+Projects follows Education inside About, under the same top bar, and Skills follows Projects. Project detail pages stay in `projects/`: a card opens its page in a sheet over the site, and each page links back to `index.html#projects`.
 
 Add project entries as `<li>` items in `.projects-list`; the list stays hidden until it has any.
 
@@ -99,4 +96,4 @@ Add project entries as `<li>` items in `.projects-list`; the list stays hidden u
 
 Projects is a pinned horizontal track beneath the top bar. Its layout and motion follow the "Engineered for scale" section of daqconsulting.com. The copy and implementation are written for Josh. The runway is sized to the track's travel, so ordinary scrolling drives it; nothing intercepts the wheel or touch. As each card crosses the column, its name and corner numeral fill in over a hairline outline through a soft 100° edge, finishing at centre. The centred card takes a brighter border, and a progress hairline with one label per card follows along. Rail labels jump to their card. Keyboard focus brings its card to centre immediately.
 
-A fine pointer gets a 90ms glide behind the scroll. Touch keeps native momentum, and reduced motion follows the scroll exactly without entrance motion. Without JavaScript the track is an ordinary horizontal scroller. Edit the cards in `projects.html`: projects two to five are placeholders.
+A fine pointer gets a 90ms glide behind the scroll. Touch keeps native momentum, and reduced motion follows the scroll exactly without entrance motion. Without JavaScript the track is an ordinary horizontal scroller. Edit the cards in `index.html`: projects two to five are placeholders.

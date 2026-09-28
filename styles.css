@@ -1147,12 +1147,14 @@ html.about-paging { scroll-snap-type: y mandatory; }
   .core-title { font-size: 2.6rem; }
   .core-desc { margin-top: clamp(24px, 4.5svh, 44px); }
 }
-/* Kisaka carries three paragraphs in the same card as the shorter jobs.
+/* Kisaka and GCE carry three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
 #core-kisaka .core-desc,
+#core-gce .core-desc,
 #core-kisaka-support .core-desc { margin-top: 20px; line-height: 1.45; }
 #core-kisaka .core-desc + .core-desc,
+#core-gce .core-desc + .core-desc,
 #core-kisaka-support .core-desc + .core-desc { margin-top: .7em; }
 #core-kisaka .core-desc-link { color: #cc0033; }
 #core-kisaka .core-desc-link:focus-visible { outline-color: #cc0033; }

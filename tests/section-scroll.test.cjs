@@ -4,14 +4,15 @@ const { readFileSync } = require('node:fs');
 const vm = require('node:vm');
 const source = readFileSync(new URL('../script.js', `file://${__filename}`), 'utf8');
 const springSource = source.slice(source.indexOf('function createSpring2D('), source.indexOf('// Paint the grain once.'));
-const sectionSource = source.slice(source.indexOf('function enableSectionScroll()'), source.indexOf('// Transform and opacity reveals'));
+const sectionSource = source.slice(source.indexOf('function enableSectionScroll()'), source.indexOf('// Where each Experience job rests')) +
+  'enableSectionScroll();';
 
 // The two sections share a sticky viewport; one hero height separates their
 // scroll destinations. Gesture navigation completes that distance automatically.
 const BOUNDARY = 1000;
 const rect = (left, top, width, height) => ({ left, top, width, height });
 
-function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScroll = false) {
+function setup(reduce = false, initialHash = '', smoothScroll = false) {
   let now = 1, frameId = 0;
   const frames = new Map(), events = { window: {}, document: {} };
   class Element {
@@ -92,7 +93,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
 
   const on = (type, name, fn) => (events[type][name] ||= []).push(fn);
   const window = { scrollY: 0, innerHeight: 900, scrollTo({ top }) { this.scrollY = top; }, addEventListener: (name, fn) => on('window', name, fn) };
-  const document = { documentElement: root, body, querySelector: selector => selector === '#about' ? about : selector === 'main' ? { dataset: { entryPage } } : intro,
+  const document = { documentElement: root, body, querySelector: selector => selector === '#about' ? about : intro,
     querySelectorAll: () => [], addEventListener: (name, fn) => on('document', name, fn),
     createRange() {
       let node = null;
@@ -102,7 +103,8 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     finePointer: { matches: smoothScroll },
     reducedMotion: { matches: reduce, addEventListener: (name, fn) => on('window', 'motionchange', fn) }, heroIsVisible: true,
     syncAmbientMotion() {}, getComputedStyle: node => ({ overflowY: node.overflowY || 'visible' }),
-    URL, location: { hash: initialHash, href: 'https://example.test/index.html' + initialHash },
+    URL, location: { hash: initialHash, href: 'https://example.test/index.html' + initialHash,
+      origin: 'https://example.test', pathname: '/index.html' },
     history: { pushState(state, title, href) { context.location.hash = new URL(href, context.location.href).hash; context.location.href = new URL(href, context.location.href).href; } }, performance: { now: () => now },
     requestAnimationFrame: fn => { frames.set(++frameId, fn); return frameId; },
     cancelAnimationFrame: id => frames.delete(id) };
@@ -149,7 +151,7 @@ function setup(reduce = false, initialHash = '', entryPage = 'home', smoothScrol
     click: (hash, values = {}) => {
       const link = new Element();
       link.hash = hash;
-      link.href = hash === '#about' ? 'about_me.html#about' : 'index.html#home';
+      link.href = 'https://example.test/index.html' + hash;
       link.attrs.href = link.href;
       Object.assign(link, values);
       link.closest = () => link;
@@ -665,7 +667,7 @@ test('resize during a fold does not remasure until rest', () => {
 });
 
 test('native presentation resumes at the landing after navigation completes', () => {
-  const s = setup(false, '', 'home', true);
+  const s = setup(false, '', true);
   s.click('#about');
   s.advance();
   const landing = s.stage.style.transform;
@@ -692,17 +694,19 @@ test('a motion preference change recalculates the shorter native section boundar
   assert.equal(s.window.scrollY, 720);
 });
 
-test('direct About, legacy hash links and explicit Home hashes open the correct section', () => {
-  assert.equal(setup(false, '', 'about').window.scrollY, BOUNDARY);
+test('section hashes open past the fold and Home hashes open Home', () => {
+  assert.equal(setup(false, '').window.scrollY, 0);
   assert.equal(setup(false, '#about').window.scrollY, BOUNDARY);
-  assert.equal(setup(false, '#home', 'about').window.scrollY, 0);
+  assert.equal(setup(false, '#education').window.scrollY, BOUNDARY);
+  assert.equal(setup(false, '#home').window.scrollY, 0);
+  assert.equal(setup(false, '#intro').window.scrollY, 0);
 });
 
 test('enhanced links update the HTML URL and browser history restores the section', () => {
   const s = setup();
   s.click('#about');
   s.advance();
-  assert.equal(s.context.location.href, 'https://example.test/about_me.html#about');
+  assert.equal(s.context.location.href, 'https://example.test/index.html#about');
   assert.equal(s.context.document.title, 'About me · JOSH');
   s.context.location.hash = '#home';
   s.dispatch('window', 'popstate');
@@ -721,12 +725,12 @@ test('new tabs, downloads and unrelated URLs retain native navigation', () => {
   const s = setup();
   assert.equal(s.click('#about', { target: '_blank' }).defaultPrevented, false);
   assert.equal(s.click('#about', { attrs: { download: '' } }).defaultPrevented, false);
-  assert.equal(s.click('#about', { href: 'https://elsewhere.test/about_me.html#about' }).defaultPrevented, false);
-  assert.equal(s.click('#about', { href: 'projects.html#about' }).defaultPrevented, false);
+  assert.equal(s.click('#about', { href: 'https://elsewhere.test/index.html#about' }).defaultPrevented, false);
+  assert.equal(s.click('#about', { href: 'projects/next_step.html#about' }).defaultPrevented, false);
 });
 
 test('wheel steps smooth the presentation without moving the document', () => {
-  const s = setup(false, '', 'home', true);
+  const s = setup(false, '', true);
   const direct = setup();
   const atHome = s.stage.style.transform;
   s.scrollTo(800);
@@ -743,7 +747,7 @@ test('wheel steps smooth the presentation without moving the document', () => {
 });
 
 test('reversing a wheel step continues from the presented pose', () => {
-  const s = setup(false, '', 'home', true);
+  const s = setup(false, '', true);
   s.scrollTo(900);
   s.advance(96);
   const before = s.stage.style.transform;
@@ -759,7 +763,7 @@ test('reversing a wheel step continues from the presented pose', () => {
 
 test('hybrid touch and keyboard bypass wheel smoothing', () => {
   for (const input of ['touch-input', 'section-scroll-keyboard']) {
-    const s = setup(false, '', 'home', true);
+    const s = setup(false, '', true);
     const direct = setup();
     s.root.classList.add(input);
     s.scrollTo(600);
@@ -769,7 +773,7 @@ test('hybrid touch and keyboard bypass wheel smoothing', () => {
 });
 
 test('explicit link navigation has only its navigation spring', () => {
-  const s = setup(false, '', 'home', true);
+  const s = setup(false, '', true);
   s.click('#about');
   s.advance(96);
   assert.notEqual(s.stage.style.transform, 'translate3d(0px, 0px, 0) scale(1)');

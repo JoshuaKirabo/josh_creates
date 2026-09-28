@@ -1,10 +1,6 @@
 'use strict';
 
-async function startSite() {
-// Home can start its intro while About loads. A direct About visit imports Home
-// first so its return transition has exactly the same source composition.
-if (!document.querySelector('.hero')) await window.sitePagesReady;
-
+function startSite() {
 // Placeholder links remain focusable and interactive without navigating.
 document.addEventListener('click', (event) => {
   if (event.target.closest('[data-placeholder-link]')) event.preventDefault();
@@ -576,7 +572,6 @@ function enableSectionScroll() {
   // About's own content sits under the hero for the whole fold, so it has to
   // stay out of sight until the words have nearly landed.
   const aboutContent = about.querySelector('.about-content');
-  const entryPage = document.querySelector('main')?.dataset?.entryPage;
   const links = [...document.querySelectorAll('[data-section-link]')];
   const currentLinks = links.filter(link => link.matches('.nav-link, .section-nav-link'));
   const dividers = [...(hero.querySelectorAll?.('.nav-divider') || [])];
@@ -1164,13 +1159,17 @@ function enableSectionScroll() {
   }
 
   function sectionHash() {
-    return location.hash || (entryPage === 'about' ? '#about' : '#home');
+    return location.hash || '#home';
   }
+  // Everything but Home's own anchors lives past the fold.
+  const pastFold = () => !['#home', '#intro'].includes(sectionHash());
 
   function restoreSection() {
     stop();
-    navigate(sectionHash() === '#about' ? boundary : 0, true);
-    document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
+    document.title = sectionTitle();
+    // Projects and Skills land themselves, further on than About's top.
+    if (landOnSection(location.hash)) return;
+    navigate(pastFold() ? boundary : 0, true);
   }
   let traversedHash = null;
 
@@ -1178,8 +1177,7 @@ function enableSectionScroll() {
     const link = event.target.closest('[data-section-link]');
     if (!link || !['#home', '#about'].includes(link.hash) || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const url = new URL(link.href, location.href);
-    const expected = new URL(link.hash === '#about' ? 'about_me.html' : 'index.html', location.href);
-    if (url.origin !== expected.origin || url.pathname !== expected.pathname || link.hasAttribute('download') ||
+    if (url.origin !== location.origin || url.pathname !== location.pathname || link.hasAttribute('download') ||
       (link.target && link.target !== '_self')) return;
     event.preventDefault();
     const to = link.hash === '#about' ? boundary : 0;
@@ -1189,7 +1187,7 @@ function enableSectionScroll() {
     // focus until it has restored the page, without blocking the scroll input.
     navigate(to, keyboard, !mobileMenu?.open);
     if (location.hash !== link.hash) history.pushState(null, '', link.getAttribute('href'));
-    document.title = link.hash === '#about' ? 'About me · JOSH' : 'JOSH';
+    document.title = sectionTitle(link.hash);
   });
 
   // Paging, arrows, and space are the browser's own, and now scrub the fold
@@ -1215,7 +1213,7 @@ function enableSectionScroll() {
     // deeper in About. Do not replace the browser's restoration with an endpoint.
     traversedHash = location.hash;
     stop();
-    document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
+    document.title = sectionTitle();
     paintImmediately();
   });
   window.addEventListener('hashchange', () => {
@@ -1236,22 +1234,56 @@ function enableSectionScroll() {
   boundary = Math.max(1, foldDistance());
   root.style.setProperty('--fold-distance', `${boundary}px`);
   // A direct About visit gets the same complete scroll surface, already landed.
-  if (sectionHash() === '#about' && window.scrollY < boundary) {
+  if (pastFold() && window.scrollY < boundary) {
     window.scrollTo({ top: boundary, behavior: 'instant' });
   }
-  document.title = sectionHash() === '#about' ? 'About me · JOSH' : 'JOSH';
+  document.title = sectionTitle();
   paintImmediately();
 }
-if (window.sitePagesReady) {
-  window.sitePagesReady.then(bindAboutNavScrambles);
-  window.sitePagesReady.then(enableSectionScroll);
-  window.sitePagesReady.then(initAboutContent);
-  window.sitePagesReady.then(initAboutPages);
-  window.sitePagesReady.then(() => { bindProjectCtaScrambles(); initProjectsTrack(); initProjectsNav(); initCraft(); });
-} else {
-  enableSectionScroll();
-  initAboutContent();
-  initAboutPages();
+// Each section past About's top registers how to land on it once its
+// layout is measured. Landing says whether the hash named one.
+const sectionLandings = {};
+function landOnSection(hash) {
+  const land = sectionLandings[hash];
+  if (!land) return false;
+  land();
+  syncProjectsNav();
+  return true;
+}
+const sectionTitles = { '#experience': 'Experience', '#education': 'Education', '#projects': 'Projects', '#skills': 'Skills' };
+function sectionTitle(hash = location.hash) {
+  if (sectionTitles[hash]) return `${sectionTitles[hash]} · JOSH`;
+  return ['', '#home', '#intro'].includes(hash) ? 'JOSH' : 'About me · JOSH';
+}
+
+// The address names the section on screen as the reader scrolls, without
+// adding history entries. Home keeps a bare address, so a reload there still
+// plays the intro. A project sheet owns the address while it is open.
+function trackSectionHash() {
+  const root = document.documentElement;
+  const path = location.pathname + location.search;
+  const sections = [
+    ['#experience', document.querySelector('#experience')],
+    ['#education', document.querySelector('#education')],
+    ['#projects', document.querySelector('.projects-frame')],
+    ['#skills', document.querySelector('#skills')]
+  ].filter(([, el]) => el);
+  let frameId = 0;
+  function update() {
+    frameId = 0;
+    if (location.pathname + location.search !== path || root.classList.contains('project-sheet-open')) return;
+    const fold = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
+    const half = window.innerHeight / 2;
+    let hash = window.scrollY < fold / 2 ? '' : '#about';
+    if (hash) sections.forEach(([name, el]) => { if (el.getBoundingClientRect().top < half) hash = name; });
+    const current = ['#home', '#intro'].includes(location.hash) ? '' : location.hash;
+    if (hash === current) return;
+    history.replaceState(history.state, '', hash || path);
+    document.title = sectionTitle(hash);
+  }
+  window.addEventListener('scroll', () => {
+    if (!frameId) frameId = requestAnimationFrame(update);
+  }, { passive: true });
 }
 
 // Where each Experience job rests while the section is pinned; empty when
@@ -3251,6 +3283,7 @@ function initAboutPages() {
     // A pinned Core stops once per card; its runway splits evenly between them.
     const step = pinned ? (core.offsetHeight - window.innerHeight) / (jobs - 1) : 0;
     coreJobStops = pinned ? Array.from({ length: jobs }, (_, i) => Math.round(coreTop + i * step)) : [];
+    sectionLandings['#experience'] = () => window.scrollTo({ top: Math.round(coreTop), behavior: 'instant' });
     const stops = [0, aboutTop, coreTop, ...coreJobStops];
     // A Core taller than the screen also stops with its bottom edge in view.
     if (core.offsetHeight > window.innerHeight + 1 && !pinned) stops.push(coreTop + core.offsetHeight - window.innerHeight);
@@ -3258,6 +3291,7 @@ function initAboutPages() {
       let educationTop = aboutTop;
       for (let node = education; node && node !== about; node = node.offsetParent) educationTop += node.offsetTop;
       stops.push(educationTop);
+      sectionLandings['#education'] = () => window.scrollTo({ top: Math.round(educationTop), behavior: 'instant' });
     }
     stops.push(end);
     const offsets = [...new Set(stops.map(Math.round))].filter(y => y >= 0 && y <= end);
@@ -3293,8 +3327,8 @@ function initProjectsNav() {
   const runway = document.querySelector('[data-projects-runway]');
   const nav = runway?.closest('.about')?.querySelector('.about-topbar .section-nav');
   const aboutLink = about && nav?.querySelector('.section-nav-link[href$="#about"]');
-  const projectsLink = nav?.querySelector('.section-nav-link[href="projects.html"]');
-  const skillsLink = nav?.querySelector('.section-nav-link[href="projects.html#skills"]');
+  const projectsLink = nav?.querySelector('.section-nav-link[href="#projects"]');
+  const skillsLink = nav?.querySelector('.section-nav-link[href="#skills"]');
   const skills = document.querySelector('.skills-main');
   // About joins Projects in after load, so this can be called a second time.
   if (!projectsLink || !runway || nav.dataset.tracked !== undefined) return;
@@ -4647,10 +4681,6 @@ function initProjectsTrack() {
   let turning = false;
   const skillsStop = () => Math.min(pageTop(skills) - geometry.barEnd, root.scrollHeight - window.innerHeight);
   const onSkills = () => skills.getBoundingClientRect().top < window.innerHeight / 2;
-  // The standalone page keeps Skills in its address, so a reload lands there.
-  const markSkills = (shown) => {
-    if (!about) history.replaceState(history.state, '', shown ? '#skills' : location.pathname + location.search);
-  };
   function cut(top, direction) {
     spendTurnMomentum(direction);
     window.scrollTo({ top, behavior: 'instant' });
@@ -4668,7 +4698,6 @@ function initProjectsTrack() {
       craftStage.enter();
       root.classList.remove('projects-leaving', 'nav-line-leave');
       syncProjectsNav();
-      markSkills(true);
       turning = false;
     }, leave ? 380 : 0);
   }
@@ -4694,7 +4723,6 @@ function initProjectsTrack() {
       refresh();
       root.classList.remove('nav-line-leave', 'nav-line-back');
       syncProjectsNav();
-      markSkills(false);
       turning = false;
     }, leave ? 360 : 0);
   }
@@ -4710,33 +4738,30 @@ function initProjectsTrack() {
     }, () => turnToProjects(cards.length - 1), { fresh: true });
     // The top bar's links take the same turns. Projects opens on its first
     // card when asked for by name.
-    document.querySelectorAll('.section-nav-link[href="projects.html#skills"]').forEach((link) => {
+    document.querySelectorAll('.section-nav-link[href="#skills"]').forEach((link) => {
       link.addEventListener('click', (event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
         turnToSkills();
       });
     });
-    document.querySelectorAll('.section-nav-link[href="projects.html"]').forEach((link) => {
+    document.querySelectorAll('.section-nav-link[href="#projects"]').forEach((link) => {
       link.addEventListener('click', (event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !onSkills()) return;
         event.preventDefault();
         turnToProjects(0);
       });
     });
-    // Arriving at #skills, the page lands on Skills once the runway has its
-    // height, since the browser's own jump came before it did.
-    if (!about && location.hash === '#skills') {
-      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-      const land = () => {
-        measure();
-        window.scrollTo({ top: skillsStop(), behavior: 'instant' });
-        refresh();
-      };
-      land();
-      document.fonts?.ready.then(land);
-    }
   }
+  // #projects opens on the first card and #skills on Skills. Both land once
+  // the runway has its height, since the browser's own jump came before it did.
+  const land = (top) => {
+    measure();
+    window.scrollTo({ top: top(), behavior: 'instant' });
+    refresh();
+  };
+  sectionLandings['#projects'] = () => land(() => cardStops()[0]);
+  if (skills) sectionLandings['#skills'] = () => land(skillsStop);
   // Keyboard focus lands on the card at once; the track follows without a glide.
   track.addEventListener('focusin', (event) => {
     const index = cards.indexOf(event.target.closest('[data-project]'));
@@ -4765,11 +4790,18 @@ function initProjectsTrack() {
     requestAnimationFrame(() => requestAnimationFrame(() => main.classList.add('projects-entered')));
   }
 }
+// Every section is in the page from the start. They start in reading order,
+// once everything above is defined.
+enableSectionScroll();
+initAboutContent();
+initAboutPages();
 initProjectsTrack();
-// Inside About the underline waits for the fold, which starts once About is joined in.
-if (!document.querySelector('#about')) initProjectsNav();
-// Skills follows Projects; its panel starts once everything above is defined.
+initProjectsNav();
 initCraft();
+// A section's own address lands on it: now, and again once the webfonts have
+// settled the layout, since the browser's own jump came before any of it.
+if (landOnSection(location.hash)) document.fonts?.ready.then(() => landOnSection(location.hash));
+trackSectionHash();
 
 playIntro();
 
