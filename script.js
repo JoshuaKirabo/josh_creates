@@ -1202,6 +1202,19 @@ function enableSectionScroll() {
     const link = event.target.closest('a[href^="#"]');
     followedHash = link && !event.defaultPrevented ? link.hash : null;
   });
+  // Mandatory snapping keeps the browser from restoring a position on
+  // Back/Forward within the page, so each entry keeps its own once the page
+  // comes to rest, and again the moment a link is about to leave it.
+  let saveId = 0;
+  const savePosition = () => {
+    clearTimeout(saveId);
+    if (history.state?.section) history.replaceState({ ...history.state, y: Math.round(window.scrollY) }, '');
+  };
+  window.addEventListener('scroll', () => {
+    clearTimeout(saveId);
+    saveId = setTimeout(savePosition, 150);
+  }, { passive: true });
+  document.addEventListener('click', savePosition, true);
 
   // Paging, arrows, and space are the browser's own, and now scrub the fold
   // like any other scroll. Only a spring already in flight has to yield.
@@ -1226,9 +1239,21 @@ function enableSectionScroll() {
     // deeper in About. Do not replace the browser's restoration with an endpoint.
     // An address typed or pasted over this page fires popstate too, but only
     // on an entry the page has never marked, and that one still has to land.
+    // A position still waiting to be saved belongs to the entry just left.
+    clearTimeout(saveId);
     if (location.hash === followedHash || !event.state) return;
     traversedHash = location.hash;
     stop();
+    const { y } = event.state;
+    if (Number.isFinite(y)) {
+      // Past the fold, the snap stops are only where they rest once the fold
+      // has painted About, as when landing on a section.
+      if (y >= boundary && window.scrollY < boundary) {
+        window.scrollTo({ top: boundary, behavior: 'instant' });
+        paintImmediately();
+      }
+      window.scrollTo({ top: y, behavior: 'instant' });
+    }
     document.title = sectionTitle();
     paintImmediately();
   });

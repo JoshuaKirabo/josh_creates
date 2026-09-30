@@ -109,7 +109,9 @@ function setup(reduce = false, initialHash = '', smoothScroll = false) {
       pushState(state, title, href) { this.state = state; context.location.hash = new URL(href, context.location.href).hash; context.location.href = new URL(href, context.location.href).href; },
       replaceState(state, title, href) { this.state = state; if (href) this.pushState(state, title, href); } }, performance: { now: () => now },
     requestAnimationFrame: fn => { frames.set(++frameId, fn); return frameId; },
-    cancelAnimationFrame: id => frames.delete(id) };
+    cancelAnimationFrame: id => frames.delete(id),
+    // Timers only ever defer saving the position to history; nothing here waits on them.
+    setTimeout: () => 0, clearTimeout() {} };
   vm.runInNewContext(springSource + sectionSource, context);
 
   function advance(ms = 2000) {
@@ -720,6 +722,19 @@ test('enhanced links update the HTML URL and browser history restores the sectio
   assert.equal(s.context.document.title, 'JOSH');
   s.context.location.hash = '#about';
   s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#about' });
+  assert.equal(s.window.scrollY, BOUNDARY);
+});
+
+test('Back/Forward returns to where the entry was left, even when the browser does not', () => {
+  const s = setup();
+  s.click('#about');
+  s.advance();
+  // Mandatory snapping keeps the browser's own restoration where the page was.
+  s.scrollTo(0);
+  s.context.location.hash = '#about';
+  s.dispatch('window', 'popstate', { state: { section: true, y: BOUNDARY } });
+  s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#about' });
+  s.advance();
   assert.equal(s.window.scrollY, BOUNDARY);
 });
 
