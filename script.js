@@ -1167,7 +1167,13 @@ function enableSectionScroll() {
   function restoreSection() {
     stop();
     document.title = sectionTitle();
-    // Projects and Skills land themselves, further on than About's top.
+    // Projects and Skills land themselves, further on than About's top. They
+    // measure against About's layout past the fold, which the fold has to
+    // paint first, or the browser snaps to where their stops were on Home.
+    if (sectionLandings[location.hash]) {
+      if (window.scrollY < boundary) window.scrollTo({ top: boundary, behavior: 'instant' });
+      paintImmediately();
+    }
     if (landOnSection(location.hash)) return;
     navigate(pastFold() ? boundary : 0, true);
   }
@@ -1186,7 +1192,7 @@ function enableSectionScroll() {
     // The navigation dialog closes through its existing link handler. Defer
     // focus until it has restored the page, without blocking the scroll input.
     navigate(to, keyboard, !mobileMenu?.open);
-    if (location.hash !== link.hash) history.pushState(null, '', link.getAttribute('href'));
+    if (location.hash !== link.hash) history.pushState(sectionEntry, '', link.getAttribute('href'));
     document.title = sectionTitle(link.hash);
   });
   // Following a link on the page fires popstate too, just like Back/Forward.
@@ -1215,10 +1221,12 @@ function enableSectionScroll() {
   window.addEventListener('resize', measure, { passive: true });
   window.addEventListener('pagehide', () => { stop(); presentation.stop(); });
   window.addEventListener('pageshow', measure);
-  window.addEventListener('popstate', () => {
+  window.addEventListener('popstate', event => {
     // Back/Forward restores the reader's exact position, including mid-fold or
     // deeper in About. Do not replace the browser's restoration with an endpoint.
-    if (location.hash === followedHash) return;
+    // An address typed or pasted over this page fires popstate too, but only
+    // on an entry the page has never marked, and that one still has to land.
+    if (location.hash === followedHash || !event.state) return;
     traversedHash = location.hash;
     stop();
     document.title = sectionTitle();
@@ -1232,8 +1240,9 @@ function enableSectionScroll() {
     if (restored) return;
     // The browser's jump reaches the address tracker before this event, and it
     // can rename the address after whatever section that jump passed over.
-    // Land where the link pointed.
-    if (location.hash !== hash) history.replaceState(history.state, '', hash);
+    // Land where the link pointed, and mark the entry so coming back to it
+    // later reads as Back/Forward.
+    history.replaceState(history.state ?? sectionEntry, '', hash);
     // The open navigation dialog holds the page still, so the landing waits
     // until it has closed.
     if (mobileMenu?.open) mobileMenu.addEventListener('close', restoreSection, { once: true });
@@ -1249,6 +1258,7 @@ function enableSectionScroll() {
   // webfonts have replaced the fallbacks.
   document.fonts?.ready.then(() => { foldStale = true; schedulePaint(); });
   root.classList.add('section-scroll-ready');
+  if (!history.state) history.replaceState(sectionEntry, '');
   boundary = Math.max(1, foldDistance());
   root.style.setProperty('--fold-distance', `${boundary}px`);
   // A direct About visit gets the same complete scroll surface, already landed.
@@ -1258,6 +1268,9 @@ function enableSectionScroll() {
   document.title = sectionTitle();
   paintImmediately();
 }
+// The history state on every entry the page has made or landed on. The
+// browser leaves it off an address the reader typed or pasted.
+const sectionEntry = { section: true };
 // Each section past About's top registers how to land on it once its
 // layout is measured. Landing says whether the hash named one.
 const sectionLandings = {};
@@ -1267,6 +1280,27 @@ function landOnSection(hash) {
   land();
   syncProjectsNav();
   return true;
+}
+function holdLanding(hash) {
+  const input = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
+  let frameId = 0;
+  const land = () => {
+    if (!frameId) frameId = requestAnimationFrame(() => {
+      frameId = 0;
+      if (location.hash === hash) landOnSection(hash);
+    });
+  };
+  const release = () => {
+    cancelAnimationFrame(frameId);
+    window.removeEventListener('scroll', land);
+    input.forEach(type => window.removeEventListener(type, release, true));
+  };
+  window.addEventListener('scroll', land, { passive: true });
+  input.forEach(type => window.addEventListener(type, release, { capture: true, passive: true }));
+  document.fonts?.ready.then(land);
+  const settle = () => { land(); requestAnimationFrame(() => requestAnimationFrame(release)); };
+  if (document.readyState === 'complete') settle();
+  else window.addEventListener('load', settle, { once: true });
 }
 const sectionTitles = { '#experience': 'Experience', '#education': 'Education', '#projects': 'Projects', '#skills': 'Skills' };
 function sectionTitle(hash = location.hash) {
@@ -4917,9 +4951,11 @@ initAboutPages();
 initProjectsTrack();
 initProjectsNav();
 initCraft();
-// A section's own address lands on it: now, and again once the webfonts have
-// settled the layout, since the browser's own jump came before any of it.
-if (landOnSection(location.hash)) document.fonts?.ready.then(() => landOnSection(location.hash));
+// A section's own address lands on it now. Until the page has loaded, the
+// browser can still jump to the section's element, whose top is not where the
+// section rests, and webfonts can still move the layout. Any scroll the reader
+// did not make lands again, until they move or the page is done.
+if (landOnSection(location.hash)) holdLanding(location.hash);
 trackSectionHash();
 
 playIntro();

@@ -105,7 +105,9 @@ function setup(reduce = false, initialHash = '', smoothScroll = false) {
     syncAmbientMotion() {}, getComputedStyle: node => ({ overflowY: node.overflowY || 'visible' }),
     URL, location: { hash: initialHash, href: 'https://example.test/index.html' + initialHash,
       origin: 'https://example.test', pathname: '/index.html' },
-    history: { pushState(state, title, href) { context.location.hash = new URL(href, context.location.href).hash; context.location.href = new URL(href, context.location.href).href; } }, performance: { now: () => now },
+    history: { state: null,
+      pushState(state, title, href) { this.state = state; context.location.hash = new URL(href, context.location.href).hash; context.location.href = new URL(href, context.location.href).href; },
+      replaceState(state, title, href) { this.state = state; if (href) this.pushState(state, title, href); } }, performance: { now: () => now },
     requestAnimationFrame: fn => { frames.set(++frameId, fn); return frameId; },
     cancelAnimationFrame: id => frames.delete(id) };
   vm.runInNewContext(springSource + sectionSource, context);
@@ -709,7 +711,7 @@ test('enhanced links update the HTML URL and browser history restores the sectio
   assert.equal(s.context.location.href, 'https://example.test/index.html#about');
   assert.equal(s.context.document.title, 'About me · JOSH');
   s.context.location.hash = '#home';
-  s.dispatch('window', 'popstate');
+  s.dispatch('window', 'popstate', { state: { section: true } });
   // The browser restores the previous position after popstate, then hashchange.
   s.scrollTo(BOUNDARY * .35);
   s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#home' });
@@ -719,6 +721,20 @@ test('enhanced links update the HTML URL and browser history restores the sectio
   s.context.location.hash = '#about';
   s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#about' });
   assert.equal(s.window.scrollY, BOUNDARY);
+});
+
+test('an address pasted over the page lands, though the browser fires popstate for it', () => {
+  const s = setup();
+  // A fresh fragment navigation arrives on an entry with no state, after the
+  // browser's own jump to the element.
+  s.context.location.hash = '#about';
+  s.context.history.state = null;
+  s.dispatch('window', 'popstate', { state: null });
+  s.scrollTo(0);
+  s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#about' });
+  s.advance();
+  assert.equal(s.window.scrollY, BOUNDARY);
+  assert.deepEqual({ ...s.context.history.state }, { section: true }, 'the entry is marked, so coming back to it restores');
 });
 
 test('new tabs, downloads and unrelated URLs retain native navigation', () => {
