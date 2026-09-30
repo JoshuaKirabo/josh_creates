@@ -2487,6 +2487,8 @@ function initCraftField(craft) {
   let shape = CRAFT_ORDER[0];
   // A point keeps its old colour until the scan line sets it off.
   let previous = shape;
+  // Arriving, the points wait on their line until the sweep sets them off.
+  let gathering = false;
   let sweepAt = -Infinity;
   let frame = 0;
   let last = 0;
@@ -2514,6 +2516,7 @@ function initCraftField(craft) {
     context.clearRect(0, 0, width, height);
     if (!width || !height) return;
     const goal = form(shape);
+    const before = form(previous);
     const size = Math.min(width * .34, height * .36);
     const camera = 3.2;
     // The solid is seen from a little above. It turns slowly from one
@@ -2537,10 +2540,13 @@ function initCraftField(craft) {
       const k = i * 3;
       const g = i * 7;
       const set = step === 0 || time >= setOff[i];
-      craftMove(shape, goal, g, still ? 0 : time, spot, set ? beat : -1);
+      // A point the sweep has not reached yet carries on to the shape it was
+      // already bound for, so switching shapes mid-flight never stops it dead.
+      if (set) craftMove(shape, goal, g, still ? 0 : time, spot, beat);
+      else if (!gathering) craftMove(previous, before, g, time, spot, -1);
       if (step === 0) {
         for (let a = 0; a < 3; a++) { now[k + a] = spot[a]; speed[k + a] = 0; facing[k + a] = spot[3 + a]; }
-      } else if (set) {
+      } else if (set || !gathering) {
         for (let n = 0; n < slices; n++) {
           for (let a = 0; a < 3; a++) {
             speed[k + a] += ((spot[a] - now[k + a]) * STIFFNESS - speed[k + a] * DAMPING) * slice;
@@ -2646,6 +2652,7 @@ function initCraftField(craft) {
     if (to === shape) return;
     previous = shape;
     shape = to;
+    gathering = false;
     caption(to);
     if (still) { draw(0, 0); return; }
     const time = performance.now() / 1000;
@@ -2716,6 +2723,7 @@ function initCraftField(craft) {
       clearTimeout(resumeTimer);
       held = null;
       shape = previous = CRAFT_ORDER[0];
+      gathering = true;
       caption(shape);
       light(shape, still ? 'held' : 'lit');
       if (still) { draw(0, 0); return; }
