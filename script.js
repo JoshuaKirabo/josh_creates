@@ -1189,6 +1189,13 @@ function enableSectionScroll() {
     if (location.hash !== link.hash) history.pushState(null, '', link.getAttribute('href'));
     document.title = sectionTitle(link.hash);
   });
+  // Following a link on the page fires popstate too, just like Back/Forward.
+  // Remembering the link keeps it from passing for a restored position.
+  let followedHash = null;
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#"]');
+    followedHash = link && !event.defaultPrevented ? link.hash : null;
+  });
 
   // Paging, arrows, and space are the browser's own, and now scrub the fold
   // like any other scroll. Only a spring already in flight has to yield.
@@ -1211,15 +1218,26 @@ function enableSectionScroll() {
   window.addEventListener('popstate', () => {
     // Back/Forward restores the reader's exact position, including mid-fold or
     // deeper in About. Do not replace the browser's restoration with an endpoint.
+    if (location.hash === followedHash) return;
     traversedHash = location.hash;
     stop();
     document.title = sectionTitle();
     paintImmediately();
   });
-  window.addEventListener('hashchange', () => {
-    const restored = traversedHash === location.hash;
+  window.addEventListener('hashchange', event => {
+    const hash = new URL(event.newURL).hash;
+    const restored = traversedHash === hash;
     traversedHash = null;
-    if (!restored) restoreSection();
+    followedHash = null;
+    if (restored) return;
+    // The browser's jump reaches the address tracker before this event, and it
+    // can rename the address after whatever section that jump passed over.
+    // Land where the link pointed.
+    if (location.hash !== hash) history.replaceState(history.state, '', hash);
+    // The open navigation dialog holds the page still, so the landing waits
+    // until it has closed.
+    if (mobileMenu?.open) mobileMenu.addEventListener('close', restoreSection, { once: true });
+    else restoreSection();
   });
   reducedMotion.addEventListener('change', () => {
     measure();

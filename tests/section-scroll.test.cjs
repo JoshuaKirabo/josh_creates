@@ -712,12 +712,12 @@ test('enhanced links update the HTML URL and browser history restores the sectio
   s.dispatch('window', 'popstate');
   // The browser restores the previous position after popstate, then hashchange.
   s.scrollTo(BOUNDARY * .35);
-  s.dispatch('window', 'hashchange');
+  s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#home' });
   s.advance();
   assert.equal(s.window.scrollY, BOUNDARY * .35, 'history preserves a partially scrolled Home');
   assert.equal(s.context.document.title, 'JOSH');
   s.context.location.hash = '#about';
-  s.dispatch('window', 'hashchange');
+  s.dispatch('window', 'hashchange', { newURL: 'https://example.test/index.html#about' });
   assert.equal(s.window.scrollY, BOUNDARY);
 });
 
