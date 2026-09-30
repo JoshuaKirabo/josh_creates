@@ -1447,19 +1447,18 @@ function holdPageTurns(target, leave, { fresh = false, still = () => false, whee
 // it is moving: the fold, Meet Josh's entrance and its exit all run on the
 // same thread as the scene, so it holds its last frame until they finish.
 // Phones get none of it; the scene is not loaded below the tablet width.
-const SPLINE_BUILD = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.55/build/';
+const SPLINE_BUILD = 'https://cdn.jsdelivr.net/npm/@splinetool/runtime@2.0.64/build/';
 const SPLINE_RUNTIME = SPLINE_BUILD + 'runtime.js';
 // Left alone, the runtime asks for these one wave at a time: its modules, then
 // the scene, then what the scene uses, then the renderer. Asked for together,
 // they arrive in one wave. The list is this scene's and this runtime
 // version's; a name that goes stale costs one unused download, nothing more.
-const SPLINE_MODULES = ['runtime-timeline-5YUCVT7L.js', 'runtime-text-LFJHKA7L.js',
-  'runtime-particles-PBWDRHMN.js', 'runtime-DRACOLoader-GLMRFFK2.js', 'process.js', 'opentype.js'];
-const SPLINE_FILES = ['https://cdn.spline.design/@splinetool/runtime@2.0.55/build/process.wasm',
-  'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js',
+const SPLINE_MODULES = ['runtime-timeline-JEZKTTPW.js', 'runtime-text-4AHR5UXX.js',
+  'runtime-particles-6U43I2Y4.js', 'runtime-DRACOLoader-GLMRFFK2.js', 'bevel.js', 'opentype.js'];
+const SPLINE_FILES = ['https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js',
   'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.wasm'];
 // The renderer is WebGPU where the browser has it and WebGL elsewhere.
-const SPLINE_RENDERER = 'gpu' in navigator ? 'runtime-webgpu-DDM7K6ES.js' : 'runtime-classicRuntime-7CF5S54Q.js';
+const SPLINE_RENDERER = 'gpu' in navigator ? 'runtime-webgpu-5H7LPI55.js' : 'runtime-classicRuntime-2LP2RINT.js';
 // The scene is soft enough that a retina screen gains little from drawing it
 // at full density, and every extra pixel is drawn every frame.
 const SCENE_PIXEL_RATIO = 1.25;
@@ -4378,6 +4377,10 @@ initProjectPage();
 
 function initProjectSheet() {
 
+  // An open sheet moves the address into projects/, where the cards' relative
+  // links would resolve a folder too deep. They always mean this page's own.
+  const pageURL = document.baseURI;
+  const hrefOf = link => new URL(link.getAttribute('href'), pageURL).href;
   const sheet = document.createElement('dialog');
   sheet.className = 'project-sheet';
   sheet.setAttribute('aria-labelledby', 'project-sheet-title');
@@ -4434,7 +4437,7 @@ function initProjectSheet() {
 
   function projectLink(target) {
     const link = target.closest?.('.project-link');
-    return link && /\/projects\/[^/]+\.html$/.test(new URL(link.href, location.href).pathname) ? link : null;
+    return link && /\/projects\/[^/]+\.html$/.test(new URL(hrefOf(link)).pathname) ? link : null;
   }
 
   // Each page is fetched once, as soon as a reader shows interest in it.
@@ -4459,22 +4462,23 @@ function initProjectSheet() {
   }
 
   async function open(link, fromHistory = false) {
-    if (opening === link.href) return;
-    opening = link.href;
+    const href = hrefOf(link);
+    if (opening === href) return;
+    opening = href;
     let content;
     try {
       // Projects plays its exit while the page loads.
-      [content] = await Promise.all([load(link.href), leaveProjects(link)]);
+      [content] = await Promise.all([load(href), leaveProjects(link)]);
     } catch {
       // file://, offline or a missing page: go to the page instead.
-      location.href = link.href;
+      location.href = href;
       return;
     } finally {
       opening = null;
     }
     // The address follows the sheet, so a refresh lands on the project page and
     // the browser's back button closes the sheet.
-    if (!fromHistory) history.pushState({ projectSheet: link.href }, '', link.href);
+    if (!fromHistory) history.pushState({ projectSheet: href }, '', href);
     sheet.querySelector('.project-sheet-content').replaceWith(document.importNode(content, true));
     fade?.cancel();
     clearTimeout(reveal);
@@ -4545,7 +4549,7 @@ function initProjectSheet() {
   window.addEventListener('popstate', (event) => {
     const href = event.state?.projectSheet;
     if (href) {
-      const link = [...document.querySelectorAll('.project-link')].find((candidate) => candidate.href === href);
+      const link = [...document.querySelectorAll('.project-link')].find((candidate) => hrefOf(candidate) === href);
       if (link) open(link, true);
       else location.reload();
     } else {
@@ -4555,7 +4559,7 @@ function initProjectSheet() {
 
   const prefetch = (event) => {
     const link = projectLink(event.target);
-    if (link) load(link.href).catch(() => {});
+    if (link) load(hrefOf(link)).catch(() => {});
   };
   document.addEventListener('pointerover', prefetch, { passive: true });
   document.addEventListener('focusin', prefetch);
