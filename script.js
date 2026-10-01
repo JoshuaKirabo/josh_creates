@@ -39,7 +39,7 @@ function spendTurnMomentum(direction) {
 // Touch feedback follows contact, while native scrolling and click timing stay intact.
 function enableTouchFeedback() {
   const root = document.documentElement;
-  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a, .core-subject, .core-link, .core-desc-link, .project-sheet-back';
+  const controls = '.button, .menu-toggle, .nav-link, .social-link, .text-link, .section-nav-link, .topbar-wordmark, .project-link, .projects-rail a, .core-subject, .core-link, .core-desc-link, .project-sheet-back, .connect-rail-link';
   let press = null;
   let released = null;
 
@@ -1327,7 +1327,7 @@ function holdLanding(hash) {
   if (document.readyState === 'complete') settle();
   else window.addEventListener('load', settle, { once: true });
 }
-const sectionTitles = { '#experience': 'Experience', '#education': 'Education', '#projects': 'Projects', '#skills': 'Skills' };
+const sectionTitles = { '#experience': 'Experience', '#education': 'Education', '#projects': 'Projects', '#skills': 'Skills', '#connect': 'Let’s connect' };
 function sectionTitle(hash = location.hash) {
   if (sectionTitles[hash]) return `${sectionTitles[hash]} · JOSH`;
   return ['', '#home', '#intro'].includes(hash) ? 'JOSH' : 'About me · JOSH';
@@ -1343,7 +1343,8 @@ function trackSectionHash() {
     ['#experience', document.querySelector('#experience')],
     ['#education', document.querySelector('#education')],
     ['#projects', document.querySelector('.projects-frame')],
-    ['#skills', document.querySelector('#skills')]
+    ['#skills', document.querySelector('#skills')],
+    ['#connect', document.querySelector('#connect')]
   ].filter(([, el]) => el);
   let frameId = 0;
   function update() {
@@ -2799,6 +2800,269 @@ function initCraft() {
   }, { threshold: [0, .35] }).observe(craft);
 }
 
+let connectStage = { enter() {}, leave() {} };
+// Let's connect's greeting, its heading. Once the section is on screen it
+// turns from word to word, one every 1300ms. Each word is split into letters
+// that rise in one after another, about 750ms for the longest, leaving the
+// word a moment at rest to be read. The word leaving is marked .is-past so its
+// letters lift up and out while the new one's rise in. Each word's flag changes with it, in one place
+// at the end of the eyebrow. A fine pointer resting on it holds the word; pressing it holds it
+// until pressed again. Held, it names the language beside the flag. Each entrance starts again
+// from the first word. Reduced motion shows Gyebale, and pressing steps on.
+// The turns to and from Skills belong to the track.
+// The address is written as two halves and joined here, so it never sits
+// whole in the page for harvesters to find. The rail's email mark then opens
+// mail and names the address.
+function initConnectEmail(section) {
+  const link = section.querySelector('.connect-email-link');
+  const { emailUser: user, emailDomain: domain } = link?.dataset || {};
+  if (!link || !user || !domain) return;
+  const address = `${user}@${domain}`;
+  link.href = `mailto:${address}`;
+  link.setAttribute('aria-label', `Email ${address}`);
+  link.querySelector('.connect-rail-name').textContent = address;
+  link.removeAttribute('data-placeholder-link');
+}
+
+// The message form. Opening it turns the section in place: the greeting
+// cuts out, the fields rise where it stood and the name field takes focus.
+// Cancel, Escape or sending closes it again. Fields are checked when the
+// reader leaves them and on send; the first one wrong takes focus. Messages
+// go to Web3Forms with the form's public access key.
+function initConnectForm(section, { onToggle }) {
+  const form = section.querySelector('.connect-form');
+  const compose = section.querySelector('.connect-compose');
+  if (!form || !compose) return;
+  const send = form.querySelector('.connect-send');
+  const status = form.querySelector('.connect-form-status');
+  const sent = form.querySelector('.connect-sent');
+  const fields = [...form.querySelectorAll('.connect-input')];
+  form.querySelectorAll('.connect-field, .connect-form-actions').forEach((el, i) => el.style.setProperty('--i', i));
+  const problems = {
+    name: input => !input.value.trim() && 'Enter your name.',
+    email: input => (!input.value.trim() && 'Enter your email so I can reply.')
+      || (!input.validity.valid && 'Enter an email like name@example.com.'),
+    message: input => !input.value.trim() && 'Write a message before sending.'
+  };
+  function check(input) {
+    const problem = problems[input.name]?.(input) || '';
+    const error = form.querySelector(`#${input.id}-error`);
+    if (error) error.textContent = problem;
+    if (problem) input.setAttribute('aria-invalid', 'true');
+    else input.removeAttribute('aria-invalid');
+    return !problem;
+  }
+  fields.forEach((input) => {
+    input.addEventListener('blur', () => { if (input.value) check(input); });
+    input.addEventListener('input', () => { if (input.hasAttribute('aria-invalid')) check(input); });
+  });
+
+  let open = false;
+  function toggle(next) {
+    if (next === open) return;
+    open = next;
+    section.classList.toggle('is-composing', open);
+    form.inert = !open;
+    compose.setAttribute('aria-expanded', String(open));
+    onToggle(open);
+    if (open) {
+      form.classList.remove('is-sent');
+      status.textContent = '';
+      fields[0].focus({ preventScroll: true });
+    } else {
+      compose.focus({ preventScroll: true });
+    }
+  }
+  compose.addEventListener('click', () => toggle(true));
+  form.querySelectorAll('.connect-cancel').forEach(button => button.addEventListener('click', () => toggle(false)));
+  form.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      toggle(false);
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (send.getAttribute('aria-busy') === 'true') return;
+    status.textContent = '';
+    const wrong = fields.filter(input => !check(input));
+    if (wrong.length) {
+      wrong[0].focus();
+      return;
+    }
+    const key = form.dataset.accessKey;
+    if (!key) {
+      status.textContent = 'The form isn’t connected yet. Email me instead.';
+      return;
+    }
+    const [name, email, message] = fields.map(input => input.value.trim());
+    send.setAttribute('aria-busy', 'true');
+    send.querySelector('.button-label').textContent = 'Sending…';
+    try {
+      const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: key,
+          subject: `Message from ${name} via your site`,
+          from_name: name,
+          name,
+          email,
+          message,
+          botcheck: form.querySelector('.connect-botcheck').checked
+        })
+      });
+      const reply = await response.json().catch(() => ({}));
+      if (!response.ok || !reply.success) throw new Error(reply.message || response.status);
+      form.querySelector('[data-sent-to]').textContent = email;
+      form.reset();
+      form.classList.add('is-sent');
+      sent.focus({ preventScroll: true });
+    } catch {
+      status.textContent = 'Couldn’t send your message. Check your connection and try again.';
+    } finally {
+      send.removeAttribute('aria-busy');
+      send.querySelector('.button-label').textContent = 'Submit';
+    }
+  });
+}
+
+function initConnect() {
+  const section = document.querySelector('.connect-section');
+  const greeting = section?.querySelector('[data-greeting]');
+  if (!greeting || greeting.dataset.ready !== undefined) return;
+  greeting.dataset.ready = '';
+  initConnectEmail(section);
+  // The line the greeting finishes rises in word by word on arrival.
+  const lead = section.querySelector('.connect-lead');
+  if (lead) {
+    const parts = lead.textContent.trim().split(/\s+/);
+    lead.replaceChildren(...parts.flatMap((part, i) => {
+      const word = document.createElement('span');
+      word.className = 'connect-lead-word';
+      word.style.setProperty('--i', i);
+      word.textContent = part;
+      return i ? [' ', word] : [word];
+    }));
+  }
+  // Each mark slides left far enough to leave its handle a 12px gap and end
+  // the handle on the rail's edge. Measured again once fonts load and on resize.
+  const railLinks = [...section.querySelectorAll('.connect-rail-link')];
+  const measureRail = () => railLinks.forEach((link) => {
+    const icon = link.querySelector('.connect-rail-icon');
+    const name = link.querySelector('.connect-rail-name');
+    const inset = (link.clientWidth - parseFloat(getComputedStyle(icon).width)) / 2;
+    link.style.setProperty('--shift', `${Math.round(name.offsetWidth + 12 - inset)}px`);
+  });
+  measureRail();
+  document.fonts?.ready.then(measureRail);
+  window.addEventListener('resize', measureRail, { passive: true });
+  const BEAT = 1300;
+  const words = [...greeting.querySelectorAll('.greeting-word')];
+  words.forEach((word) => {
+    const letters = [...word.textContent].map((char, i) => {
+      const letter = document.createElement('span');
+      letter.className = 'greeting-letter';
+      letter.style.setProperty('--i', i);
+      letter.textContent = char;
+      return letter;
+    });
+    word.replaceChildren(...letters);
+  });
+  const flags = [...section.querySelectorAll('.greeting-flag')];
+  const language = section.querySelector('.greeting-language');
+  let current = -1;
+  let running = false;
+  let hovered = false;
+  let pinned = false;
+  let composing = false;
+  let beat = 0;
+  let cueTimer = 0;
+
+  function show(index) {
+    words.forEach(word => word.classList.remove('is-past'));
+    words[current]?.classList.add('is-past');
+    words[current]?.classList.remove('is-current');
+    flags[current]?.classList.remove('is-current');
+    current = index;
+    words[current]?.classList.add('is-current');
+    flags[current]?.classList.add('is-current');
+    language.textContent = words[current]?.dataset.language || '';
+  }
+  const held = () => hovered || pinned || composing;
+  function sync() {
+    clearTimeout(beat);
+    beat = 0;
+    greeting.classList.toggle('is-paused', (hovered || pinned) && !composing && current >= 0);
+    greeting.setAttribute('aria-pressed', String(pinned));
+    greeting.setAttribute('aria-label', pinned ? 'Play the greetings' : 'Pause the greetings');
+    if (running && !held()) beat = setTimeout(next, BEAT);
+  }
+  function next() {
+    show((current + 1) % words.length);
+    sync();
+  }
+
+  // Composing holds the greeting on its word, out of reach, until it returns.
+  initConnectForm(section, {
+    onToggle(open) {
+      composing = open;
+      greeting.inert = open;
+      if (!reducedMotion.matches) sync();
+    }
+  });
+
+  if (reducedMotion.matches || !('IntersectionObserver' in window)) {
+    greeting.setAttribute('aria-label', 'Next greeting');
+    greeting.classList.add('is-paused');
+    show(Math.max(0, words.findIndex(word => word.lang === 'lg')));
+    greeting.addEventListener('click', () => show((current + 1) % words.length));
+    return;
+  }
+  section.classList.add('connect-motion');
+  greeting.addEventListener('pointerenter', (event) => {
+    if (event.pointerType === 'touch' || !finePointer.matches) return;
+    hovered = true;
+    sync();
+  });
+  greeting.addEventListener('pointerleave', () => {
+    hovered = false;
+    sync();
+  });
+  greeting.addEventListener('click', () => {
+    pinned = !pinned;
+    sync();
+  });
+  const enter = () => {
+    if (section.classList.contains('is-entered')) return;
+    section.classList.remove('is-leaving');
+    section.classList.add('is-entered');
+    running = true;
+    // The first word cuts in once the line it finishes has risen in.
+    clearTimeout(cueTimer);
+    cueTimer = setTimeout(() => {
+      show(0);
+      sync();
+    }, 420);
+  };
+  const leave = () => {
+    if (!section.classList.contains('is-entered')) return;
+    section.classList.remove('is-entered', 'is-leaving');
+    running = false;
+    pinned = false;
+    clearTimeout(cueTimer);
+    show(-1);
+    sync();
+  };
+  connectStage = { enter, leave };
+  new IntersectionObserver((entries) => {
+    const entry = entries[entries.length - 1];
+    if (entry.intersectionRatio >= .35) enter();
+    else if (!entry.isIntersecting) leave();
+  }, { threshold: [0, .35] }).observe(section);
+}
+
 function initAboutContent() {
   const about = document.querySelector('#about');
   const content = about?.querySelector('.about-content');
@@ -3452,7 +3716,9 @@ function initProjectsNav() {
   const aboutLink = about && nav?.querySelector('.section-nav-link[href$="#about"]');
   const projectsLink = nav?.querySelector('.section-nav-link[href="#projects"]');
   const skillsLink = nav?.querySelector('.section-nav-link[href="#skills"]');
+  const connectLink = nav?.querySelector('.section-nav-link[href="#connect"]');
   const skills = document.querySelector('.skills-main');
+  const connect = document.querySelector('.connect-main');
   // About joins Projects in after load, so this can be called a second time.
   if (!projectsLink || !runway || nav.dataset.tracked !== undefined) return;
   nav.dataset.tracked = '';
@@ -3495,11 +3761,13 @@ function initProjectsNav() {
     // About's underline can carry the fold's inline --pill, so it is hidden
     // outright while Projects or Skills is current.
     nav.classList.toggle('is-projects', Boolean(aboutLink) && link !== aboutLink);
-    // Projects and Skills turn by a cut, so the underline does not glide
-    // between them: it draws on under the one that landed, from the side it
-    // came from. The turn has already lifted it off the one it left.
-    if (link === skillsLink || from === skillsLink) {
-      if (!instant && !reducedMotion.matches) drawNavLine(link !== skillsLink);
+    // Projects, Skills and Let's connect turn by a cut, so the underline does
+    // not glide between them: it draws on under the one that landed, from the
+    // side it came from. The turn has already lifted it off the one it left.
+    const cutLinks = [skillsLink, connectLink].filter(Boolean);
+    if (cutLinks.includes(link) || cutLinks.includes(from)) {
+      const order = [projectsLink, skillsLink, connectLink];
+      if (!instant && !reducedMotion.matches) drawNavLine(order.indexOf(link) < order.indexOf(from));
       instant = true;
     }
     if (instant || reducedMotion.matches) {
@@ -3534,7 +3802,8 @@ function initProjectsNav() {
   function update(instant = false) {
     frameId = 0;
     const half = window.innerHeight / 2;
-    if (skillsLink && skills && skills.getBoundingClientRect().top < half) show(skillsLink, instant);
+    if (connectLink && connect && connect.getBoundingClientRect().top < half) show(connectLink, instant);
+    else if (skillsLink && skills && skills.getBoundingClientRect().top < half) show(skillsLink, instant);
     else if (!aboutLink || frame.getBoundingClientRect().top < half) show(projectsLink, instant);
     else show(aboutLink, instant);
   }
@@ -3912,6 +4181,7 @@ function initInsightsLeave() {
     ['.edu-section', el => el.classList.add('is-leaving')],
     ['.projects-main', () => root.classList.add('projects-leaving')],
     ['.craft-section', el => el.classList.add('is-leaving')],
+    ['.connect-section', el => el.classList.add('is-leaving')],
   ];
   const onScreen = () => {
     const middle = window.innerHeight / 2;
@@ -4709,6 +4979,8 @@ function initProjectsTrack() {
   const topbar = document.querySelector('.about-topbar');
   const skills = document.querySelector('.skills-main');
   const craft = skills?.querySelector('.craft-section');
+  const connect = document.querySelector('.connect-main');
+  const connectSection = connect?.querySelector('.connect-section');
   const phone = window.matchMedia('(max-width: 700px)');
   // Scroll pixels per pixel of horizontal travel.
   const PACE = 1.15;
@@ -4734,6 +5006,7 @@ function initProjectsTrack() {
     main.style.setProperty('--projects-top', `${barEnd + (phone.matches ? 0 : 12)}px`);
     // Skills rests with its top against the bar and fills the screen below it.
     skills?.style.setProperty('--skills-top', `${barEnd}px`);
+    connect?.style.setProperty('--skills-top', `${barEnd}px`);
     const viewWidth = viewport.clientWidth;
     const last = cards[cards.length - 1];
     // Travel ends with the last card centred, so every card has its turn.
@@ -4871,6 +5144,8 @@ function initProjectsTrack() {
   let turning = false;
   const skillsStop = () => Math.min(pageTop(skills) - geometry.barEnd, root.scrollHeight - window.innerHeight);
   const onSkills = () => skills.getBoundingClientRect().top < window.innerHeight / 2;
+  const connectStop = () => Math.min(pageTop(connect) - geometry.barEnd, root.scrollHeight - window.innerHeight);
+  const onConnect = () => Boolean(connect) && connect.getBoundingClientRect().top < window.innerHeight / 2;
   function cut(top, direction) {
     spendTurnMomentum(direction);
     window.scrollTo({ top, behavior: 'instant' });
@@ -4894,9 +5169,11 @@ function initProjectsTrack() {
   function turnToProjects(index) {
     if (turning || !geometry) return;
     turning = true;
-    const leave = !reducedMotion.matches && craft?.classList.contains('is-entered');
+    // The top bar can ask for Projects from Let's connect as well.
+    const from = onConnect() ? connectSection : craft;
+    const leave = !reducedMotion.matches && from?.classList.contains('is-entered');
     if (leave) {
-      craft.classList.add('is-leaving');
+      from.classList.add('is-leaving');
       root.classList.add('nav-line-leave', 'nav-line-back');
     }
     setTimeout(() => {
@@ -4909,8 +5186,51 @@ function initProjectsTrack() {
       }
       if (!reducedMotion.matches) main.classList.remove('projects-entered');
       craftStage.leave();
+      connectStage.leave();
       cut(cardStops()[index], -1);
       refresh();
+      root.classList.remove('nav-line-leave', 'nav-line-back');
+      syncProjectsNav();
+      turning = false;
+    }, leave ? 360 : 0);
+  }
+  // Let's connect follows Skills the same way: scrolling on from Skills
+  // plays its exit in place, its copy lifting with the page, cuts to Let's
+  // connect and lets it enter; scrolling up from Let's connect cuts back to
+  // Skills. The top bar's link can also ask for it from Projects.
+  function turnToConnect() {
+    if (turning || !connect || onConnect()) return;
+    turning = true;
+    const fromSkills = onSkills();
+    const leave = !reducedMotion.matches && (fromSkills ? craft?.classList.contains('is-entered') : main.classList.contains('projects-entered'));
+    if (leave) {
+      if (fromSkills) craft.classList.add('is-leaving', 'is-leaving-down');
+      else root.classList.add('projects-leaving');
+      root.classList.add('nav-line-leave');
+    }
+    setTimeout(() => {
+      if (!fromSkills && !reducedMotion.matches) main.classList.remove('projects-entered');
+      craftStage.leave();
+      craft?.classList.remove('is-leaving-down');
+      cut(connectStop(), 1);
+      connectStage.enter();
+      root.classList.remove('projects-leaving', 'nav-line-leave');
+      syncProjectsNav();
+      turning = false;
+    }, leave ? 380 : 0);
+  }
+  function turnConnectToSkills() {
+    if (turning || !connect) return;
+    turning = true;
+    const leave = !reducedMotion.matches && connectSection.classList.contains('is-entered');
+    if (leave) {
+      connectSection.classList.add('is-leaving');
+      root.classList.add('nav-line-leave', 'nav-line-back');
+    }
+    setTimeout(() => {
+      connectStage.leave();
+      cut(skillsStop(), -1);
+      craftStage.enter();
       root.classList.remove('nav-line-leave', 'nav-line-back');
       syncProjectsNav();
       turning = false;
@@ -4932,7 +5252,8 @@ function initProjectsTrack() {
       link.addEventListener('click', (event) => {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        turnToSkills();
+        if (onConnect()) turnConnectToSkills();
+        else turnToSkills();
       });
     });
     document.querySelectorAll('.section-nav-link[href="#projects"]').forEach((link) => {
@@ -4952,6 +5273,24 @@ function initProjectsTrack() {
   };
   sectionLandings['#projects'] = () => land(() => cardStops()[0]);
   if (skills) sectionLandings['#skills'] = () => land(skillsStop);
+  if (connect) sectionLandings['#connect'] = () => land(connectStop);
+  if (skills && connect) {
+    holdPageTurns((direction) => {
+      if (direction < 0 || turning || !geometry) return;
+      if (Math.abs(window.scrollY - skillsStop()) <= 2) return 'connect';
+    }, turnToConnect, { fresh: true });
+    holdPageTurns((direction) => {
+      if (direction > 0 || turning || !geometry) return;
+      if (Math.abs(window.scrollY - connectStop()) <= 2) return 'skills';
+    }, turnConnectToSkills, { fresh: true });
+    document.querySelectorAll('.section-nav-link[href="#connect"]').forEach((link) => {
+      link.addEventListener('click', (event) => {
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        turnToConnect();
+      });
+    });
+  }
   // Keyboard focus lands on the card at once; the track follows without a glide.
   track.addEventListener('focusin', (event) => {
     const index = cards.indexOf(event.target.closest('[data-project]'));
@@ -4988,6 +5327,7 @@ initAboutPages();
 initProjectsTrack();
 initProjectsNav();
 initCraft();
+initConnect();
 // A section's own address lands on it now. Until the page has loaded, the
 // browser can still jump to the section's element, whose top is not where the
 // section rests, and webfonts can still move the layout. Any scroll the reader

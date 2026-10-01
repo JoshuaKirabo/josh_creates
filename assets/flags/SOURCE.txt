@@ -1,0 +1,4 @@
+Flags (ug, us, gb-eng, ke, zm, rw, in, mx, jp, kh, fj): flag-icons 7.2.3, 4x3 set
+(https://github.com/lipis/flag-icons), MIT licence, see LICENSE-flag-icons.txt.
+Every flag is cropped by the set's authors to the same 4:3 frame, so they
+share one size on the page.

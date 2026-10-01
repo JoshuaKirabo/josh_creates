@@ -40,7 +40,16 @@
   font-weight: 700;
   font-display: swap;
 }
+/* Only Let's connect's "Hola" uses it. */
+@font-face {
+  font-family: 'Unbounded';
+  src: url('assets/fonts/unbounded-latin-900-normal.woff') format('woff');
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+}
 :root {
+  --error: #ff8f7f;
   --background: #060606;
   --surface: #0a0a0a;
   --muted: rgba(255, 255, 255, .65);
@@ -1305,10 +1314,10 @@ html.about-paging { scroll-snap-type: y mandatory; }
    Nothing follows it, so it carries the room above the footer as its own
    padding; without it the page ends short and Skills can't scroll up to
    the bar. */
-.skills-main { display: flex; flex-direction: column; min-height: calc(100svh - var(--skills-top, 0px)); padding-bottom: calc(var(--footer-bottom) + 4rem); scroll-margin-top: var(--skills-top, 0px); }
+.skills-main { display: flex; flex-direction: column; min-height: calc(100svh - var(--skills-top, 0px)); padding-bottom: calc(var(--footer-bottom) + 48px); scroll-margin-top: var(--skills-top, 0px); }
 html.projects-snapping .skills-main { scroll-snap-align: start; }
 .skills-main:focus { outline: none; }
-.craft-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 48px 24px; }
+.craft-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 24px; }
 .craft-section .about-block-head { margin-bottom: 24px; }
 .craft-section .about-heading { font-family: 'Google Sans', Arial, sans-serif; font-size: min(clamp(2.1rem, 4.6vw, 4.25rem), max(2.1rem, 7svh)); }
 .craft { --craft-line: rgba(255, 255, 255, .2); position: relative; display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, 260px); grid-template-rows: repeat(3, 155px); color: var(--white); }
@@ -1443,6 +1452,222 @@ html.projects-snapping .skills-main { scroll-snap-align: start; }
    with the page, as Education's does when it turns up. */
 .craft-motion.is-entered.is-leaving .craft-copy { opacity: 0; transform: translateY(10px); transition: opacity .2s var(--ease-out), transform .2s var(--ease-out); }
 .craft-motion.is-entered.is-leaving .craft-field { opacity: 0; transition: opacity .26s var(--ease-out); }
+/* Turning on down to Let's connect, the copy lifts with the page instead. */
+.craft-motion.is-entered.is-leaving.is-leaving-down .craft-copy { transform: translateY(-10px); }
+
+/* Skills' own footer sits on the foot of its screen, on the same insets as
+   the page's footer, which now follows Let's connect. */
+.skills-main { position: relative; }
+.about-footer-skills { left: calc(max(var(--edge), env(safe-area-inset-left)) - var(--page-gutter)); right: calc(max(var(--edge), env(safe-area-inset-right)) - var(--page-gutter)); }
+/* Skills ends just above Let's connect's screen, where the footer would show
+   through the top bar, so it is shown only while Skills is the page. */
+.about-footer-skills { transition: opacity .4s var(--ease-out); }
+.skills-main:has(.craft-motion:not(.is-entered)) .about-footer-skills { opacity: 0; transition-duration: 0s; }
+
+/* Let's connect follows Skills and rests the same way: against the bar, one
+   screen tall, its greeting centred in the room above the footer. */
+.connect-main { display: flex; flex-direction: column; min-height: calc(100svh - var(--skills-top, 0px)); padding-bottom: calc(var(--footer-bottom) + 48px); scroll-margin-top: var(--skills-top, 0px); }
+html.projects-snapping .connect-main { scroll-snap-align: start; }
+.connect-main:focus { outline: none; }
+.connect-section { display: flex; flex: 1 0 auto; flex-direction: column; justify-content: center; padding-block: 24px; }
+.connect-section .about-block-head { gap: 32px; margin-bottom: 0; }
+.connect-title { margin: 0; font-weight: 400; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* The greeting is the heading. Every word shares one grid cell on a common
+   baseline, so the cell is always the widest and tallest of them and a cut
+   never moves anything else; only the current word is visible. Each word has
+   its own face. A change runs letter by letter: the old word's letters lift
+   and fade in quick succession while the new word's rise into place a beat
+   behind them, a little slower, so the cell is never empty. Each letter
+   sharpens out of a slight blur as it lands and softens into one as it goes. Offsets are in em
+   so every face moves in proportion to its size. Nothing clips the letters,
+   so descenders survive; the fade does the hiding. */
+.greeting { --greeting-scale: 1.2; display: flex; margin: 0; padding: 0; border: 0; background: none; color: var(--white); font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.greeting:focus-visible { outline: 2px solid currentColor; outline-offset: 12px; }
+.greeting-words { display: grid; align-items: baseline; }
+.greeting-word { grid-area: 1 / 1; justify-self: start; line-height: 1; white-space: nowrap; visibility: hidden; transition: visibility 0s linear 400ms; }
+.greeting-word.is-current { visibility: visible; transition: visibility 0s; }
+.greeting-letter { display: inline-block; opacity: 0; transform: translateY(.35em); filter: blur(6px); transition: opacity 240ms var(--ease-in-out), transform 240ms var(--ease-in-out), filter 240ms var(--ease-in-out); transition-delay: calc(var(--i) * 14ms); }
+.is-past > .greeting-letter { transform: translateY(-.35em); }
+.is-current > .greeting-letter { opacity: 1; transform: none; filter: none; transition-duration: 460ms; transition-timing-function: var(--ease-out); transition-delay: calc(80ms + var(--i) * 22ms); }
+.greeting-word[data-face="hello"] { font-family: 'Instrument Serif', Georgia, serif; font-size: calc(280px * var(--greeting-scale)); letter-spacing: -.02em; }
+.greeting-word[data-face="wassup"] { color: transparent; -webkit-text-stroke: .018em var(--white); font-family: 'Unbounded Outline', Arial, sans-serif; font-size: calc(180px * var(--greeting-scale)); font-weight: 700; letter-spacing: -.04em; text-transform: uppercase; }
+.greeting-word[data-face="gyebale"] { font-family: 'Bounded', Arial, sans-serif; font-size: calc(190px * var(--greeting-scale)); font-weight: 200; letter-spacing: -.06em; text-transform: uppercase; }
+.greeting-word[data-face="bwanji"] { font-family: 'Bounded', Arial, sans-serif; font-size: calc(220px * var(--greeting-scale)); font-weight: 800; letter-spacing: -.035em; }
+.greeting-word[data-face="jambo"] { font-family: 'Haval', Arial, sans-serif; font-size: calc(200px * var(--greeting-scale)); letter-spacing: -.02em; }
+.greeting-word[data-face="amakuru"] { font-family: 'Geist Mono', monospace; font-size: calc(200px * var(--greeting-scale)); font-weight: 300; letter-spacing: -.04em; }
+.greeting-word[data-face="namaste"] { font-family: 'Google Sans', Arial, sans-serif; font-size: calc(220px * var(--greeting-scale)); letter-spacing: -.04em; }
+.greeting-word[data-face="hola"] { font-family: 'Unbounded', Arial, sans-serif; font-size: calc(200px * var(--greeting-scale)); font-weight: 900; letter-spacing: -.04em; }
+.greeting-word[data-face="konnichiwa"] { font-family: 'Instrument Serif', Georgia, serif; font-size: calc(240px * var(--greeting-scale)); letter-spacing: -.02em; }
+.greeting-word[data-face="suosdey"] { font-family: 'Geist Mono', monospace; font-size: calc(190px * var(--greeting-scale)); font-weight: 300; letter-spacing: -.04em; text-transform: uppercase; }
+.greeting-word[data-face="bula"] { font-family: 'Haval', Arial, sans-serif; font-size: calc(220px * var(--greeting-scale)); letter-spacing: -.02em; text-transform: uppercase; }
+/* Optical left edge: each face's first letter carries its own side bearing,
+   which at display size reads as an indent under the lead line. Each word is
+   pulled left by that letter's measured bearing (from the font files: the
+   glyph's xMin), so the ink, the lead line and the button share one edge.
+   WASSUP's outline stroke already reaches past its bearing, so it needs
+   almost none. */
+.greeting-word { margin-left: calc(var(--ink-start, 0) * -1em); }
+.greeting-word[data-face="gyebale"] { --ink-start: .052; }
+.greeting-word[data-face="wassup"] { --ink-start: .001; }
+.greeting-word[data-face="hello"] { --ink-start: .019; }
+.greeting-word[data-face="jambo"] { --ink-start: .06; }
+.greeting-word[data-face="bwanji"] { --ink-start: .0436; }
+.greeting-word[data-face="amakuru"] { --ink-start: .0573; }
+.greeting-word[data-face="namaste"] { --ink-start: .079; }
+.greeting-word[data-face="hola"] { --ink-start: .06; }
+.greeting-word[data-face="konnichiwa"] { --ink-start: .019; }
+.greeting-word[data-face="suosdey"] { --ink-start: .0487; }
+.greeting-word[data-face="bula"] { --ink-start: .08; }
+/* The word's flag changes in place at the end of the eyebrow's rule, all of
+   them stacked in one cell like the words. Held on a word, the language is
+   named beside it, in the eyebrow's own voice. */
+.greeting-mark { display: flex; align-items: center; gap: 14px; }
+.greeting-flags { display: grid; place-items: center; width: 32px; height: 24px; }
+.greeting-flag { grid-area: 1 / 1; width: 32px; height: 24px; visibility: hidden; opacity: 0; transform: translateY(4px); box-shadow: 0 0 0 1px rgba(255, 255, 255, .18); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0s linear 200ms; }
+.greeting-flag.is-current { visibility: visible; opacity: 1; transform: none; transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out), visibility 0s; }
+/* Reduced motion keeps the change soft: opacity only, nothing moves. */
+@media (prefers-reduced-motion: reduce) {
+  .greeting-letter, .greeting-flag { transform: none !important; filter: none !important; transition: opacity 200ms var(--ease-out), visibility 0s linear 200ms !important; }
+  .greeting-word { transition: visibility 0s linear 200ms !important; }
+  .greeting-word.is-current, .greeting-flag.is-current { transition: opacity 200ms var(--ease-out), visibility 0s !important; }
+}
+.greeting-language { color: var(--white); font-size: 11px; opacity: 0; white-space: nowrap; transition: opacity var(--press-out) var(--ease-out); }
+.connect-section:has(.greeting.is-paused) .greeting-language { opacity: .7; }
+@media (max-width: 1100px) { .greeting { --greeting-scale: .84; } }
+@media (max-width: 700px) { .greeting { --greeting-scale: .48; } }
+/* Let's connect arrives as Skills does: the rule draws and the eyebrow fades
+   in, then the greeting cuts in on its first word. Leaving, the greeting cuts
+   out at once and the rule withdraws. Script adds .connect-motion only when
+   motion is allowed. */
+.connect-motion:not(.is-entered) .about-rule::after { transform: scaleX(0); }
+.connect-motion:not(.is-entered) .about-eyebrow { opacity: 0; }
+.connect-motion.is-entered .about-rule::after { transition: transform 1.2s var(--ease-out) .1s; }
+.connect-motion.is-entered:not(.is-leaving) .about-eyebrow { transition: opacity .4s var(--ease-out); }
+.connect-motion.is-entered.is-leaving .about-rule::after { transform: scaleX(0); transition: transform .28s var(--ease-out) .06s; }
+.connect-motion.is-entered.is-leaving .about-eyebrow { opacity: 0; transition: opacity .25s var(--ease-out) .06s; }
+.connect-motion.is-leaving .greeting { opacity: 0; }
+.connect-motion:not(.is-entered) :is(.connect-compose, .connect-elsewhere) { opacity: 0; }
+.connect-motion.is-entered:not(.is-leaving) :is(.connect-compose, .connect-elsewhere) { transition: opacity .5s var(--ease-out) .35s; }
+.connect-motion.is-entered.is-leaving :is(.connect-compose, .connect-elsewhere) { opacity: 0; transition: opacity .2s var(--ease-out); }
+
+/* The greeting and the contact rail share a row: the rail keeps to the right
+   edge, centred on the greeting, so the longest word still clears it. */
+.connect-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 48px; }
+/* At rest the stage shows the greeting with its answer beneath it on the
+   word's left edge: the message button, long and set in the serif the form's
+   fields use, so it already speaks like the form it opens. */
+.connect-hello { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; }
+/* The line the greeting finishes: it reads straight into the word, so it sits
+   close above it in the softer serif voice the rail's caption uses. */
+/* Its D's side bearing (.019em) is pulled in the same way. */
+.connect-lead { margin: 0 0 -20px -.019em; color: rgba(255, 255, 255, .62); font-family: 'Instrument Serif', Georgia, serif; font-size: 36px; line-height: 1.2; letter-spacing: -.01em; }
+.connect-section.is-composing .connect-lead { visibility: hidden; }
+/* On arrival the line rises in word by word, 45ms apart, before the greeting
+   cuts in to finish it; leaving, the words lift out quickly. Script splits the
+   words and adds .connect-motion only when motion is allowed. */
+.connect-lead-word { display: inline-block; }
+.connect-motion .connect-lead-word { opacity: 0; transform: translateY(.4em); }
+.connect-motion.is-entered:not(.is-leaving) .connect-lead-word { opacity: 1; transform: none; transition: opacity 460ms var(--ease-out) calc(var(--i, 0) * 45ms), transform 460ms var(--ease-out) calc(var(--i, 0) * 45ms); }
+.connect-motion.is-entered.is-leaving .connect-lead-word { opacity: 0; transform: translateY(-.25em); transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.connect-compose { flex: none; width: 400px; min-height: 64px; border: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 26px; font-weight: 400; letter-spacing: -.005em; cursor: pointer; }
+.connect-compose::before { width: 60px; }
+.connect-compose .button-label { padding-left: 62px; line-height: 1.2; }
+.connect-compose .button-arrow { width: 60px; }
+.connect-compose .button-arrow svg { width: 20px; height: 20px; }
+.connect-compose:focus-visible .button-label { padding-right: 52px; }
+.connect-compose:focus-visible .button-arrow { left: calc(100% - 62px); }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .connect-compose:hover .button-label { padding-right: 52px; }
+  :root:not(.touch-input) .connect-compose:hover .button-arrow { left: calc(100% - 62px); }
+}
+.connect-section.is-composing .connect-compose { visibility: hidden; }
+/* The caption sits over the marks, right-aligned to them, and takes no width
+   of its own, so the rail stays as narrow as its marks and the longest word
+   still clears it. */
+.connect-elsewhere { position: relative; }
+.connect-elsewhere-caption { position: absolute; right: 8px; bottom: calc(100% + 14px); margin: 0; color: rgba(255, 255, 255, .6); font-family: 'Instrument Serif', Georgia, serif; font-size: 20px; line-height: 1.15; letter-spacing: -.005em; text-align: right; white-space: nowrap; }
+/* Four marks, the same ones Home uses, larger. Under a fine pointer or
+   keyboard focus a mark slides left by its handle's width (script measures it
+   into --shift) and the handle wipes in behind it, on its right, ending on the
+   rail's edge. The other marks step back. Touch relies on the marks
+   and their accessible names. */
+.connect-rail { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.connect-rail-link { position: relative; display: grid; place-items: center; width: 56px; height: 56px; color: var(--white); touch-action: manipulation; }
+.connect-rail-icon { width: 28px; height: 28px; opacity: .7; overflow: visible; transition: opacity .2s var(--ease-out), transform var(--press-out) var(--ease-out), translate .32s var(--ease-out); }
+.connect-rail-name { position: absolute; right: 0; top: 50%; color: var(--white); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .14em; line-height: 1; text-transform: uppercase; white-space: nowrap; opacity: 0; clip-path: inset(0 100% 0 0); transform: translateY(-50%); pointer-events: none; transition: clip-path .16s var(--ease-out), opacity .16s var(--ease-out); }
+.connect-rail-link:focus-visible .connect-rail-name { opacity: 1; clip-path: inset(0); transition: clip-path .24s var(--ease-out), opacity .12s var(--ease-out); }
+/* Real handles keep their own capitals. */
+.connect-handle .connect-rail-name { font-size: 13px; letter-spacing: .02em; text-transform: none; }
+.connect-rail-link:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+.connect-rail-link:focus-visible .connect-rail-icon { opacity: 1; translate: calc(var(--shift, 0px) * -1) 0; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .connect-rail:has(.connect-rail-link:hover) .connect-rail-icon { opacity: .35; }
+  :root:not(.touch-input) .connect-rail:has(.connect-rail-link:hover) .connect-rail-link:hover .connect-rail-icon { opacity: 1; }
+  :root:not(.touch-input) .connect-rail-link:hover .connect-rail-icon { translate: calc(var(--shift, 0px) * -1) 0; }
+  :root:not(.touch-input) .connect-rail-link:hover .connect-rail-name { opacity: 1; clip-path: inset(0); transition: clip-path .24s var(--ease-out), opacity .12s var(--ease-out); }
+  :root:not(.touch-input) .connect-rail-link:active .connect-rail-icon { transform: scale(.94); transition-duration: var(--press-in); }
+}
+.connect-rail-link.is-touch-pressed .connect-rail-icon { opacity: 1; transform: scale(.94); transition-duration: var(--press-in); }
+.connect-label { margin: 0; color: rgba(255, 255, 255, .55); font-family: 'Geist Mono', monospace; font-size: 11px; font-weight: 300; letter-spacing: .18em; line-height: 1.4; text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) {
+  .connect-rail-name, .connect-rail-link:is(:hover, :focus-visible) .connect-rail-name { clip-path: none !important; transition: opacity .15s var(--ease-out) !important; }
+  .connect-rail-link:active .connect-rail-icon { transform: none !important; }
+  .connect-rail-icon { transition: opacity .2s var(--ease-out) !important; }
+  .connect-rail-link.is-touch-pressed .connect-rail-icon { transform: none; }
+}
+
+/* The message form shares the greeting's cell. Opening it cuts the greeting
+   (and its flag) out and lets the fields rise in one after another, each
+   hairline drawing on from the left; closing cuts the greeting back in on
+   the word it left. Fields are large serif text on hairlines, labelled in the
+   page's own label voice. */
+.connect-stage { display: grid; }
+.connect-stage > * { grid-area: 1 / 1; min-width: 0; }
+.connect-form { display: flex; flex-direction: column; justify-content: center; gap: 20px; visibility: hidden; }
+.connect-section.is-composing .connect-form { visibility: visible; }
+.connect-section.is-composing :is(.greeting-word.is-current, .greeting-flag.is-current) { visibility: hidden; }
+.connect-section.is-composing .greeting-language { opacity: 0; }
+.connect-botcheck { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.connect-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 40px; }
+.connect-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.connect-field-message { grid-column: 1 / -1; }
+.connect-input { width: 100%; min-height: 48px; margin: 0; padding: 4px 0 8px; border: 0; border-radius: 0; background: linear-gradient(var(--white), var(--white)) 0 100% / 0 2px no-repeat; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .28); color: var(--white); font-family: 'Instrument Serif', Georgia, serif; font-size: 30px; line-height: 1.2; letter-spacing: -.01em; caret-color: var(--white); transition: background-size .45s var(--ease-out); }
+textarea.connect-input { display: block; resize: none; }
+.connect-input:focus { outline: none; background-size: 100% 2px; }
+.connect-input[aria-invalid="true"] { box-shadow: inset 0 -1px 0 var(--error); }
+.connect-error { min-height: 16px; margin: 0; color: var(--error); font-family: 'Google Sans', Arial, sans-serif; font-size: 13px; line-height: 1.25; }
+.connect-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+.connect-form-status { margin: 0 auto 0 0; color: var(--error); font-family: 'Google Sans', Arial, sans-serif; font-size: 15px; line-height: 1.35; }
+.connect-cancel { min-height: 44px; padding: 0 4px; border: 0; background: none; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, sans-serif; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; touch-action: manipulation; transition: color var(--press-out) var(--ease-out); }
+.connect-cancel:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.connect-send { border: 0; cursor: pointer; }
+.connect-send[aria-busy="true"] { opacity: .6; cursor: progress; }
+/* Sent, the fields give way to one line in the display serif. */
+.connect-sent { display: none; flex-direction: column; align-items: flex-start; gap: 12px; }
+.connect-sent:focus { outline: none; }
+.connect-form.is-sent > :not(.connect-sent) { display: none; }
+.connect-form.is-sent .connect-sent { display: flex; }
+.connect-sent-title { margin: 0; font-family: 'Instrument Serif', Georgia, serif; font-size: 96px; line-height: 1; letter-spacing: -.02em; }
+.connect-sent-text { margin: 0; color: rgba(255, 255, 255, .7); font-family: 'Google Sans', Arial, sans-serif; font-size: 20px; }
+@media (hover: hover) and (pointer: fine) {
+  :root:not(.touch-input) .connect-cancel:hover { color: var(--white); }
+}
+.connect-motion .connect-form :is(.connect-field, .connect-form-actions) { opacity: 0; transform: translateY(14px); }
+.connect-motion .connect-form .connect-input { background-size: 0 2px; }
+.connect-motion.is-composing .connect-form :is(.connect-field, .connect-form-actions) { opacity: 1; transform: none; transition: opacity .45s var(--ease-out) calc(var(--i, 0) * 50ms), transform .45s var(--ease-out) calc(var(--i, 0) * 50ms); }
+.connect-motion.is-composing .connect-form .connect-input:focus { background-size: 100% 2px; }
+@media (max-width: 700px) {
+  .connect-body { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .connect-rail { flex-direction: row; margin-left: -14px; }
+  .connect-elsewhere-caption { position: static; margin-bottom: 4px; text-align: left; }
+  .connect-lead { font-size: 24px; margin-bottom: -16px; }
+  .connect-elsewhere-caption br { display: none; }
+  .connect-compose { width: 100%; }
+  .connect-fields { grid-template-columns: minmax(0, 1fr); }
+  .connect-sent-title { font-size: 56px; }
+}
 .craft-motion.is-entered.is-leaving .craft-meter { opacity: 0; transition: opacity .2s var(--ease-out); }
 /* Reduced motion lands on the finished state; the global rule already drops
    the transitions. */
