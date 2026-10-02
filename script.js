@@ -1333,6 +1333,7 @@ function startSite()
                 if(window.scrollY < boundary) window.scrollTo({ top: boundary, behavior: 'instant' });
                 paintImmediately();
               }
+
             if(landOnSection(location.hash)) return;
             navigate(pastFold() ? boundary : 0, true);
           }
@@ -1366,16 +1367,19 @@ function startSite()
         // Back/Forward within the page, so each entry keeps its own once the page
         // comes to rest, and again the moment a link is about to leave it.
         let saveId = 0;
+
         const savePosition = () =>
           {
             clearTimeout(saveId);
             if(history.state?.section) history.replaceState({ ...history.state, y: Math.round(window.scrollY) }, '');
           };
+
         window.addEventListener('scroll', () =>
           {
             clearTimeout(saveId);
             saveId = setTimeout(savePosition, 150);
           }, { passive: true });
+
         document.addEventListener('click', savePosition, true);
 
         // Paging, arrows, and space are the browser's own, and now scrub the fold
@@ -1386,6 +1390,7 @@ function startSite()
             stop();
             root.classList.add('section-scroll-keyboard');
           });
+
         document.addEventListener('pointerdown', event =>
           {
             // A new destination keeps the spring's velocity through the following click.
@@ -1393,14 +1398,18 @@ function startSite()
             if(event.pointerType !== 'touch' && !event.target.closest('[data-section-link]')) stop();
             root.classList.remove('section-scroll-keyboard');
           }, { capture: true, passive: true });
+
         window.addEventListener('scroll', schedulePaint, { passive: true });
         window.addEventListener('resize', measure, { passive: true });
+
         window.addEventListener('pagehide', () =>
           {
             stop();
             presentation.stop();
           });
+
         window.addEventListener('pageshow', measure);
+
         window.addEventListener('popstate', event =>
           {
             // Back/Forward restores the reader's exact position, including mid-fold or
@@ -1413,6 +1422,7 @@ function startSite()
             traversedHash = location.hash;
             stop();
             const { y } = event.state;
+
             if(Number.isFinite(y))
               {
                 // Past the fold, the snap stops are only where they rest once the fold
@@ -1427,12 +1437,14 @@ function startSite()
             document.title = sectionTitle();
             paintImmediately();
           });
+
         window.addEventListener('hashchange', event =>
           {
             const hash = new URL(event.newURL).hash;
             const restored = traversedHash === hash;
             traversedHash = null;
             followedHash = null;
+
             if(restored) return;
             // The browser's jump reaches the address tracker before this event, and it
             // can rename the address after whatever section that jump passed over.
@@ -1444,6 +1456,7 @@ function startSite()
             if(mobileMenu?.open) mobileMenu.addEventListener('close', restoreSection, { once: true });
             else restoreSection();
           });
+
         reducedMotion.addEventListener('change', () =>
           {
             measure();
@@ -1451,6 +1464,7 @@ function startSite()
             foldStale = true;
             schedulePaint();
           });
+
         // Both ends of the fold are text, so their boxes are only final once the
         // webfonts have replaced the fallbacks.
         document.fonts?.ready.then(() =>
@@ -1458,6 +1472,7 @@ function startSite()
             foldStale = true;
             schedulePaint();
           });
+
         root.classList.add('section-scroll-ready');
         if(!history.state) history.replaceState(sectionEntry, '');
         boundary = Math.max(1, foldDistance());
@@ -1484,6 +1499,7 @@ function startSite()
         syncProjectsNav();
         return true;
       }
+
     function holdLanding(hash)
       {
         const input = ['wheel', 'touchstart', 'keydown', 'pointerdown'];
@@ -1686,6 +1702,7 @@ function startSite()
         // runtime's render loop, so it is held here while the scene is stopped.
         let sceneTick = null;
         let heldTick = null;
+
         const sync = () =>
           {
             if(!app) return;
@@ -1855,6 +1872,25 @@ function startSite()
                 scene.play();
                 playing = true;
                 app = scene;
+                // The runtime builds most of its shaders on the first frame it really
+                // draws, and that used to be the frame About landed on: a few 80ms
+                // frames right in the middle of the entrance. So it draws here instead,
+                // behind Home with the scene still faded out, until its frames are
+                // cheap again. If the fold starts meanwhile, sync stops it as usual.
+                await new Promise(resolve =>
+                  {
+                    const started = performance.now();
+                    let last = started;
+                    let cheap = 0;
+                    const warm = (now) =>
+                      {
+                        cheap = now - last < 34 ? cheap + 1 : 0;
+                        last = now;
+                        if(playing === false || cheap >= 3 || now - started > 1500) resolve();
+                        else requestAnimationFrame(warm);
+                      };
+                    requestAnimationFrame(warm);
+                  });
                 canvas.classList.add('is-loaded');
                 sync();
               }
@@ -1885,9 +1921,11 @@ function startSite()
         else window.addEventListener('load', start, { once: true });
         if('IntersectionObserver' in window)
           {
-            new IntersectionObserver(([entry]) =>
+            // Chrome can hand over a stale entry ahead of the current one, so the
+            // last one is the one that counts.
+            new IntersectionObserver((entries) =>
               {
-                onScreen = entry.isIntersecting;
+                onScreen = entries.at(-1).isIntersecting;
                 sync();
               }).observe(canvas);
           }
@@ -2070,6 +2108,7 @@ function startSite()
                 const owner = solid((x, y, z, e) => Math.abs(z - cz) < depth / 2 - e && inside(x - cx, y - cy));
                 const xs = loops.flat().map(p => p[0]);
                 const ys = loops.flat().map(p => p[1]);
+
                 for(let x = Math.min(...xs) + gap / 2; x < Math.max(...xs); x += gap)
                   {
                     for(let y = Math.min(...ys) + gap / 2; y < Math.max(...ys); y += gap)
@@ -2079,6 +2118,7 @@ function startSite()
                         put(owner, cx + x, cy + y, cz - depth / 2, 0, 0, -1);
                       }
                   }
+
                 const rows = along(depth);
                 loops.forEach((loop) =>
                   {
@@ -2143,6 +2183,7 @@ function startSite()
       {
         const tag = goal[g + 6];
         let angle = 0, cx = 0, cy = 0, upright = false;
+
         if(name === 'automation' && tag >= 0)
           {
             [cx, cy] = CRAFT_GEARS[tag];
@@ -2238,11 +2279,13 @@ function startSite()
     function craftGlow(name, tag, beat, age)
       {
         if(tag < 0 || beat < 0) return 0;
+
         if(name === 'frontend')
           {
             // The clicked card flashes as the pointer lands and fades over 400ms.
             return tag === 2 && beat >= .12 && beat < .52 ? 1 - (beat - .12) / .4 : 0;
           }
+
         if(name === 'ml')
           {
             // Signals leave input nodes a moment apart and hop node to node along
@@ -2968,6 +3011,7 @@ function startSite()
                 alpha += glow * .3;
                 if(alpha < .04) continue;
                 const fill = paints[set ? shape : previous][lit ? 1 : 0];
+                
                 if(fill !== paint)
                   {
                     context.fillStyle = fill;
@@ -3211,7 +3255,9 @@ function startSite()
             points?.enter();
             return;
           }
+
         craft.classList.add('craft-motion');
+
         const enter = () =>
           {
             if(craft.classList.contains('is-entered')) return;
@@ -3219,12 +3265,14 @@ function startSite()
             craft.classList.add('is-entered');
             points?.enter();
           };
+
         const leave = () =>
           {
             if(!craft.classList.contains('is-entered')) return;
             craft.classList.remove('is-entered', 'is-leaving');
             points?.leave();
           };
+          
         // On Projects' last card Skills can sit just inside the screen's foot, so
         // the observer never sees it go. The turns set it directly at their cuts.
         craftStage = { enter, leave };
@@ -3313,6 +3361,7 @@ function startSite()
             form.inert = !open;
             compose.setAttribute('aria-expanded', String(open));
             onToggle(open);
+
             if(open)
               {
                 form.classList.remove('is-sent');
@@ -3439,6 +3488,7 @@ function startSite()
               });
             word.replaceChildren(...letters);
           });
+
         const flags = [...section.querySelectorAll('.greeting-flag')];
         const language = section.querySelector('.greeting-language');
         let current = -1;
@@ -3460,6 +3510,7 @@ function startSite()
             flags[current]?.classList.add('is-current');
             language.textContent = words[current]?.dataset.language || '';
           }
+
         const held = () => hovered || pinned || composing;
         function sync()
           {
@@ -3470,6 +3521,7 @@ function startSite()
             greeting.setAttribute('aria-label', pinned ? 'Play the greetings' : 'Pause the greetings');
             if(running && !held()) beat = setTimeout(next, BEAT);
           }
+          
         function next()
           {
             show((current + 1) % words.length);
@@ -3994,21 +4046,25 @@ function startSite()
           {
             if(focus) tabs[index].focus({ preventScroll: true });
             const card = owner[shown] === index && owner[shown + 1] === index ? shown + 1 : owner.indexOf(index);
+
             if(!coreJobStops.length)
               {
                 select(card);
                 return;
               }
+
             window.scrollTo({ top: coreJobStops[card], behavior: reducedMotion.matches ? 'auto' : 'smooth' });
           }
         function follow()
           {
             if(!coreJobStops.length) return;
             let nearest = 0;
+
             coreJobStops.forEach((top, i) =>
               {
                 if(Math.abs(top - window.scrollY) < Math.abs(coreJobStops[nearest] - window.scrollY)) nearest = i;
               });
+
             if(nearest === current) return;
             current = nearest;
             select(nearest);
@@ -4245,6 +4301,7 @@ function startSite()
             const stops = [0, aboutTop, coreTop, ...coreJobStops];
             // A Core taller than the screen also stops with its bottom edge in view.
             if(core.offsetHeight > window.innerHeight + 1 && !pinned) stops.push(coreTop + core.offsetHeight - window.innerHeight);
+
             if(education)
               {
                 let educationTop = aboutTop;
@@ -4254,6 +4311,7 @@ function startSite()
               }
             stops.push(end);
             const offsets = [...new Set(stops.map(Math.round))].filter(y => y >= 0 && y <= end);
+
             while(markers.length < offsets.length)
               {
                 const marker = document.createElement('span');
@@ -4262,6 +4320,7 @@ function startSite()
                 document.body.append(marker);
                 markers.push(marker);
               }
+
             markers.splice(offsets.length).forEach(marker => marker.remove());
             markers.forEach((marker, index) => { marker.style.top = `${offsets[index]}px`; });
             coreIndex?.dispatchEvent(new Event('core-stops'));
@@ -4293,6 +4352,7 @@ function startSite()
         const connectLink = nav?.querySelector('.section-nav-link[href="#connect"]');
         const skills = document.querySelector('.skills-main');
         const connect = document.querySelector('.connect-main');
+
         // About joins Projects in after load, so this can be called a second time.
         if(!projectsLink || !runway || nav.dataset.tracked !== undefined) return;
         nav.dataset.tracked = '';
@@ -4301,6 +4361,7 @@ function startSite()
         let glide = null;
         let glideY = 0;
         let frameId = 0;
+        
         // The rule's two ends ride one critically damped spring (x: left, y: right),
         // so a reversal mid-glide keeps its speed instead of restarting from rest.
         const spring = createSpring2D(.4, ({ x, y }, settled) =>
@@ -5739,6 +5800,8 @@ function startSite()
         let frameId = 0;
         let current = -1;
         const fills = cards.map(() => -1);
+        // Where the rail's line ends for each card, as a share of the rail.
+        let railStops = [];
 
         function measure()
           {
@@ -5766,12 +5829,36 @@ function startSite()
                 width: cards[0]?.offsetWidth || 1,
                 centers: cards.map((card) => card.offsetLeft + card.offsetWidth / 2)
               };
+            // Where the track rests for each card. The first ones can't reach the
+            // middle on a wide screen, so they rest at the start.
+            geometry.stops = geometry.centers.map(center => Math.min(travel, Math.max(0, center - viewWidth / 2)));
             // Markers sit in the runway where the page must stop for each card.
             const runwayTop = geometry.start + stickyTop;
             snaps.forEach((snap, index) =>
               {
                 snap.style.top = `${scrollFor(index) - runwayTop}px`;
               });
+            // The labels are spread out by their own widths, so the line has to stop
+            // under each one instead of moving in even steps. It reaches further into
+            // each label, from the first one's left edge to the last one's right edge.
+            const railWidth = rail.clientWidth || 1;
+            railStops = railLinks.map((link, index) =>
+              {
+                const along = railLinks.length > 1 ? index / (railLinks.length - 1) : 1;
+                return (link.offsetLeft + link.offsetWidth * along) / railWidth;
+              });
+          }
+
+        // Track position to the rail line's length, going card stop to card stop.
+        function railProgress(x)
+          {
+            const { travel, stops } = geometry;
+            if(!travel || railStops.length !== stops.length) return travel ? x / travel : 1;
+            let index = 0;
+            while(index < stops.length - 2 && x > stops[index + 1]) index++;
+            const span = stops[index + 1] - stops[index];
+            const t = span > 0 ? Math.min(1, Math.max(0, (x - stops[index]) / span)) : 1;
+            return railStops[index] + (railStops[index + 1] - railStops[index]) * t;
           }
 
         // Inside About the section is pinned for the fold, so its box is not where
@@ -5795,14 +5882,16 @@ function startSite()
 
         function paint(x)
           {
-            const { viewWidth, travel, width, centers } = geometry;
+            const { viewWidth, width, centers, stops } = geometry;
             track.style.transform = `translate3d(${-x}px, 0, 0)`;
-            rail.style.setProperty('--progress', travel ? (x / travel).toFixed(4) : '1');
+            rail.style.setProperty('--progress', railProgress(x).toFixed(4));
             let nearest = 0;
             centers.forEach((center, index) =>
               {
                 const offset = center - x - viewWidth / 2;
-                if(Math.abs(offset) < Math.abs(centers[nearest] - x - viewWidth / 2)) nearest = index;
+                // The current card is the one whose stop the track is closest to, so
+                // the first card still counts on a wide screen where it can't centre.
+                if(Math.abs(stops[index] - x) < Math.abs(stops[nearest] - x)) nearest = index;
                 // The name fills while its card travels in from the right and is full
                 // at centre; reversing empties it the same way.
                 const fill = Math.round(Math.min(1, Math.max(0, (width * .39 - offset) / (width * .39))) * 1000) / 1000;
@@ -5856,9 +5945,8 @@ function startSite()
         // Scroll position that brings card `index` to the column's centre.
         function scrollFor(index)
           {
-            const { viewWidth, travel, distance, start, centers } = geometry;
-            const x = Math.min(travel, Math.max(0, centers[index] - viewWidth / 2));
-            return start + (travel ? x / travel : 0) * distance;
+            const { travel, distance, start, stops } = geometry;
+            return start + (travel ? stops[index] / travel : 0) * distance;
           }
 
         railLinks.forEach((link, index) =>
@@ -6051,6 +6139,12 @@ function startSite()
             refresh();
           };
         sectionLandings['#projects'] = () => land(() => cardStops()[0]);
+        // A link to one project, like #project-5, opens on that card.
+        cards.forEach((card, index) =>
+          {
+            sectionLandings[`#${card.id}`] = () => land(() => cardStops()[index]);
+            sectionTitles[`#${card.id}`] = 'Projects';
+          });
         if(skills) sectionLandings['#skills'] = () => land(skillsStop);
         if(connect) sectionLandings['#connect'] = () => land(connectStop);
         if(skills && connect)
@@ -6085,8 +6179,19 @@ function startSite()
           });
 
         window.addEventListener('scroll', schedule, { passive: true });
-        new ResizeObserver(refresh).observe(frame);
-        window.addEventListener('resize', refresh, { passive: true });
+        // Resizing moves every card's stop, so a card the page was resting on
+        // stays put instead of the track landing somewhere between two cards.
+        function holdCard()
+          {
+            const resting = geometry ? cardStops().findIndex(stop => Math.abs(stop - window.scrollY) <= 2) : -1;
+            refresh();
+            if(resting < 0) return;
+            window.scrollTo({ top: cardStops()[resting], behavior: 'instant' });
+            refresh();
+          }
+
+        new ResizeObserver(holdCard).observe(frame);
+        window.addEventListener('resize', holdCard, { passive: true });
         phone.addEventListener('change', refresh);
         document.fonts?.ready.then(refresh);
         refresh();
@@ -6099,8 +6204,11 @@ function startSite()
           {
             // Below About, or with Skills after it, the entrance waits for the reader
             // and replays each time they come back to it, as About's own sections do.
-            new IntersectionObserver(([entry]) =>
+            // A tall screen can get a stale entry and the current one together, and
+            // going by the stale one left Projects blank.
+            new IntersectionObserver((entries) =>
               {
+                const entry = entries.at(-1);
                 if(!entry.isIntersecting) main.classList.remove('projects-entered');
                 else if(entry.intersectionRatio >= .35) main.classList.add('projects-entered');
               }, { threshold: [0, .35] }).observe(frame);

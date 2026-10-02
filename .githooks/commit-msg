@@ -1,0 +1,39 @@
+#!/bin/sh
+# Enforce: type(scope): Summary.
+# Example: feat(ui): Added a toggle.
+
+msg_file="$1"
+subject=$(sed -n '1p' "$msg_file" | tr -d '\r')
+
+# Allow merge / revert subjects git generates.
+case "$subject" in
+  Merge\ *|Revert\ *)
+    exit 0
+    ;;
+esac
+
+# Allow comment-only drafts (git opens editor with # lines).
+case "$subject" in
+  \#*)
+    exit 0
+    ;;
+esac
+
+pattern='^(feat|fix|docs|style|refactor|perf|test|chore)\([a-z0-9/-]+\): [A-Z].*\.$'
+
+if ! printf '%s\n' "$subject" | grep -Eq "$pattern"
+  then
+    echo "Invalid commit subject:" >&2
+    echo "  $subject" >&2
+    echo "" >&2
+    echo "Required format:" >&2
+    echo "  type(scope): Summary." >&2
+    echo "" >&2
+    echo "Examples:" >&2
+    echo "  feat(ui): Added a toggle." >&2
+    echo "  style(css): Reformatted styles and scripts." >&2
+    echo "  fix(scroll): Restore scroll position from history state." >&2
+    exit 1
+  fi
+
+exit 0
