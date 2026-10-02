@@ -6013,8 +6013,14 @@ html.projects-snapping .connect-main
    }
 
 /* The word's flag changes in place at the end of the eyebrow's rule, all of
-   them stacked in one cell like the words. Held on a word, the language is
-   named beside it, in the eyebrow's own voice. */
+   them stacked in one cell like the words. The cell is a fixed frame: its
+   hairline and tint never move or fade with the flags, so the rectangle
+   holds its place through every change, even before the first flag arrives.
+   The next flag wipes up over the last one inside it, on the letters' own
+   timing (80ms in, 460ms out), so they rise together and two flags never
+   show through each other. The last flag stays whole underneath until it is
+   covered. Held on a word, the language is named beside it, in the eyebrow's
+   own voice. */
 .greeting-mark
    {
       display: flex;
@@ -6024,36 +6030,52 @@ html.projects-snapping .connect-main
 
 .greeting-flags
    {
+      position: relative;
       display: grid;
-      place-items: center;
       width: 32px;
       height: 24px;
+      overflow: hidden;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, .06);
+      isolation: isolate;
+   }
+
+.greeting-flags::after
+   {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .18);
+      pointer-events: none;
    }
 
 .greeting-flag
    {
       grid-area: 1 / 1;
+      display: block;
       width: 32px;
       height: 24px;
+      z-index: 0;
       visibility: hidden;
-      opacity: 0;
-      transform: translateY(4px);
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, .18);
-      transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0s linear 200ms;
+      clip-path: inset(100% 0 0 0);
+      transition: clip-path 0s linear 600ms, visibility 0s linear 600ms;
    }
 
 .greeting-flag.is-current
    {
+      z-index: 1;
       visibility: visible;
-      opacity: 1;
-      transform: none;
-      transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out), visibility 0s;
+      clip-path: inset(0 0 0 0);
+      transition: clip-path 460ms var(--ease-out) 80ms, visibility 0s;
    }
 
-/* Reduced motion keeps the change soft: opacity only, nothing moves. */
+/* Reduced motion keeps the change soft: opacity only, nothing moves. The new
+   flag fades in over the last, which stays whole until it is covered. */
 @media (prefers-reduced-motion: reduce)
    {
-      .greeting-letter, .greeting-flag
+      .greeting-letter
          {
             transform: none !important;
             filter: none !important;
@@ -6065,8 +6087,21 @@ html.projects-snapping .connect-main
             transition: visibility 0s linear 200ms !important;
          }
 
-      .greeting-word.is-current, .greeting-flag.is-current
+      .greeting-word.is-current
          {
+            transition: opacity 200ms var(--ease-out), visibility 0s !important;
+         }
+
+      .greeting-flag
+         {
+            clip-path: none !important;
+            opacity: 0;
+            transition: opacity 0s linear 200ms, visibility 0s linear 200ms !important;
+         }
+
+      .greeting-flag.is-current
+         {
+            opacity: 1;
             transition: opacity 200ms var(--ease-out), visibility 0s !important;
          }
    }
