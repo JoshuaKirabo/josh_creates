@@ -38,13 +38,11 @@
   <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
   <script>
     // Hide only when the browser can run the intro; otherwise show the page normally.
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches && !location.hash &&
-        typeof Element.prototype.animate === 'function') {
-      document.documentElement.classList.add('intro-pending', 'socials-pending');
-      window.introFallback = setTimeout(() => {
-        document.documentElement.classList.remove('intro-pending', 'socials-pending');
-      }, 8000);
-    }
+    if(!matchMedia('(prefers-reduced-motion: reduce)').matches && !location.hash && typeof Element.prototype.animate === 'function')
+      {
+        document.documentElement.classList.add('intro-pending', 'socials-pending');
+        window.introFallback = setTimeout(() => document.documentElement.classList.remove('intro-pending', 'socials-pending'), 8000);
+      }
   </script>
   <link rel="preload" href="assets/fonts/google-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/bounded-variable.woff2" as="font" type="font/woff2" crossorigin>
