@@ -349,7 +349,13 @@ function startSite()
         // way toward the pointer. Without it every page opened on a new sky that
         // stood still and then slowly got going.
         let carried = null;
-        try { carried = JSON.parse(sessionStorage.getItem('grain-state')); } catch {}
+        try
+          {
+            carried = JSON.parse(sessionStorage.getItem('grain-state'));
+          }
+        catch
+          {
+          }
         // Only a page turn carries the motion on; the same sky is kept regardless.
         const turned = !!carried && Date.now() - carried.at < 3000;
         const layers = [null, ...drifts].map((drift, index) =>
@@ -439,8 +445,7 @@ function startSite()
             const nextWidth = container.clientWidth;
             // Reserve the touch screen's full height so Safari's toolbar does not rebuild
             // the grain as it expands and collapses. The container clips the spare area.
-            const nextHeight = nextHighDetail ? container.clientHeight :
-              Math.max(container.clientHeight, window.screen?.height || 0);
+            const nextHeight = nextHighDetail ? container.clientHeight : Math.max(container.clientHeight, window.screen?.height || 0);
             if(width === nextWidth && height === nextHeight && highDetail === nextHighDetail) return;
             width = nextWidth;
             height = nextHeight;
@@ -525,7 +530,9 @@ function startSite()
                     y: shown.y
                   }));
               }
-            catch {}
+            catch
+              {
+              }
           });
 
         if('ResizeObserver' in window) new ResizeObserver(resize).observe(container);
@@ -597,10 +604,8 @@ function startSite()
     function syncAmbientMotion()
       {
         // The star field is fixed behind both sections, so it keeps drifting on About.
-        const playing = pageIsActive && !document.hidden && !reducedMotion.matches &&
-          !increasedContrast.matches && starsReady;
-        const pointerActive = playing && finePointer.matches &&
-          !document.documentElement.classList.contains('intro-pending');
+        const playing = pageIsActive && !document.hidden && !reducedMotion.matches && !increasedContrast.matches && starsReady;
+        const pointerActive = playing && finePointer.matches && !document.documentElement.classList.contains('intro-pending');
         backdrop.dataset.ambientMotion = playing ? 'playing' : 'paused';
         grainParticles.setPlaying(playing);
         grainParticles.setPointerActive(pointerActive);
@@ -744,9 +749,7 @@ function startSite()
             const y = plan.fromY + (plan.toY - plan.fromY) * travel;
             // Solve the offset that puts the travelling centre exactly on the straight
             // line between its two rest positions, whatever the current scale is.
-            plan.mover.style.transform =
-              `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scale}px, ` +
-              `${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scale})`;
+            plan.mover.style.transform = `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scale}px, ${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scale})`;
             // Same threshold as hiding the hero, so the travelling copy is never
             // pulled off-screen a frame before the top bar mark is there.
             // Once both copies occupy the same position, blend their rasterization and
@@ -794,9 +797,7 @@ function startSite()
             const scaleX = scale * (1 - .9 * collapse);
             const x = plan.fromX + (plan.toX - plan.fromX) * travel;
             const y = plan.fromY + (plan.toY - plan.fromY) * travel;
-            plan.mover.style.transform =
-              `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scaleX}px, ` +
-              `${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scaleX}, ${scale})`;
+            plan.mover.style.transform = `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scaleX}px, ${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scaleX}, ${scale})`;
             plan.mover.style.opacity = String(1 - collapse);
             // Both lines of a role share one icon; only the trailing one drives it,
             // so the strokes finish drawing as the last word goes.
@@ -858,8 +859,7 @@ function startSite()
                 const label = link.querySelector?.('.nav-label');
                 if(!target || !label) return;
                 const landing = target.querySelector?.('.nav-label') || target.querySelector?.('span') || target;
-                const plan = planFold(link, label, landing, landing,
-                  index * lead, index * lead + span);
+                const plan = planFold(link, label, landing, landing, index * lead, index * lead + span);
                 if(plan)
                   {
                     plan.icon = target.querySelector('svg');
@@ -917,10 +917,7 @@ function startSite()
         function releaseTransition()
           {
             clearFolds();
-            [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar,
-              aboutFooter, aboutSignature, footerRule, aboutContent,
-              ...dividers, ...headerRest, ...headingRest]
-              .forEach((element) =>
+            [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, aboutFooter, aboutSignature, footerRule, aboutContent, ...dividers, ...headerRest, ...headingRest].forEach((element) =>
                 {
                   if(!element) return;
                   element.style.transform = '';
@@ -1079,9 +1076,7 @@ function startSite()
             paintFrame = requestAnimationFrame(() =>
               {
                 paintFrame = null;
-                const direct = running || reducedMotion.matches || !finePointer.matches ||
-                  root.classList.contains('touch-input') || root.classList.contains('section-scroll-keyboard') ||
-                  window.scrollY > boundary + 2;
+                const direct = running || reducedMotion.matches || !finePointer.matches || root.classList.contains('touch-input') || root.classList.contains('section-scroll-keyboard') || window.scrollY > boundary + 2;
                 if(direct) paintImmediately();
                 else presentation.setTarget(0, Math.min(boundary, Math.max(0, window.scrollY)));
               });
@@ -1146,6 +1141,7 @@ function startSite()
                 complete();
                 return;
               }
+
             if(!running)
               {
                 if(paintFrame !== null) cancelAnimationFrame(paintFrame);
@@ -1155,6 +1151,7 @@ function startSite()
                 root.classList.add('section-folding');
                 foldingState = true;
               }
+
             running = true;
             spring.setTarget(0, to); // Reversals preserve the current position AND velocity.
           }
@@ -1163,23 +1160,22 @@ function startSite()
         // horizontal gestures, zoom and reduced motion remain native.
         function canOwnGesture(event, direction)
           {
-            if(reducedMotion.matches || mobileMenu?.open || event.defaultPrevented ||
-              event.ctrlKey || event.metaKey || event.shiftKey || event.altKey ||
-              event.cancelable === false) return false;
+            if(reducedMotion.matches || mobileMenu?.open || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.cancelable === false) return false;
+
             for(let node = event.target; node && node !== document.body && node !== root; node = node.parentElement)
               {
                 if(!(node instanceof Element)) continue;
-                if(/auto|scroll/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1 &&
-                  (direction < 0 ? node.scrollTop > 0 : node.scrollTop + node.clientHeight < node.scrollHeight - 1)) return false;
+
+                if(/auto|scroll/.test(getComputedStyle(node).overflowY) && node.scrollHeight > node.clientHeight + 1 && (direction < 0 ? node.scrollTop > 0 : node.scrollTop + node.clientHeight < node.scrollHeight - 1)) return false;
               }
+
             return true;
           }
 
         function canTurn(event, direction)
           {
             const y = window.scrollY;
-            return canOwnGesture(event, direction) && y <= boundary + 2 &&
-              (running || (direction > 0 ? y < boundary - 2 : y > 2));
+            return canOwnGesture(event, direction) && y <= boundary + 2 && (running || (direction > 0 ? y < boundary - 2 : y > 2));
           }
 
         let wheelTime = -Infinity;
@@ -1187,30 +1183,39 @@ function startSite()
         let wheelDistance = 0;
         let wheelOwned = false;
         let wheelTargetDirection = 0;
+
         window.addEventListener('wheel', event =>
           {
             if(Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+
             const direction = Math.sign(event.deltaY);
             const now = performance.now();
+
             if(now - wheelTime > 180)
               {
                 wheelOwned = false;
                 wheelDirection = 0;
                 wheelDistance = 0;
               }
+
             wheelTime = now;
+
             // Keep consuming the tail of an accepted flick after landing. Otherwise
             // trackpad momentum would scroll straight past the newly arrived section.
             const tail = wheelOwned && window.scrollY <= boundary + 2 && canOwnGesture(event, direction);
             if(!tail && !canTurn(event, direction)) return;
+
             event.preventDefault();
             root.classList.remove('section-scroll-keyboard');
+
             if(direction !== wheelDirection)
               {
                 wheelDirection = direction;
                 wheelDistance = 0;
               }
+
             wheelDistance += Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+
             if((!wheelOwned || direction !== wheelTargetDirection) && wheelDistance >= 12)
               {
                 wheelOwned = true;
@@ -1220,36 +1225,64 @@ function startSite()
           }, { passive: false });
 
         let touch = null;
+
         window.addEventListener('touchstart', event =>
           {
             touch = null;
-            if(event.touches.length !== 1) { stop(); return; }
+
+            if(event.touches.length !== 1)
+              {
+                stop();
+                return;
+              }
+
             const point = event.touches[0];
             touch = { id: point.identifier, x: point.clientX, y: point.clientY, direction: 0, targetDirection: 0, distance: 0, owned: false };
           }, { passive: true });
+
         window.addEventListener('touchmove', event =>
           {
-            if(!touch || event.touches.length !== 1) { touch = null; return; }
+            if(!touch || event.touches.length !== 1)
+              {
+                touch = null;
+                return;
+              }
+
             const point = event.touches[0];
+
             if(point.identifier !== touch.id) return;
+
             const dx = point.clientX - touch.x;
             const dy = touch.y - point.clientY;
+
             touch.x = point.clientX;
             touch.y = point.clientY;
+
             if(!dy) return;
-            if(Math.abs(dx) > Math.abs(dy)) { touch = null; return; }
+
+            if(Math.abs(dx) > Math.abs(dy))
+              {
+                touch = null;
+                return;
+              }
+
             const direction = Math.sign(dy);
+
             if(!canTurn(event, direction) && !(touch.owned && window.scrollY <= boundary + 2 && canOwnGesture(event, direction))) return;
+
             // Cancel the first vertical move so Safari never starts native momentum
             // alongside the section spring. A tap or pinch is never captured.
             event.preventDefault();
             root.classList.remove('section-scroll-keyboard');
+
             if(direction !== touch.direction)
               {
                 touch.direction = direction;
                 touch.distance = 0;
               }
+
             touch.distance += Math.abs(dy);
+
             if((!touch.owned || direction !== touch.targetDirection) && touch.distance >= 12)
               {
                 touch.owned = true;
@@ -1257,8 +1290,9 @@ function startSite()
                 navigate(direction > 0 ? boundary : 0);
               }
           }, { passive: false });
-        window.addEventListener('touchend', () => { touch = null; }, { passive: true });
-        window.addEventListener('touchcancel', () => { touch = null; }, { passive: true });
+
+        window.addEventListener('touchend', () => (touch = null), { passive: true });
+        window.addEventListener('touchcancel', () => (touch = null), { passive: true });
 
         function measure()
           {
@@ -1309,8 +1343,7 @@ function startSite()
             const link = event.target.closest('[data-section-link]');
             if(!link || !['#home', '#about'].includes(link.hash) || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
             const url = new URL(link.href, location.href);
-            if(url.origin !== location.origin || url.pathname !== location.pathname || link.hasAttribute('download') ||
-              (link.target && link.target !== '_self')) return;
+            if(url.origin !== location.origin || url.pathname !== location.pathname || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
             event.preventDefault();
             const to = link.hash === '#about' ? boundary : 0;
             // Keyboard links move focus immediately, without a full-screen animation.
@@ -1349,8 +1382,7 @@ function startSite()
         // like any other scroll. Only a spring already in flight has to yield.
         document.addEventListener('keydown', event =>
           {
-            if(mobileMenu?.open || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey ||
-              event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
+            if(mobileMenu?.open || event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || event.target.closest('input, textarea, select, [contenteditable="true"]')) return;
             stop();
             root.classList.add('section-scroll-keyboard');
           });
@@ -1363,7 +1395,11 @@ function startSite()
           }, { capture: true, passive: true });
         window.addEventListener('scroll', schedulePaint, { passive: true });
         window.addEventListener('resize', measure, { passive: true });
-        window.addEventListener('pagehide', () => { stop(); presentation.stop(); });
+        window.addEventListener('pagehide', () =>
+          {
+            stop();
+            presentation.stop();
+          });
         window.addEventListener('pageshow', measure);
         window.addEventListener('popstate', event =>
           {
@@ -1417,7 +1453,11 @@ function startSite()
           });
         // Both ends of the fold are text, so their boxes are only final once the
         // webfonts have replaced the fallbacks.
-        document.fonts?.ready.then(() => { foldStale = true; schedulePaint(); });
+        document.fonts?.ready.then(() =>
+          {
+            foldStale = true;
+            schedulePaint();
+          });
         root.classList.add('section-scroll-ready');
         if(!history.state) history.replaceState(sectionEntry, '');
         boundary = Math.max(1, foldDistance());
@@ -1465,7 +1505,11 @@ function startSite()
         window.addEventListener('scroll', land, { passive: true });
         input.forEach(type => window.addEventListener(type, release, { capture: true, passive: true }));
         document.fonts?.ready.then(land);
-        const settle = () => { land(); requestAnimationFrame(() => requestAnimationFrame(release)); };
+        const settle = () =>
+          {
+            land();
+            requestAnimationFrame(() => requestAnimationFrame(release));
+          };
         if(document.readyState === 'complete') settle();
         else window.addEventListener('load', settle, { once: true });
       }
@@ -1498,7 +1542,10 @@ function startSite()
             const fold = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
             const half = window.innerHeight / 2;
             let hash = window.scrollY < fold / 2 ? '' : '#about';
-            if(hash) sections.forEach(([name, el]) => { if(el.getBoundingClientRect().top < half) hash = name; });
+            if(hash) sections.forEach(([name, el]) =>
+              {
+                if(el.getBoundingClientRect().top < half) hash = name;
+              });
             const current = ['#home', '#intro'].includes(location.hash) ? '' : location.hash;
             if(hash === current) return;
             history.replaceState(history.state, '', hash || path);
@@ -1609,10 +1656,8 @@ function startSite()
     // the scene, then what the scene uses, then the renderer. Asked for together,
     // they arrive in one wave. The list is this scene's and this runtime
     // version's; a name that goes stale costs one unused download, nothing more.
-    const SPLINE_MODULES = ['runtime-timeline-JEZKTTPW.js', 'runtime-text-4AHR5UXX.js',
-      'runtime-particles-6U43I2Y4.js', 'runtime-DRACOLoader-GLMRFFK2.js', 'bevel.js', 'opentype.js'];
-    const SPLINE_FILES = ['https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js',
-      'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.wasm'];
+    const SPLINE_MODULES = ['runtime-timeline-JEZKTTPW.js', 'runtime-text-4AHR5UXX.js', 'runtime-particles-6U43I2Y4.js', 'runtime-DRACOLoader-GLMRFFK2.js', 'bevel.js', 'opentype.js'];
+    const SPLINE_FILES = ['https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_wasm_wrapper.js', 'https://www.gstatic.com/draco/versioned/decoders/1.5.2/draco_decoder.wasm'];
     // The renderer is WebGPU where the browser has it and WebGL elsewhere.
     const SPLINE_RENDERER = 'gpu' in navigator ? 'runtime-webgpu-5H7LPI55.js' : 'runtime-classicRuntime-2LP2RINT.js';
     // The scene is soft enough that a retina screen gains little from drawing it
@@ -1795,7 +1840,13 @@ function startSite()
                 // The pixel ratio comes from the scene's publish settings, which default
                 // to the device's; the renderer is private, so this is best effort.
                 const ratio = Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO);
-                try { scene._renderer?.setPixelRatio?.(ratio); } catch {}
+                try
+                  {
+                    scene._renderer?.setPixelRatio?.(ratio);
+                  }
+                catch
+                  {
+                  }
                 // Load starts the render loop a task after it resolves, without marking
                 // the runtime as playing, and its stop does nothing while it believes it
                 // is stopped. Waiting out that task and playing brings the two in line,
@@ -1891,7 +1942,11 @@ function startSite()
       {
         const points = [];
         const solids = [];
-        const solid = (inside) => { solids.push(inside); return solids.length - 1; };
+        const solid = (inside) =>
+          {
+            solids.push(inside);
+            return solids.length - 1;
+          };
         // A tag rides with each point for forms that move once built: which gear
         // it belongs to, or how far round a loop it sits. A function works it
         // out from the point.
@@ -2034,7 +2089,11 @@ function startSite()
                         let nx = (by - ay) / length, ny = -(bx - ax) / length;
                         const mx = (ax + bx) / 2, my = (ay + by) / 2;
                         // The normal points out of the solid, whichever way the loop runs.
-                        if(inside(mx + nx * gap * .3, my + ny * gap * .3)) { nx = -nx; ny = -ny; }
+                        if(inside(mx + nx * gap * .3, my + ny * gap * .3))
+                          {
+                            nx = -nx;
+                            ny = -ny;
+                          }
                         const steps = Math.max(1, Math.round(length / gap));
                         for(let s = 0; s < steps; s++)
                           {
@@ -2156,7 +2215,11 @@ function startSite()
                 const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
                 const t = Math.max(0, Math.min(1, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / (length * length)));
                 const gap = Math.hypot(x - a[0] - d[0] * t, y - a[1] - d[1] * t, z - a[2] - d[2] * t);
-                if(gap < best) { best = gap; at = before + t * length; }
+                if(gap < best)
+                  {
+                    best = gap;
+                    at = before + t * length;
+                  }
                 before += length;
               });
             return base + .999 * at / total;
@@ -2375,8 +2438,7 @@ function startSite()
           {
             const k = .64;
             const puffs = [[-.36, -.14, .24], [.02, .08, .34], [.38, -.1, .25]];
-            const inside = (x, y) => puffs.some(([px, py, r]) => Math.hypot(x - px, y - py) < r) ||
-              (x > -.36 && x < .38 && y > -.38 && y < -.14);
+            const inside = (x, y) => puffs.some(([px, py, r]) => Math.hypot(x - px, y - py) < r) || (x > -.36 && x < .38 && y > -.38 && y < -.14);
             // The outline, found by walking out from the middle along each bearing.
             const loop = Array.from({ length: 144 }, (_, i) =>
               {
@@ -2420,7 +2482,11 @@ function startSite()
                 samples.forEach((sample) =>
                   {
                     const d = (sample[0] - x) ** 2 + (sample[1] - y) ** 2 + (sample[2] - z) ** 2;
-                    if(d < near) { near = d; best = sample; }
+                    if(d < near)
+                      {
+                        near = d;
+                        best = sample;
+                      }
                   });
                 return ((best[3] - .62 - gap / 2) / (Math.PI * 2) + 1) % 1;
               };
@@ -2616,7 +2682,11 @@ function startSite()
             layers.slice(0, -1).forEach(([x, ys], l) =>
               {
                 const [nextX, nextYs] = layers[l + 1];
-                ys.forEach(y => nextYs.forEach((nextY) => { context.moveTo(x, y); context.lineTo(nextX, nextY); }));
+                ys.forEach(y => nextYs.forEach((nextY) =>
+                  {
+                    context.moveTo(x, y);
+                    context.lineTo(nextX, nextY);
+                  }));
               });
             context.stroke();
             context.globalCompositeOperation = 'destination-out';
@@ -2855,7 +2925,12 @@ function startSite()
                 else if(!gathering) craftMove(previous, before, g, time, spot, -1);
                 if(step === 0)
                   {
-                    for(let a = 0; a < 3; a++) { now[k + a] = spot[a]; speed[k + a] = 0; facing[k + a] = spot[3 + a]; }
+                    for(let a = 0; a < 3; a++)
+                      {
+                        now[k + a] = spot[a];
+                        speed[k + a] = 0;
+                        facing[k + a] = spot[3 + a];
+                      }
                   }
                 else if(set || !gathering)
                   {
@@ -2893,7 +2968,11 @@ function startSite()
                 alpha += glow * .3;
                 if(alpha < .04) continue;
                 const fill = paints[set ? shape : previous][lit ? 1 : 0];
-                if(fill !== paint) { context.fillStyle = fill; paint = fill; }
+                if(fill !== paint)
+                  {
+                    context.fillStyle = fill;
+                    paint = fill;
+                  }
                 context.globalAlpha = Math.min(1, alpha);
                 const dot = Math.max(.7, 1.35 * scale);
                 context.fillRect(sx - dot / 2, sy - dot / 2, dot, dot);
@@ -2960,9 +3039,13 @@ function startSite()
             clearTimeout(toolTimer);
             toolTimer = setTimeout(() =>
               {
-                toolSets.forEach((list) => { list.hidden = list !== set; });
+                toolSets.forEach((list) => (list.hidden = list !== set));
                 if(!tools.length) return;
-                tools.forEach((tool, k) => { tool.style.setProperty('--k', k); tool.classList.add('is-before'); });
+                tools.forEach((tool, k) =>
+                  {
+                    tool.style.setProperty('--k', k);
+                    tool.classList.add('is-before');
+                  });
                 field.classList.add('has-tools');
                 requestAnimationFrame(() => requestAnimationFrame(() => tools.forEach(tool => tool.classList.remove('is-before'))));
               }, 160);
@@ -2976,7 +3059,11 @@ function startSite()
             shape = to;
             gathering = false;
             caption(to);
-            if(still) { draw(0, 0); return; }
+            if(still)
+              {
+                draw(0, 0);
+                return;
+              }
             const time = performance.now() / 1000;
             sweepAt = time;
             for(let i = 0; i < COUNT; i++) setOff[i] = time + Math.max(0, screenY[i] / (height || 1)) * .75 + lag[i] * .08;
@@ -3024,8 +3111,14 @@ function startSite()
           }
         cells.forEach((cell) =>
           {
-            cell.addEventListener('pointerenter', (event) => { if(event.pointerType === 'mouse') hold(cell); });
-            cell.addEventListener('pointerleave', (event) => { if(event.pointerType === 'mouse') release(cell); });
+            cell.addEventListener('pointerenter', (event) =>
+              {
+                if(event.pointerType === 'mouse') hold(cell);
+              });
+            cell.addEventListener('pointerleave', (event) =>
+              {
+                if(event.pointerType === 'mouse') release(cell);
+              });
             cell.addEventListener('focusin', () => hold(cell));
             cell.addEventListener('focusout', () => requestAnimationFrame(() => release(cell)));
           });
@@ -3035,7 +3128,7 @@ function startSite()
             const box = field.getBoundingClientRect();
             pointer = ((event.clientX - box.left) / box.width - .5) * 2;
           });
-        field.addEventListener('pointerleave', () => { pointer = 0; });
+        field.addEventListener('pointerleave', () => (pointer = 0));
 
         new ResizeObserver(measure).observe(field);
         new IntersectionObserver((entries) =>
@@ -3058,7 +3151,11 @@ function startSite()
               gathering = true;
               caption(shape);
               light(shape, still ? 'held' : 'lit');
-              if(still) { draw(0, 0); return; }
+              if(still)
+                {
+                  draw(0, 0);
+                  return;
+                }
               for(let i = 0; i < COUNT; i++)
                 {
                   now[i * 3] = (i % 60) / 59 * 2.1 - 1.05;
@@ -3197,8 +3294,14 @@ function startSite()
           }
         fields.forEach((input) =>
           {
-            input.addEventListener('blur', () => { if(input.value) check(input); });
-            input.addEventListener('input', () => { if(input.hasAttribute('aria-invalid')) check(input); });
+            input.addEventListener('blur', () =>
+              {
+                if(input.value) check(input);
+              });
+            input.addEventListener('input', () =>
+              {
+                if(input.hasAttribute('aria-invalid')) check(input);
+              });
           });
 
         let open = false;
@@ -3514,8 +3617,7 @@ function startSite()
                 const y = window.scrollY;
                 // Only from Meet Josh's own resting place: while the fold is landing the
                 // document still reads Home's 0, which is a page stop too.
-                if(direction < 0 || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 ||
-                  !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
+                if(direction < 0 || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 || !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
                 return pageStops().find(top => top > y + 2);
               }, (to, edge) =>
               {
@@ -3598,8 +3700,7 @@ function startSite()
             let exitTimer = 0;
             holdPageTurns((direction) =>
               {
-                if(!education.classList.contains('is-entered') || education.classList.contains('is-leaving') ||
-                  Math.abs(education.getBoundingClientRect().top) > 2 || education.offsetHeight > window.innerHeight + 1) return;
+                if(!education.classList.contains('is-entered') || education.classList.contains('is-leaving') || Math.abs(education.getBoundingClientRect().top) > 2 || education.offsetHeight > window.innerHeight + 1) return;
                 const y = window.scrollY;
                 return direction < 0 ? pageStops().filter(top => top < y - 2).pop() : nextStop(y);
               }, (to, edge) =>
@@ -4030,9 +4131,9 @@ function startSite()
         const details = panels.map(panel => [...panel.querySelectorAll('.core-meta li > span')]);
         const fitDetails = () =>
           {
-            details.flat().forEach((words) => { words.style.minWidth = ''; });
+            details.flat().forEach((words) => (words.style.minWidth = ''));
             const widest = [];
-            details.forEach(row => row.forEach((words, i) => { widest[i] = Math.max(widest[i] || 0, words.getBoundingClientRect().width); }));
+            details.forEach(row => row.forEach((words, i) => (widest[i] = Math.max(widest[i] || 0, words.getBoundingClientRect().width))));
             details.forEach(row => row.forEach((words, i) => { words.style.minWidth = `${Math.ceil(widest[i])}px`; }));
           };
         // The card keeps one height for every job, so a longer description steps
@@ -4041,7 +4142,7 @@ function startSite()
         const copy = panels.map(panel => [...panel.querySelectorAll('.core-desc')]);
         const fitCopy = () =>
           {
-            copy.flat().forEach((paragraph) => { paragraph.style.fontSize = ''; });
+            copy.flat().forEach((paragraph) => (paragraph.style.fontSize = ''));
             // Each panel's own height, measured out of the shared row.
             const natural = panels.map((panel) =>
               {
@@ -4059,7 +4160,7 @@ function startSite()
             // fitting copy. Long descriptions must not inflate that measurement.
             panels.forEach(panel => { panel.style.height = `${baseline}px`; });
             const room = Math.max(baseline, card.clientHeight);
-            panels.forEach(panel => { panel.style.height = ''; });
+            panels.forEach(panel => (panel.style.height = ''));
             panels.forEach((panel, i) =>
               {
                 const paragraphs = copy[i];
@@ -4092,7 +4193,12 @@ function startSite()
                 panel.style.height = '';
               });
           };
-        const fitCard = () => { fitTitles(); fitDetails(); fitCopy(); };
+        const fitCard = () =>
+          {
+            fitTitles();
+            fitDetails();
+            fitCopy();
+          };
         new ResizeObserver(fitCard).observe(card);
         document.fonts.ready.then(fitCard);
       }
@@ -4434,8 +4540,7 @@ function startSite()
           {
             // Mobile refresh and browser chrome can emit resize without changing the layout width.
             // Only a new composition should skip the entrance; height-only touch resizes keep playing.
-            if(document.documentElement.clientWidth !== viewportWidth ||
-                (finePointer.matches && window.innerHeight !== viewportHeight)) finish();
+            if(document.documentElement.clientWidth !== viewportWidth || (finePointer.matches && window.innerHeight !== viewportHeight)) finish();
           };
 
         // Any deliberate interaction can skip the intro. History restores keep their position.
@@ -4456,7 +4561,7 @@ function startSite()
             mask.src = 'assets/josh_portrait_cartoon_mask.png';
             await Promise.race([
               Promise.allSettled([document.fonts.ready, portrait.decode(), mask.decode()]),
-              new Promise((resolve) => { readyTimeout = setTimeout(resolve, 2000); })
+              new Promise((resolve) => (readyTimeout = setTimeout(resolve, 2000)))
             ]);
             clearTimeout(readyTimeout);
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -4490,8 +4595,7 @@ function startSite()
                 animations.push(animation);
                 return animation;
               };
-            const reveal = (element, delay, duration, easing = easeOut) => animate(element,
-              [{ opacity: 0 }, { opacity: 1 }], delay, duration, easing);
+            const reveal = (element, delay, duration, easing = easeOut) => animate(element, [{ opacity: 0 }, { opacity: 1 }], delay, duration, easing);
 
             const scrambleIn = (label, delay, fadeDuration = 0) =>
               {
@@ -4505,8 +4609,7 @@ function startSite()
                 const effect = introScrambles.get(label);
                 const duration = Math.max(effect.duration + 60, fadeDuration);
                 const fadeOffset = fadeDuration ? fadeDuration / duration : .001;
-                animate(label, [{ opacity: 0 }, { opacity: 1, offset: fadeOffset }, { opacity: 1 }],
-                  delay, duration, 'linear');
+                animate(label, [{ opacity: 0 }, { opacity: 1, offset: fadeOffset }, { opacity: 1 }], delay, duration, 'linear');
                 scrambleTimers.push(setTimeout(() =>
                   {
                     if(!finished) effect.scramble();
@@ -4537,13 +4640,11 @@ function startSite()
             hero.querySelectorAll('.nav-label > .scramble-text').forEach((label, index) =>
               {
                 if(!label.getClientRects().length) return;
-                animate(label, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }],
-                  2000 + index * 40, 250, easeOut);
+                animate(label, [{ transform: 'translateY(110%)' }, { transform: 'translateY(0)' }], 2000 + index * 40, 250, easeOut);
               });
             scrambleIn(hero.querySelector('.signature'), 3050, 700);
             // Independent CSS transitions also reveal smoothly when touch skips the intro.
-            socialTimer = setTimeout(() => revealSocials(),
-              Math.max(0, startTime + 3150 - document.timeline.currentTime));
+            socialTimer = setTimeout(() => revealSocials(), Math.max(0, startTime + 3150 - document.timeline.currentTime));
             await Promise.all(animations.map((animation) => animation.finished));
             finish();
           }
@@ -4614,9 +4715,12 @@ function startSite()
                 glyph.style.width = `${rect.width}px`;
                 if(event && /[a-z]/i.test(real))
                   {
-                    const distance = Math.hypot(rect.left + rect.width / 2 - event.clientX,
-                      rect.top + rect.height / 2 - event.clientY);
-                    if(distance < nearest) { nearest = distance; origin = index; }
+                    const distance = Math.hypot(rect.left + rect.width / 2 - event.clientX, rect.top + rect.height / 2 - event.clientY);
+                    if(distance < nearest)
+                      {
+                        nearest = distance;
+                        origin = index;
+                      }
                   }
                 return { glyph, real, animated: /[a-z]/i.test(real), lastSwap: -Infinity };
               });
@@ -4630,7 +4734,11 @@ function startSite()
                   {
                     if(!character.animated) return;
                     const elapsed = now - started - 28 * Math.abs(index - origin);
-                    if(elapsed < 0) { complete = false; return; }
+                    if(elapsed < 0)
+                      {
+                        complete = false;
+                        return;
+                      }
                     if(elapsed < 260)
                       {
                         if(now - character.lastSwap > 45)
@@ -4735,9 +4843,15 @@ function startSite()
             // The page fades behind the exit, not over it; the bar is left standing.
             const targets = fromBar ? [section].filter(Boolean) : [...document.querySelectorAll('body > :not(.site-backdrop)')];
             const fades = targets.map(el => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 140, easing: 'cubic-bezier(.77, 0, .175, 1)', fill: 'forwards' }));
-            try { sessionStorage.setItem(ARRIVAL_KEY, fromBar ? 'bar' : 'home'); } catch {}
+            try
+              {
+                sessionStorage.setItem(ARRIVAL_KEY, fromBar ? 'bar' : 'home');
+              }
+            catch
+              {
+              }
             leaving = { section, fades, href: link.href };
-            setTimeout(() => { location.href = leaving.href; }, 400);
+            setTimeout(() => (location.href = leaving.href), 400);
           }, true);
         // Coming back through the browser's history restores the page as it left.
         window.addEventListener('pageshow', (event) =>
@@ -4756,7 +4870,9 @@ function startSite()
             from = sessionStorage.getItem(ARRIVAL_KEY);
             if(from === 'insights') sessionStorage.removeItem(ARRIVAL_KEY);
           }
-        catch {}
+        catch
+          {
+          }
         if(from === 'insights' && !reducedMotion.matches) drawNavLine(true);
       }
     initInsightsLeave();
@@ -5220,7 +5336,7 @@ function startSite()
             leaveProjectPage(page);
             // The page fades behind the hero's exit, not over it.
             exit = page.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, delay: 140, easing: 'cubic-bezier(.77, 0, .175, 1)', fill: 'forwards' });
-            exit.onfinish = () => { location.href = href; };
+            exit.onfinish = () => (location.href = href);
           });
         // Coming back through the browser's history restores the page as it left.
         window.addEventListener('pageshow', (event) =>
