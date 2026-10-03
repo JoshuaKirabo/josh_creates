@@ -2452,6 +2452,11 @@ html.projects-snapping
       --brand: #44a8e0;
    }
 
+.project-tag-icon--mongodb
+   {
+      --brand: #47a248;
+   }
+
 .project-tag-icon--togetherai
    {
       --brand: #ef2cc1;
@@ -7172,6 +7177,14 @@ html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]:
       height: 22px;
    }
 
+/* SleekBoard's mark is wide and short in both its broken and whole states, so
+   it is drawn larger to read at the same weight. */
+.project-sheet-actions .button-arrow .sleek-mark
+   {
+      width: 26px;
+      height: 26px;
+   }
+
 .project-sheet-actions .button-label
    {
       padding-right: 18px;
@@ -7247,54 +7260,6 @@ html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]:
 .project-story
    {
       max-width: 68ch;
-   }
-
-.project-stack-list
-   {
-      margin: 0;
-   }
-
-.project-stack-list > div
-   {
-      padding: .85rem 0;
-      border-top: 1px solid rgba(255, 255, 255, .15);
-   }
-
-.project-stack-list dt
-   {
-      margin-bottom: .35rem;
-      color: rgba(255, 255, 255, .5);
-      font-family: 'Geist Mono', monospace;
-      font-size: 10px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-   }
-
-.project-stack-list dd
-   {
-      margin: 0;
-      color: rgba(255, 255, 255, .8);
-      font-family: 'Google Sans', Arial, sans-serif;
-      font-size: 1rem;
-      line-height: 1.6;
-   }
-
-.project-story > p + .project-stack
-   {
-      margin-top: 2rem;
-   }
-
-.handover-motion .project-stack
-   {
-      transition: opacity .5s var(--ease-out) .12s, translate .5s var(--ease-out) .12s;
-   }
-
-.handover-motion.is-leaving .project-stack
-   {
-      opacity: 0;
-      translate: 0 -10px;
-      transition-duration: .24s;
-      transition-delay: 0s;
    }
 
 .project-story .about-eyebrow
@@ -7509,6 +7474,14 @@ html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]:
    {
       background: #030303;
       border: 1px solid rgba(255, 255, 255, .18);
+   }
+
+/* A project whose drawing is still to come keeps the sheet at the figure's
+   full size, so the section turns and reveals as the drawn ones do. */
+.arch-sheet--blank
+   {
+      box-sizing: border-box;
+      height: 558px;
    }
 
 .arch-legend
@@ -8133,6 +8106,72 @@ html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]:
       40%
          {
             transform: translateX(-12px);
+         }
+   }
+
+/* SleekBoard's View Live mark is its logo broken in two: the halves sit
+   apart, offset, each holding half the circle. On landing they slide in from
+   either side. Hovering, once the fill has carried the mark across, they slide
+   together into the whole logo, the square with its round hole: the top half
+   right and up, the bottom half left and down, by the 19.8 and 6.46 units that
+   line the two arcs up. Leaving, they part again, quicker. */
+.sleek-mark :is(.sleek-top, .sleek-bottom)
+   {
+      transition: transform .3s var(--ease-in-out);
+   }
+
+.project-sheet.is-playing .sleek-mark .sleek-top
+   {
+      animation: sleek-top-in .5s var(--ease-out) 1s both;
+   }
+
+.project-sheet.is-playing .sleek-mark .sleek-bottom
+   {
+      animation: sleek-bottom-in .5s var(--ease-out) 1.08s both;
+   }
+
+@keyframes sleek-top-in
+   {
+      from
+         {
+            opacity: 0;
+            transform: translateX(-28px);
+         }
+   }
+
+@keyframes sleek-bottom-in
+   {
+      from
+         {
+            opacity: 0;
+            transform: translateX(28px);
+         }
+   }
+
+@media (hover: hover) and (pointer: fine)
+   {
+      :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .sleek-mark :is(.sleek-top, .sleek-bottom)
+         {
+            transition: transform .5s var(--ease-out) .28s;
+         }
+
+      :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .sleek-top
+         {
+            transform: translate(19.8px, -6.46px);
+         }
+
+      :root:not(.touch-input) .project-sheet:not(.is-playing) .button:hover .sleek-bottom
+         {
+            transform: translate(-19.8px, 6.46px);
+         }
+   }
+
+@media (prefers-reduced-motion: reduce)
+   {
+      .sleek-mark :is(.sleek-top, .sleek-bottom)
+         {
+            animation: none !important;
+            transition: none !important;
          }
    }
 

@@ -4957,6 +4957,9 @@ function startSite()
         paragraph.replaceChildren(...words.flatMap((word, i) =>
           {
             const span = document.createElement('span');
+            // Measured whole: a hyphenated word may not break across lines here,
+            // or it lands on the line it starts on and overflows its clip.
+            span.style.whiteSpace = 'nowrap';
             span.textContent = word;
             return i ? [' ', span] : [span];
           }));
