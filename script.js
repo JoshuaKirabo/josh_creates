@@ -3290,8 +3290,8 @@ function startSite()
     // that rise in one after another, about 750ms for the longest, leaving the
     // word a moment at rest to be read. The word leaving is marked .is-past so its
     // letters lift up and out while the new one's rise in. Each word's flag changes with it, in one place
-    // at the end of the eyebrow. A fine pointer resting on it holds the word; pressing it holds it
-    // until pressed again. Held, it names the language beside the flag. Each entrance starts again
+    // at the end of the eyebrow. Hovering never holds it; pressing it holds the word
+    // until pressed again. Held, it names the language under the greeting. Each entrance starts again
     // from the first word. Reduced motion shows Gyebale, and pressing steps on.
     // The turns to and from Skills belong to the track.
     // The address is written as two halves and joined here, so it never sits
@@ -3493,7 +3493,6 @@ function startSite()
         const language = section.querySelector('.greeting-language');
         let current = -1;
         let running = false;
-        let hovered = false;
         let pinned = false;
         let composing = false;
         let beat = 0;
@@ -3511,12 +3510,12 @@ function startSite()
             language.textContent = words[current]?.dataset.language || '';
           }
 
-        const held = () => hovered || pinned || composing;
+        const held = () => pinned || composing;
         function sync()
           {
             clearTimeout(beat);
             beat = 0;
-            greeting.classList.toggle('is-paused', (hovered || pinned) && !composing && current >= 0);
+            greeting.classList.toggle('is-paused', pinned && !composing && current >= 0);
             greeting.setAttribute('aria-pressed', String(pinned));
             greeting.setAttribute('aria-label', pinned ? 'Play the greetings' : 'Pause the greetings');
             if(running && !held()) beat = setTimeout(next, BEAT);
@@ -3548,17 +3547,6 @@ function startSite()
             return;
           }
         section.classList.add('connect-motion');
-        greeting.addEventListener('pointerenter', (event) =>
-          {
-            if(event.pointerType === 'touch' || !finePointer.matches) return;
-            hovered = true;
-            sync();
-          });
-        greeting.addEventListener('pointerleave', () =>
-          {
-            hovered = false;
-            sync();
-          });
         greeting.addEventListener('click', () =>
           {
             pinned = !pinned;

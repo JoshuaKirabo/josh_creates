@@ -6019,8 +6019,7 @@ html.projects-snapping .connect-main
    The next flag wipes up over the last one inside it, on the letters' own
    timing (80ms in, 460ms out), so they rise together and two flags never
    show through each other. The last flag stays whole underneath until it is
-   covered. Held on a word, the language is named beside it, in the eyebrow's
-   own voice. */
+   covered. */
 .greeting-mark
    {
       display: flex;
@@ -6106,10 +6105,27 @@ html.projects-snapping .connect-main
          }
    }
 
+/* Held on a word, the language is named under it, in the eyebrow's own
+   voice. It hangs below the heading out of flow, so showing it never moves
+   the button beneath. */
+.connect-title
+   {
+      position: relative;
+   }
+
 .greeting-language
    {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 8px;
       color: var(--white);
+      font-family: 'Geist Mono', monospace;
       font-size: 11px;
+      font-weight: 300;
+      letter-spacing: .3em;
+      line-height: 1.5;
+      text-transform: uppercase;
       opacity: 0;
       white-space: nowrap;
       transition: opacity var(--press-out) var(--ease-out);

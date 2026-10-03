@@ -441,7 +441,7 @@
                   <p class="project-desc" id="project-3-desc">One line on what you built and the problem it solved.</p>
                 </div>
                 <span class="project-cta"><span class="project-cta-label">View this project</span><span class="project-cta-arrow-box" aria-hidden="true"><svg class="project-cta-arrow" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="project-cta-arrow project-cta-arrow--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></span>
-                <span class="project-numeral project-numeral--image" aria-hidden="true"><img class="project-numeral-outline" src="assets/project-logos/docx.png" width="1254" height="1254" alt="" decoding="async"><span class="project-numeral-fill"><img src="assets/project-logos/docx.png" width="1254" height="1254" alt="" decoding="async"></span></span>
+                <span class="project-numeral project-numeral--image" aria-hidden="true"><img class="project-numeral-outline" src="assets/project-logos/docx.png" width="1254" height="1254" alt="" decoding="async"><span class="project-numeral-fill"><img src="assets/project-logos/docx.png" width="1254" height="1254" alt="" decoding="async"></span><span class="project-numeral-fill">03</span></span>
               </a>
             </li>
             <li class="project-card" id="project-4" data-project>
@@ -685,8 +685,8 @@
       <!-- Let's connect follows Skills under the same top bar and turns in
            place like it. Its heading is a greeting that cuts from language to
            language, each word in one of the site's faces, its flag changing in
-           place at the end of the eyebrow's rule. Hovering or pressing it
-           stops on the word and names the language beside the flag. Flags are
+           place at the end of the eyebrow's rule. Pressing it stops on the
+           word and names the language under it; hovering never stops it. Flags are
            flag-icons' 4:3 set, so they all share one size (assets/flags/). -->
       <div class="about-main connect-main" id="connect" tabindex="-1">
       <section class="about-block connect-section" aria-labelledby="connect-title">
@@ -703,7 +703,7 @@
                 <img class="greeting-flag" src="assets/flags/jp.svg" width="32" height="24" alt="" decoding="async">
                 <img class="greeting-flag" src="assets/flags/kh.svg" width="32" height="24" alt="" decoding="async">
                 <img class="greeting-flag" src="assets/flags/fj.svg" width="32" height="24" alt="" decoding="async">
-              </span><span class="greeting-language"></span></span></p>
+              </span></span></p>
           <!-- The greeting and the message form share one cell, so opening
                the form turns the section in place: the greeting cuts out
                and the form rises where it stood. Nothing around them moves. -->
@@ -728,6 +728,7 @@
                 <span class="greeting-word" data-face="bula" data-language="Fijian" lang="fj">Bula</span>
               </span>
             </button>
+            <span class="greeting-language" aria-hidden="true"></span>
           </h2>
           <!-- The greeting's answer: the one filled button on the page, under
                the word on its left edge, opens the message form in their
