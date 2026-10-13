@@ -4332,16 +4332,16 @@ html.about-paging
          }
    }
 
-/* Kisaka and GCE carry three paragraphs in the same card as the shorter jobs.
+/* Kisaka, Tellistic, and GCE carry three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
-#core-kisaka .core-desc, #core-gce .core-desc, #core-kisaka-support .core-desc
+#core-kisaka .core-desc, #core-tellistic .core-desc, #core-gce .core-desc, #core-kisaka-support .core-desc
    {
       margin-top: 20px;
       line-height: 1.45;
    }
 
-#core-kisaka .core-desc + .core-desc, #core-gce .core-desc + .core-desc, #core-kisaka-support .core-desc + .core-desc
+#core-kisaka .core-desc + .core-desc, #core-tellistic .core-desc + .core-desc, #core-gce .core-desc + .core-desc, #core-kisaka-support .core-desc + .core-desc
    {
       margin-top: .7em;
    }
@@ -4459,27 +4459,29 @@ html.about-paging
       background: var(--white);
    }
 
-/* A degree still under way carries the iPhone activity spinner in place of
-   the square, turning without end. Reduced motion holds it still. */
-@keyframes edu-spin
+/* A degree still under way carries the square too, but only its outline:
+   a dash runs round it without end, the sheet's dashed lines drawing
+   themselves. The dash and its gap sum to the perimeter, so one lap per
+   cycle loops seamlessly. The global reduced-motion rule holds it still. */
+@keyframes edu-trace
    {
       to
          {
-            transform: rotate(1turn);
+            stroke-dashoffset: -28;
          }
    }
 
-.edu-spinner
+.edu-tracer
    {
-      flex: 0 0 13px;
-      width: 13px;
-      height: 13px;
+      flex: 0 0 8px;
+      width: 8px;
+      height: 8px;
+      overflow: visible;
       fill: none;
       stroke: currentColor;
-      stroke-width: 2.6;
-      stroke-linecap: round;
-      animation: edu-spin 1s linear infinite;
-      will-change: transform;
+      stroke-width: 1;
+      stroke-dasharray: 11 17;
+      animation: edu-trace 1.6s linear infinite;
    }
 
 .edu-title
