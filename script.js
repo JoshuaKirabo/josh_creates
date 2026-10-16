@@ -4173,12 +4173,33 @@ function startSite()
         // Each detail keeps one slot, as wide as its longest value across every
         // job, so the icons sit in the same place on every card.
         const details = panels.map(panel => [...panel.querySelectorAll('.core-meta li > span')]);
-        const fitDetails = () =>
+        const metaRows = panels.map(panel => panel.querySelector('.core-meta'));
+        const sizeSlots = () =>
           {
             details.flat().forEach((words) => (words.style.minWidth = ''));
             const widest = [];
             details.forEach(row => row.forEach((words, i) => (widest[i] = Math.max(widest[i] || 0, words.getBoundingClientRect().width))));
             details.forEach(row => row.forEach((words, i) => { words.style.minWidth = `${Math.ceil(widest[i])}px`; }));
+          };
+        // The details stay on one line: the tracking and gaps tighten first, then
+        // the type steps down half a pixel at a time, no further than 10px.
+        const metaWraps = () =>
+          {
+            const items = metaRows[0].children;
+            return items[items.length - 1].offsetTop > items[0].offsetTop;
+          };
+        const fitDetails = () =>
+          {
+            metaRows.forEach((row) => { row.style.fontSize = ''; row.style.letterSpacing = ''; row.style.columnGap = ''; });
+            sizeSlots();
+            if(!metaWraps()) return;
+            metaRows.forEach((row) => { row.style.letterSpacing = '.08em'; row.style.columnGap = '18px'; });
+            sizeSlots();
+            for(let size = 11.5; metaWraps() && size >= 10; size -= .5)
+              {
+                metaRows.forEach((row) => (row.style.fontSize = `${size}px`));
+                sizeSlots();
+              }
           };
         // The card keeps one height for every job, so a longer description steps
         // its type down only as far as it must to fit the card the other jobs make.

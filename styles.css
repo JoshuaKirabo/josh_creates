@@ -4332,16 +4332,16 @@ html.about-paging
          }
    }
 
-/* Kisaka, Tellistic, and GCE carry three paragraphs in the same card as the shorter jobs.
+/* Tech Hub, Kisaka, Pearl, Tellistic, and GCE carry three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
-#core-kisaka .core-desc, #core-tellistic .core-desc, #core-gce .core-desc, #core-kisaka-support .core-desc
+#core-consultant .core-desc, #core-kisaka .core-desc, #core-intern .core-desc, #core-tellistic .core-desc, #core-gce .core-desc, #core-kisaka-support .core-desc
    {
       margin-top: 20px;
       line-height: 1.45;
    }
 
-#core-kisaka .core-desc + .core-desc, #core-tellistic .core-desc + .core-desc, #core-gce .core-desc + .core-desc, #core-kisaka-support .core-desc + .core-desc
+#core-consultant .core-desc + .core-desc, #core-kisaka .core-desc + .core-desc, #core-intern .core-desc + .core-desc, #core-tellistic .core-desc + .core-desc, #core-gce .core-desc + .core-desc, #core-kisaka-support .core-desc + .core-desc
    {
       margin-top: .7em;
    }
