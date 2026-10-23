@@ -7090,6 +7090,19 @@ html.nav-line-back.nav-line-enter .about-topbar .section-nav-link[aria-current]:
       transform-origin: right;
    }
 
+/* Returning Home from deeper in the page, the page cuts to About's top on its
+   way into the fold. Meet Josh and About's underline, which the fold would show
+   there, stay out of sight until the fold has hidden them by itself. */
+html.home-return .about-content
+   {
+      opacity: 0 !important;
+   }
+
+html.home-return .about-topbar .section-nav-link::before
+   {
+      visibility: hidden;
+   }
+
 @keyframes nav-leave
    {
       to

@@ -665,6 +665,8 @@ function startSite()
         let currentSection = null;
         let arrivedState = null;
         let foldingState = null;
+        // Set while Home is returning from deeper than About's first screen.
+        let homeReturn = false;
 
         const clamp = value => Math.min(1, Math.max(0, value));
         // Where one element sits inside its own slice of the shared cascade.
@@ -933,6 +935,9 @@ function startSite()
           {
             presentedPosition = scrollPosition;
             const progress = clamp(scrollPosition / boundary);
+            // Past .55 the fold keeps About's content out of sight by itself, so a
+            // return Home hands it back there, unseen, and a reversal can rise in.
+            if(homeReturn && progress < .55) endHomeReturn();
             // Reduced motion leaves the hero in flow, so the two sections simply scroll
             // past each other. Nothing is pinned, and nothing has to move out of the way.
             const still = reducedMotion.matches;
@@ -1111,9 +1116,17 @@ function startSite()
           }, { restDistance: 1, restSpeed: 8 });
         spring.setActive(true);
 
+        function endHomeReturn()
+          {
+            homeReturn = false;
+            root.classList.remove('home-return');
+          }
+
         function stop()
           {
             spring.stop();
+            // A gesture that interrupts a return Home owns the page from here.
+            if(homeReturn) endHomeReturn();
             if(running)
               {
                 window.scrollTo({ top: presentedPosition, behavior: 'instant' });
@@ -1339,6 +1352,38 @@ function startSite()
           }
         let traversedHash = null;
 
+        // The fold is built from About's first screen. Deeper in, the section on
+        // screen has no part in it, and the spring would spend a second travelling
+        // through pages it never draws while that section stays put under Home.
+        // So Home turns like any other section: the one on screen plays its exit,
+        // the page cuts to About's top with About's content held out of sight, and
+        // the fold carries the top bar home from there. Only the bar and the
+        // footer, which every section shares, are on screen across the cut.
+        let returning = false;
+        function returnHome(focus)
+          {
+            if(returning) return;
+            returning = true;
+            const [section, exit] = sectionOnScreen();
+            exit?.(section);
+            root.classList.add('nav-line-leave', 'nav-line-back');
+            // The exits clear at 320ms. The fold's own start, before its words move,
+            // is the empty beat a turn waits after them, so the cut needs no other.
+            setTimeout(() =>
+              {
+                section?.classList.remove('is-leaving');
+                craftStage.leave();
+                connectStage.leave();
+                root.classList.remove('projects-leaving', 'nav-line-leave', 'nav-line-back');
+                homeReturn = true;
+                root.classList.add('home-return');
+                window.scrollTo({ top: boundary, behavior: 'instant' });
+                paintImmediately();
+                returning = false;
+                navigate(0, false, focus);
+              }, section ? 320 : 0);
+          }
+
         document.addEventListener('click', event =>
           {
             const link = event.target.closest('[data-section-link]');
@@ -1351,7 +1396,9 @@ function startSite()
             const keyboard = root.classList.contains('section-scroll-keyboard');
             // The navigation dialog closes through its existing link handler. Defer
             // focus until it has restored the page, without blocking the scroll input.
-            navigate(to, keyboard, !mobileMenu?.open);
+            const deep = !running && window.scrollY > boundary + 2;
+            if(to === 0 && deep && !keyboard && !reducedMotion.matches) returnHome(!mobileMenu?.open);
+            else navigate(to, keyboard, !mobileMenu?.open);
             if(location.hash !== link.hash) history.pushState(sectionEntry, '', link.getAttribute('href'));
             document.title = sectionTitle(link.hash);
           });
@@ -1554,7 +1601,8 @@ function startSite()
         function update()
           {
             frameId = 0;
-            if(location.pathname + location.search !== path || root.classList.contains('project-sheet-open')) return;
+            // A return Home passes through About's top on its way; the address already says Home.
+            if(location.pathname + location.search !== path || root.classList.contains('project-sheet-open') || root.classList.contains('home-return')) return;
             const fold = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
             const half = window.innerHeight / 2;
             let hash = window.scrollY < fold / 2 ? '' : '#about';
@@ -4869,6 +4917,29 @@ function startSite()
       }
     bindAboutNavScrambles();
 
+    // The section in the middle of the screen, and how it plays its exit. Leaving
+    // for Insights and returning Home both start with it.
+    function sectionOnScreen()
+      {
+        const root = document.documentElement;
+        const exits = [
+          ['.about-hero', el => el.classList.add('is-leaving')],
+          ['.core-section', el => el.classList.add('is-leaving')],
+          ['.edu-section', el => el.classList.add('is-leaving')],
+          ['.projects-main', () => root.classList.add('projects-leaving')],
+          ['.craft-section', el => el.classList.add('is-leaving')],
+          ['.connect-section', el => el.classList.add('is-leaving')],
+        ];
+        const middle = window.innerHeight / 2;
+        for(const [selector, exit] of exits)
+          {
+            const el = document.querySelector(selector);
+            const box = el?.getBoundingClientRect();
+            if(box && box.height && box.top <= middle && box.bottom > middle) return [el, exit];
+          }
+        return [];
+      }
+
     // Insights is a page of its own. Following a link to it plays the exit of the
     // section on screen, as a turn between sections does, then cuts to it. From
     // the top bar the bar stays, since Insights has the same one, and only its
@@ -4880,25 +4951,6 @@ function startSite()
       {
         const root = document.documentElement;
         let leaving = null;
-        const exits = [
-          ['.about-hero', el => el.classList.add('is-leaving')],
-          ['.core-section', el => el.classList.add('is-leaving')],
-          ['.edu-section', el => el.classList.add('is-leaving')],
-          ['.projects-main', () => root.classList.add('projects-leaving')],
-          ['.craft-section', el => el.classList.add('is-leaving')],
-          ['.connect-section', el => el.classList.add('is-leaving')],
-        ];
-        const onScreen = () =>
-          {
-            const middle = window.innerHeight / 2;
-            for(const [selector, exit] of exits)
-              {
-                const el = document.querySelector(selector);
-                const box = el?.getBoundingClientRect();
-                if(box && box.height && box.top <= middle && box.bottom > middle) return [el, exit];
-              }
-            return [];
-          };
         document.addEventListener('click', (event) =>
           {
             if(event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || reducedMotion.matches) return;
@@ -4907,7 +4959,7 @@ function startSite()
             event.preventDefault();
             if(leaving) return;
             const fromBar = Boolean(link.closest('.about-topbar'));
-            const [section, exit] = fromBar ? onScreen() : [];
+            const [section, exit] = fromBar ? sectionOnScreen() : [];
             exit?.(section);
             if(fromBar) root.classList.add('nav-line-leave');
             // The page fades behind the exit, not over it; the bar is left standing.
