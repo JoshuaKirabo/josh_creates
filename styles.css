@@ -2457,6 +2457,16 @@ html.projects-snapping
       --brand: #47a248;
    }
 
+.project-tag-icon--tailwindcss
+   {
+      --brand: #06b6d4;
+   }
+
+.project-tag-icon--pytorch
+   {
+      --brand: #ee4c2c;
+   }
+
 .project-tag-icon--togetherai
    {
       --brand: #ef2cc1;
