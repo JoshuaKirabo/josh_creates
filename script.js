@@ -4680,7 +4680,7 @@ function startSite()
             clearTimeout(readyTimeout);
             await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
             if(finished) return;
-            if(reducedMotion.matches || window.scrollY > 24 || location.hash) return finish();
+            if(reducedMotion.matches || window.scrollY > 24 || (location.hash && location.hash !== '#home')) return finish();
 
             // Letter markup is present from first layout, so the entrance and the fold
             // always measure the same glyph boxes. Only their presentation changes.
