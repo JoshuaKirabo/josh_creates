@@ -3446,18 +3446,21 @@ function startSite()
     // from the first word. Reduced motion shows Gyebale, and pressing steps on.
     // The turns to and from Skills belong to the track.
     // The address is written as two halves and joined here, so it never sits
-    // whole in the page for harvesters to find. The rail's email mark then opens
-    // mail and names the address.
-    function initConnectEmail(section)
+    // whole in the page for harvesters to find. Each email mark (Home's and the
+    // Connect rail's) then opens mail; the rail's also names the address.
+    function initEmailLinks()
       {
-        const link = section.querySelector('.connect-email-link');
-        const { emailUser: user, emailDomain: domain } = link?.dataset || {};
-        if(!link || !user || !domain) return;
-        const address = `${user}@${domain}`;
-        link.href = `mailto:${address}`;
-        link.setAttribute('aria-label', `Email ${address}`);
-        link.querySelector('.connect-rail-name').textContent = address;
-        link.removeAttribute('data-placeholder-link');
+        for(const link of document.querySelectorAll('[data-email-user]'))
+          {
+            const { emailUser: user, emailDomain: domain } = link.dataset;
+            if(!user || !domain) continue;
+            const address = `${user}@${domain}`;
+            link.href = `mailto:${address}`;
+            link.setAttribute('aria-label', `Email ${address}`);
+            const name = link.querySelector('.connect-rail-name');
+            if(name) name.textContent = address;
+            link.removeAttribute('data-placeholder-link');
+          }
       }
 
     // The message form. Opening it turns the section in place: the greeting
@@ -3597,7 +3600,6 @@ function startSite()
         const greeting = section?.querySelector('[data-greeting]');
         if(!greeting || greeting.dataset.ready !== undefined) return;
         greeting.dataset.ready = '';
-        initConnectEmail(section);
         // The line the greeting finishes rises in word by word on arrival.
         const lead = section.querySelector('.connect-lead');
         if(lead)
@@ -6392,6 +6394,7 @@ function startSite()
     initProjectsTrack();
     initProjectsNav();
     initCraft();
+    initEmailLinks();
     initConnect();
     // A section's own address lands on it now. Until the page has loaded, the
     // browser can still jump to the section's element, whose top is not where the
