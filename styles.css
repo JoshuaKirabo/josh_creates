@@ -3092,7 +3092,7 @@ html.projects-snapping
       display: flex;
       flex-direction: column;
       gap: clamp(5rem, 14svh, 10rem);
-      padding-top: clamp(1.5rem, 7svh, 5rem);
+      padding-top: 24px;
    }
 
 .about-eyebrow
@@ -3135,7 +3135,7 @@ html.projects-snapping
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: calc(100svh - 5rem - clamp(1.5rem, 7svh, 5rem));
       padding-bottom: calc(var(--footer-bottom) + 4rem);
       text-align: right;
@@ -3148,18 +3148,6 @@ html.projects-snapping
       top: calc(100svh - var(--footer-bottom));
       bottom: auto;
       translate: 0 -100%;
-   }
-
-.about-hero .about-eyebrow
-   {
-      flex-direction: row-reverse;
-      width: 100%;
-      margin-bottom: clamp(2rem, 5svh, 3rem);
-   }
-
-.about-hero .about-rule::after
-   {
-      transform-origin: right;
    }
 
 .about-hero .about-title-line
@@ -3429,7 +3417,7 @@ html.projects-snapping
       justify-items: start;
       margin: 0;
       font-family: 'Bounded', Arial, sans-serif;
-      font-size: clamp(2.75rem, 9.5vw, 8.5rem);
+      font-size: clamp(2.75rem, 8.25vw, 7.25rem);
       font-weight: 200;
       line-height: .92;
       letter-spacing: -.06em;
@@ -3494,14 +3482,17 @@ html.projects-snapping
       text-wrap: pretty;
    }
 
+/* Meet Josh's story runs 2px under the project pages' leads and a little
+   wider, so it fits the first screen. */
+#meet-josh .about-lead
+   {
+      max-width: 50ch;
+      font-size: clamp(1.05rem, 2vw, calc(1.4rem - 2px));
+   }
+
 .about-motion:not(.is-arrived) .about-hero .about-title-line
    {
       --about-fill: 0;
-   }
-
-.about-motion:not(.is-arrived) .about-hero .about-rule::after
-   {
-      transform: scaleX(0);
    }
 
 .about-motion:not(.is-arrived) :is(.about-lead, .about-resume)
@@ -3518,11 +3509,6 @@ html.projects-snapping
 .about-motion.is-arrived .about-title-strong
    {
       transition-delay: .3s;
-   }
-
-.about-motion.is-arrived .about-hero .about-rule::after
-   {
-      transition: transform 1.2s var(--ease-out) .1s;
    }
 
 .about-motion.is-arrived .about-lead
@@ -3592,12 +3578,6 @@ html.projects-snapping
 .about-motion.is-arrived .about-hero.is-leaving .about-title-strong
    {
       transition-delay: 0s;
-   }
-
-.about-motion.is-arrived .about-hero.is-leaving .about-rule::after
-   {
-      transform: scaleX(0);
-      transition: transform .28s var(--ease-out) .06s;
    }
 
 .about-motion.is-arrived .about-hero.is-leaving .about-scene
@@ -6984,11 +6964,6 @@ textarea.connect-input
       .about-motion:not(.is-arrived) .about-hero .about-title-line
          {
             --about-fill: 1;
-         }
-
-      .about-motion:not(.is-arrived) .about-hero .about-rule::after
-         {
-            transform: none;
          }
 
       .about-motion:not(.is-arrived) :is(.about-lead, .about-resume)
