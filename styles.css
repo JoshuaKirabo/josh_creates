@@ -3242,6 +3242,160 @@ html.projects-snapping
       pointer-events: none;
    }
 
+/* The loading dial script lays over the scene's middle while it loads. Sixty
+   ticks light clockwise from the top as --scene-lit counts up, a sweep circles
+   them so the wait never looks stuck, and the count sits inside. It holds back
+   .3s, so a quick load never flashes it. */
+.scene-loader
+   {
+      --scene-lit: 0;
+      --scene-tick-off: rgba(255, 255, 255, .14);
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-areas: "dial" "label";
+      place-content: center;
+      justify-items: center;
+      row-gap: 20px;
+      pointer-events: none;
+      animation: scene-loader-in .6s var(--ease-out) .3s backwards;
+   }
+
+.scene-loader-dial, .scene-loader-count
+   {
+      grid-area: dial;
+   }
+
+/* The ticks are a mask: thin spokes cut to a 10px band of the circle. Behind
+   it, the lit arc ends between ticks, so a tick is always whole. */
+.scene-loader-dial
+   {
+      position: relative;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: conic-gradient(from -3deg, var(--white) calc(var(--scene-lit) * 6deg), var(--scene-tick-off) 0);
+      -webkit-mask: repeating-conic-gradient(from -.9deg, #000 0 1.8deg, transparent 0 6deg), radial-gradient(circle, transparent 41px, #000 41.5px 51.5px, transparent 52px);
+      -webkit-mask-composite: source-in;
+      mask: repeating-conic-gradient(from -.9deg, #000 0 1.8deg, transparent 0 6deg) intersect, radial-gradient(circle, transparent 41px, #000 41.5px 51.5px, transparent 52px);
+   }
+
+.scene-loader-sweep
+   {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: conic-gradient(transparent 0 60%, rgba(255, 255, 255, .75));
+      animation: scene-loader-sweep 1.6s linear infinite;
+   }
+
+.scene-loader-count
+   {
+      display: flex;
+      align-items: baseline;
+      place-self: center;
+      gap: 2px;
+      color: var(--white);
+      font-family: 'Geist Mono', monospace;
+      font-size: 17px;
+      font-weight: 400;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -.02em;
+      line-height: 1;
+   }
+
+.scene-loader-unit
+   {
+      color: rgba(255, 255, 255, .5);
+      font-size: 10px;
+      letter-spacing: 0;
+   }
+
+.scene-loader-label
+   {
+      grid-area: label;
+      color: rgba(255, 255, 255, .5);
+      font-family: 'Geist Mono', monospace;
+      font-size: 10px;
+      font-weight: 300;
+      letter-spacing: .3em;
+      line-height: 1.5;
+      text-transform: uppercase;
+   }
+
+/* As the scene fades in, the dial opens outward past it and thins away; the
+   count and label go first, so the dial is the last thing left. */
+.scene-loader.is-done .scene-loader-dial
+   {
+      opacity: 0;
+      scale: 1.6;
+      transition: scale 1s var(--ease-out) .1s, opacity .7s var(--ease-out) .1s;
+   }
+
+.scene-loader.is-done :is(.scene-loader-count, .scene-loader-label)
+   {
+      opacity: 0;
+      transition: opacity .3s var(--ease-out);
+   }
+
+.scene-loader.is-failed
+   {
+      opacity: 0;
+      transition: opacity .4s var(--ease-out);
+   }
+
+@keyframes scene-loader-in
+   {
+      from
+         {
+            opacity: 0;
+            scale: .92;
+         }
+   }
+
+@keyframes scene-loader-sweep
+   {
+      to
+         {
+            transform: rotate(1turn);
+         }
+   }
+
+@media (prefers-reduced-motion: reduce)
+   {
+      .scene-loader
+         {
+            animation-name: scene-loader-fade;
+         }
+
+      .scene-loader-sweep
+         {
+            display: none;
+         }
+
+      .scene-loader.is-done .scene-loader-dial
+         {
+            scale: none;
+            transition: opacity .4s var(--ease-out);
+         }
+
+      @keyframes scene-loader-fade
+         {
+            from
+               {
+                  opacity: 0;
+               }
+         }
+   }
+
+@media (prefers-contrast: more)
+   {
+      .scene-loader
+         {
+            --scene-tick-off: rgba(255, 255, 255, .4);
+         }
+   }
+
 /* Narrower screens bring the copy across the middle, so the scene steps
    further off the left edge and lets its far plant fall under the fade. */
 @media (max-width: 1100px)

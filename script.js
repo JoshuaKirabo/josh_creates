@@ -1721,6 +1721,99 @@ function startSite()
     // The scene is soft enough that a retina screen gains little from drawing it
     // at full density, and every extra pixel is drawn every frame.
     const SCENE_PIXEL_RATIO = 1.25;
+    // While the scene loads, a dial of sixty ticks stands where it will appear.
+    // The ticks light clockwise with real progress and the count inside matches
+    // them on the same frame. A sweep circles the dial on the compositor, so it
+    // keeps moving while building the scene holds the main thread. When the scene
+    // shows, the dial opens outward and fades as the scene fades in behind it.
+    const SCENE_TICKS = 60;
+    function createSceneLoader(figure, hidden)
+      {
+        const loader = document.createElement('div');
+        loader.className = 'scene-loader';
+        loader.setAttribute('aria-hidden', 'true');
+        loader.innerHTML = '<span class="scene-loader-dial"><span class="scene-loader-sweep"></span></span>'
+          + '<span class="scene-loader-count"><span class="scene-loader-number">0</span><span class="scene-loader-unit">%</span></span>'
+          + '<span class="scene-loader-label">Loading scene</span>';
+        figure.append(loader);
+        const born = performance.now();
+        const number = loader.querySelector('.scene-loader-number');
+        let target = 0;
+        let shown = 0;
+        let written = -1;
+        let frame = 0;
+        let last = 0;
+        const write = () =>
+          {
+            const percent = Math.round(shown * 100);
+            if(percent === written) return;
+            written = percent;
+            number.textContent = percent;
+            loader.style.setProperty('--scene-lit', Math.floor(shown * SCENE_TICKS));
+          };
+        // The count eases toward its target without overshoot (about 0.2s to
+        // close most of a gap), so a jump in progress still reads as counting.
+        const tick = (now) =>
+          {
+            frame = 0;
+            const dt = last ? Math.min(now - last, 64) : 16;
+            last = now;
+            shown = hidden() || reducedMotion.matches ? target : shown + (target - shown) * (1 - Math.exp(-dt / 120));
+            if(target - shown < .002) shown = target;
+            write();
+            if(shown !== target) frame = requestAnimationFrame(tick);
+            else last = 0;
+          };
+        const set = (value) =>
+          {
+            target = Math.max(target, Math.min(value, 1));
+            if(!frame) frame = requestAnimationFrame(tick);
+          };
+        const leave = (name) =>
+          {
+            cancelAnimationFrame(frame);
+            loader.classList.add(name);
+            setTimeout(() => loader.remove(), 1200);
+          };
+        return {
+            set,
+            done: () =>
+              {
+                // Done before the dial began to show: it never appears at all.
+                if(performance.now() - born < 350)
+                  {
+                    cancelAnimationFrame(frame);
+                    loader.remove();
+                    return;
+                  }
+                shown = target = 1;
+                write();
+                leave('is-done');
+              },
+            fail: () => leave('is-failed'),
+          };
+      }
+    // Reads the scene file while counting its bytes. A compressed response
+    // reports its compressed size, which the bytes read outgrow, so without a
+    // usable size the fraction only approaches 1.
+    async function readCounted(response, onProgress)
+      {
+        const size = Number(response.headers.get('content-length'));
+        const known = size > 0 && !response.headers.get('content-encoding');
+        if(!response.body) return response.arrayBuffer();
+        const reader = response.body.getReader();
+        const chunks = [];
+        let loaded = 0;
+        for(;;)
+          {
+            const { done, value } = await reader.read();
+            if(done) break;
+            chunks.push(value);
+            loaded += value.length;
+            onProgress(known ? loaded / size : loaded / (loaded + 1.5e6));
+          }
+        return new Blob(chunks).arrayBuffer();
+      }
     function initAboutScene(about)
       {
         const canvas = about.querySelector('.about-scene-canvas');
@@ -1748,6 +1841,13 @@ function startSite()
         // it then; anything else would freeze it half drawn, and About would land
         // on that frame.
         let warming = false;
+        // The dial shows from the start on a screen wide enough for the scene.
+        let loader = null;
+        const showLoader = () =>
+          {
+            if(!loader) loader = createSceneLoader(canvas.parentElement, () => about.inert);
+          };
+        if(wide.matches) showLoader();
 
         const sync = () =>
           {
@@ -1876,8 +1976,10 @@ function startSite()
                 document.head.append(link);
               }
             runtime = import(SPLINE_RUNTIME);
+            // The file is most of the wait, so it fills the dial to 80%; the rest
+            // is building the scene and its first frames.
             bytes = fetch(new URL(canvas.dataset.scene, document.baseURI).href)
-              .then(response => response.ok ? response.arrayBuffer() : Promise.reject(new Error(response.status)));
+              .then(response => response.ok ? readCounted(response, part => loader?.set(part * .8)) : Promise.reject(new Error(response.status)));
             // Settled here so a failure waits for load to handle it.
             runtime.catch(() => {});
             bytes.catch(() => {});
@@ -1889,6 +1991,7 @@ function startSite()
             try
               {
                 const [{ Application }, data] = await Promise.all([runtime, bytes]);
+                loader?.set(.84);
                 // The scene's own script drives everything that moves: the typing and
                 // sway, his gaze, and the lamp switching on a click. Inline runs it in
                 // this page; the default sandbox would lay an iframe over the canvas
@@ -1902,6 +2005,7 @@ function startSite()
                 scene._getPixelRatio = () => Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO);
                 // Load is a fetch and then start; the fetch has already run.
                 await scene.start(data);
+                loader?.set(.94);
                 // The sky and the studio floor give way to the grain behind them.
                 scene.setBackgroundColor('transparent');
                 const floor = scene.findObjectByName('Studio floor');
@@ -1936,12 +2040,14 @@ function startSite()
                   });
                 warming = false;
                 canvas.classList.add('is-loaded');
+                loader?.done();
                 sync();
               }
             catch
               {
                 // Offline or blocked: Meet Josh reads the same without its scene.
                 restore();
+                loader?.fail();
               }
           };
         let requested = false;
@@ -1949,6 +2055,7 @@ function startSite()
           {
             if(requested || !wide.matches) return;
             requested = true;
+            showLoader();
             fetchScene();
             // Building the scene does hold the main thread, so that part still waits
             // for a quiet moment.
