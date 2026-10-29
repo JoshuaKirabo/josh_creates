@@ -2536,8 +2536,10 @@ html.projects-snapping
       align-items: center;
       gap: .5rem;
       align-self: flex-start;
-      color: rgba(255, 255, 255, .45);
-      letter-spacing: .22em;
+      color: rgba(255, 255, 255, .8);
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: .16em;
       transition: color .5s var(--ease-out);
    }
 
