@@ -1750,10 +1750,14 @@ function startSite()
         // runtime's render loop, so it is held here while the scene is stopped.
         let sceneTick = null;
         let heldTick = null;
+        // True while the scene draws itself in behind Home. Only the fold may stop
+        // it then; anything else would freeze it half drawn, and About would land
+        // on that frame.
+        let warming = false;
 
         const sync = () =>
           {
-            if(!app) return;
+            if(!app || (warming && !root.classList.contains('section-folding'))) return;
             const showing = wide.matches && onScreen && !about.inert && !document.hidden && !moving();
             if(showing === playing) return;
             playing = showing;
@@ -1896,22 +1900,18 @@ function startSite()
                 // this page; the default sandbox would lay an iframe over the canvas
                 // and take the pointer.
                 const scene = new Application(canvas, { htmlContentMode: 'inline' });
+                // The runtime asks this once while it builds the renderer, so the scene
+                // is drawn at this ratio from its first frame. Setting it after start
+                // shrank the canvas but not the WebGPU effects already sized for the
+                // device's ratio, and a retina screen got two copies at two sizes.
+                // The method is private; if it goes, the scene keeps the device's ratio.
+                scene._getPixelRatio = () => Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO);
                 // Load is a fetch and then start; the fetch has already run.
                 await scene.start(data);
                 // The sky and the studio floor give way to the grain behind them.
                 scene.setBackgroundColor('transparent');
                 const floor = scene.findObjectByName('Studio floor');
                 if(floor) floor.visible = false;
-                // The pixel ratio comes from the scene's publish settings, which default
-                // to the device's; the renderer is private, so this is best effort.
-                const ratio = Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO);
-                try
-                  {
-                    scene._renderer?.setPixelRatio?.(ratio);
-                  }
-                catch
-                  {
-                  }
                 // Load starts the render loop a task after it resolves, without marking
                 // the runtime as playing, and its stop does nothing while it believes it
                 // is stopped. Waiting out that task and playing brings the two in line,
@@ -1920,6 +1920,7 @@ function startSite()
                 scene.play();
                 playing = true;
                 app = scene;
+                warming = true;
                 // The runtime builds most of its shaders on the first frame it really
                 // draws, and that used to be the frame About landed on: a few 80ms
                 // frames right in the middle of the entrance. So it draws here instead,
@@ -1939,6 +1940,7 @@ function startSite()
                       };
                     requestAnimationFrame(warm);
                   });
+                warming = false;
                 canvas.classList.add('is-loaded');
                 sync();
               }
