@@ -3384,6 +3384,16 @@ html.projects-snapping
          }
    }
 
+/* Up to 1400px wide, Meet Josh's story column reaches the rug, so the scene
+   steps 64px further left. */
+@media (min-width: 1101px) and (max-width: 1400px)
+   {
+      .about-scene
+         {
+            left: calc(-1 * var(--page-gutter) - 64px);
+         }
+   }
+
 /* Narrower screens bring the copy across the middle, so the scene steps
    further off the left edge and lets its far plant fall under the fade. */
 @media (max-width: 1100px)
@@ -3417,7 +3427,7 @@ html.projects-snapping
       justify-items: start;
       margin: 0;
       font-family: 'Bounded', Arial, sans-serif;
-      font-size: clamp(2.75rem, 8.25vw, 7.25rem);
+      font-size: clamp(2.75rem, 7.75vw, 6.75rem);
       font-weight: 200;
       line-height: .92;
       letter-spacing: -.06em;
@@ -3487,7 +3497,13 @@ html.projects-snapping
 #meet-josh .about-lead
    {
       max-width: 50ch;
+      margin-top: 24px;
       font-size: clamp(1.05rem, 2vw, calc(1.4rem - 2px));
+   }
+
+#meet-josh .about-resume
+   {
+      margin-top: 24px;
    }
 
 .about-motion:not(.is-arrived) .about-hero .about-title-line
