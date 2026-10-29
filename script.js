@@ -639,8 +639,6 @@ function startSite()
         const wordmark = hero.querySelector('.wordmark-stage');
         const portrait = hero.querySelector('.portrait-scroll');
         const heroContent = hero.querySelector('.hero-content');
-        // The heading travels; only the parts of it with no About twin fade.
-        const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
         const heroFooter = hero.querySelector('.hero-footer');
         const topbar = about.querySelector('.about-topbar');
         const aboutFooter = about.querySelector('.about-footer');
@@ -689,7 +687,6 @@ function startSite()
         let heroSocials = null;
         let heroSignature = null;
         let aboutSignature = null;
-        let footerRule = null;
         // Each role's two heading lines shrink into that role's footer icon and
         // morph into it: the words collapse as the icon's strokes draw in.
         let headingFolds = [];
@@ -893,7 +890,6 @@ function startSite()
             heroSocials = homeFooter?.querySelector?.('.social-links') || null;
             heroSignature = homeFooter?.querySelector?.('.signature') || null;
             aboutSignature = awayFooter?.querySelector?.('.signature') || null;
-            footerRule = awayFooter?.querySelector?.('.footer-roles-rule') || null;
             if(heroSignature && aboutSignature) signatureFold = planFold(heroSignature, heroSignature, aboutSignature, aboutSignature, 0, .92);
             const landing = new Set(headingFolds.map(plan => plan.mover));
             headingRest = heroLines.filter(line => !landing.has(line));
@@ -919,7 +915,7 @@ function startSite()
         function releaseTransition()
           {
             clearFolds();
-            [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, aboutFooter, aboutSignature, footerRule, aboutContent, ...dividers, ...headerRest, ...headingRest].forEach((element) =>
+            [portrait, heroContent, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, aboutFooter, aboutSignature, aboutContent, ...dividers, ...headerRest, ...headingRest].forEach((element) =>
                 {
                   if(!element) return;
                   element.style.transform = '';
@@ -964,7 +960,6 @@ function startSite()
                 portrait.style.transform = `translate3d(0, ${-10 * leaving}%, 0)`;
                 fade(portrait, 1 - leaving);
                 const contentLeaving = 1 - smooth(slice(progress, 0, .28));
-                fade(headingRule, contentLeaving);
                 headingRest.forEach(line => fade(line, contentLeaving));
                 headingFolds.forEach(plan => applyMorph(plan, progress));
                 const footerLeaving = 1 - smooth(slice(progress, 0, .24));
@@ -1013,9 +1008,8 @@ function startSite()
                     aboutContent.style.transform = settling >= 1 ? '' : `translate3d(0, ${12 * (1 - settling)}px, 0)`;
                     fade(aboutContent, settling);
                   }
-                // The footer's words arrive by fold; only the rule between them, and
-                // anything left without a traveller, fades in beneath them.
-                fade(footerRule, arriving);
+                // The footer's words arrive by fold; anything left without a traveller
+                // fades in beneath them.
                 if(!signatureFold) fade(aboutSignature, arriving);
                 if(!headingFolds.length) (aboutFooter || about).querySelectorAll?.('.footer-role')?.forEach?.(icon => fade(icon, arriving));
                 // Its children already fade to zero. Keep the transparent hero composed:
@@ -4567,7 +4561,7 @@ function startSite()
               }
             finished = true;
             const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
-            const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .hero-heading-rule, .site-header, .signature')];
+            const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .site-header, .signature')];
             const navSlides = [...hero.querySelectorAll('.nav-label > .scramble-text')];
             // Read the currently painted poses before cancelling the shared intro clock.
             const poses = settle ? elements.map(element => ({ element, opacity: getComputedStyle(element).opacity })) : [];
@@ -4752,7 +4746,6 @@ function startSite()
               {
                 reveal(line, 1700 + index * 100, 1000);
               });
-            reveal(hero.querySelector('.hero-heading-rule'), 1700, 1000);
             scrambleTimers.push(setTimeout(() =>
               {
                 if(!finished) hero.querySelector('.site-header')?.classList.add('is-entering');

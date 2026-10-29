@@ -309,12 +309,12 @@ test('the name and every link land exactly on their top bar counterparts', () =>
       });
   });
 
-// Home's four role lines and the footer's two role icons, bottom right.
+// Home's two role lines and the footer's role icon, bottom right.
 function withHeading(s, landings = true)
   {
-    const lines = [rect(420, 600, 290, 96), rect(430, 700, 280, 96), rect(740, 600, 270, 96), rect(740, 700, 440, 96)]
+    const lines = [rect(580, 600, 290, 96), rect(585, 700, 280, 96)]
       .map(ink => { const line = new s.Element(); line.box = ink; line.ink = ink; return line; });
-    const icons = [rect(1300, 850, 26, 26), rect(1360, 850, 26, 26)]
+    const icons = [rect(1300, 850, 26, 26)]
       .map(box => { const icon = new s.Element(); icon.box = box; icon.style.setProperty = (k, v) => { icon.style[k] = v; };
         icon.style.removeProperty = k => { delete icon.style[k]; }; return icon; });
     s.hero.children['.hero-heading-line'] = lines;
@@ -334,7 +334,7 @@ function morphCentre(line)
     return [b.left + tx + (b.width / 2) * sx, b.top + ty + (b.height / 2) * sy];
   }
 
-test('each pair of heading lines morphs into its role icon', () =>
+test('both heading lines morph into the role icon', () =>
   {
     const s = setup();
     const { lines, icons } = withHeading(s);
@@ -347,7 +347,7 @@ test('each pair of heading lines morphs into its role icon', () =>
     s.scrollTo(BOUNDARY);
     lines.forEach((line, index) =>
       {
-        const icon = icons[Math.floor(index / 2)];
+        const icon = icons[0];
         const [x, y] = morphCentre(line);
         near(x, icon.box.left + 13, `line ${index} x`);
         near(y, icon.box.top + 13, `line ${index} y`);
@@ -361,7 +361,7 @@ test('each pair of heading lines morphs into its role icon', () =>
       });
     s.scrollTo(0);
     lines.forEach(line => assert.equal(line.style.transform, 'translate3d(0px, 0px, 0) scale(1, 1)'));
-    assert.equal(icons[1].style.opacity, '0', 'reverses back to hidden');
+    assert.equal(icons[0].style.opacity, '0', 'reverses back to hidden');
   });
 
 test('the signature holds its corner and hands over to About\'s copy', () =>
