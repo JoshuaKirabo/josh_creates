@@ -16,3 +16,4 @@ MySQL: Devicon original-color SVG, https://cdn.jsdelivr.net/gh/devicons/devicon@
 n8n: Simple Icons v13 (CC0), https://cdn.jsdelivr.net/npm/simple-icons@13/icons/n8n.svg, filled in n8n's pink (#ea4b71).
 REST APIs: generic API mark from https://api.iconify.design/mdi/api.svg (Material Design Icons, Apache 2.0), filled white for the dark background.
 Bash: its dark hexagon (#293138) lightened to #e6e8ea so it shows on the dark background.
+Google Cloud, AWS, Cloudflare: SVG Logos via Iconify, https://api.iconify.design/logos/{google-cloud,aws,cloudflare-icon}.svg; the AWS wordmark text (#252f3e) lightened to #e6e8ea so it shows on the dark background.
