@@ -4494,6 +4494,50 @@ html.about-paging
          }
    }
 
+/* With room for two columns, the heading moves into the list's column and the
+   card rises to meet it, so the card gains the height the heading used to
+   take. The list also gives the card more width, since job titles are short.
+   Script still fits the copy, so the extra room goes to larger type. */
+@container core (min-width: 900px)
+   {
+      .core-stage
+         {
+            display: grid;
+            grid-template-columns: minmax(340px, .66fr) minmax(0, 1.34fr);
+            grid-template-rows: auto minmax(0, 1fr);
+            align-content: center;
+            padding-top: 2.5rem;
+         }
+
+      /* The card now reaches the top of the stage, so it keeps clear of the
+         sticky bar by more than the heading needed. */
+      .core-pinned .core-stage
+         {
+            padding-top: 7.5rem;
+         }
+
+      .core
+         {
+            display: contents;
+         }
+
+      .core-stage > .about-block-head
+         {
+            grid-area: 1 / 1;
+            padding-right: 44px;
+         }
+
+      .core-subjects
+         {
+            grid-area: 2 / 1;
+         }
+
+      .core-reading
+         {
+            grid-area: 1 / 2 / 3 / 3;
+         }
+   }
+
 /* Tech Hub, Kisaka, Pearl, Tellistic, and GCE carry three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
