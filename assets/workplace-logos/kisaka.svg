@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 118 116">
-  <symbol id="logo-kisaka" viewBox="0 0 118 116">
-    <path vector-effect="non-scaling-stroke" d="M39 0H84L46 44L118 116H65L0 45Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <symbol id="logo-kisaka" viewBox="0 0 160 160">
+    <path fill-rule="evenodd" vector-effect="non-scaling-stroke" d="M18 0H142A18 18 0 0 1 160 18V142A18 18 0 0 1 142 160H18A18 18 0 0 1 0 142V18A18 18 0 0 1 18 0ZM60 22H105L67 66L139 138H86L21 67Z"/>
   </symbol>
 </svg>
