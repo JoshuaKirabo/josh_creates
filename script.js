@@ -3657,10 +3657,20 @@ function startSite()
           });
 
         let open = false;
+        let returning = 0;
         function toggle(next)
           {
             if(next === open) return;
             open = next;
+            // On a phone the message button becomes Submit: its left edge draws
+            // in by the width Cancel takes. Both share the row's right edge, so
+            // the widths give the distance, untouched by the press's scale.
+            if(open) section.style.setProperty('--morph-left', `${compose.offsetWidth - send.offsetWidth}px`);
+            // Closing plays the morph back on a timing of its own, not the
+            // section's slower entrance.
+            clearTimeout(returning);
+            section.classList.toggle('is-uncomposing', !open);
+            if(!open) returning = setTimeout(() => section.classList.remove('is-uncomposing'), 600);
             section.classList.toggle('is-composing', open);
             form.inert = !open;
             compose.setAttribute('aria-expanded', String(open));

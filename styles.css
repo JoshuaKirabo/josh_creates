@@ -7071,10 +7071,21 @@ textarea.connect-input
       outline-offset: 2px;
    }
 
+/* Submit speaks in the message button's serif, so the button it answers
+   and the one that sends read as one voice. */
 .connect-send
    {
       border: 0;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: -.005em;
       cursor: pointer;
+   }
+
+.connect-send .button-label
+   {
+      line-height: 1.2;
    }
 
 .connect-send[aria-busy="true"]
@@ -7288,6 +7299,150 @@ textarea.connect-input
       .connect-compose:focus-visible .button-arrow
          {
             left: calc(100% - 50px);
+         }
+
+      /* Submit wears the button's measure on a phone, so one can become
+         the other: the same height, tile and type. */
+      .connect-form-actions .connect-send
+         {
+            flex: 1 1 auto;
+            min-height: 52px;
+         }
+
+      .connect-send::before,
+      .connect-send .button-arrow
+         {
+            width: 48px;
+         }
+
+      .connect-send .button-label
+         {
+            padding-left: 50px;
+         }
+
+      .connect-send .button-arrow svg
+         {
+            width: 18px;
+            height: 18px;
+         }
+
+      .connect-send:focus-visible .button-label
+         {
+            padding-right: 40px;
+         }
+
+      .connect-send:focus-visible .button-arrow
+         {
+            left: calc(100% - 50px);
+         }
+
+      /* Pressed, the button becomes Submit. Its left edge draws in to
+         Submit's (script measures the distance into --morph-left), opening
+         the room Cancel fades into, while it turns dark and its tile white,
+         tile and arrow riding in with the edge. The real Submit then takes
+         over in the same shape, its word fading in, and the button steps
+         out beneath it. Cancel plays it back; script adds .is-uncomposing
+         for the return. */
+      .connect-motion .connect-compose
+         {
+            clip-path: inset(0 0 0 0);
+         }
+
+      .connect-motion.is-entered.is-composing .connect-compose
+         {
+            clip-path: inset(0 0 0 var(--morph-left, 0px));
+            background-color: #0d0d0d;
+            transition: clip-path .34s var(--ease-in-out), background-color .34s var(--ease-in-out), transform var(--press-out) var(--ease-out), visibility 0s linear .56s;
+         }
+
+      .connect-motion.is-composing .connect-compose::before
+         {
+            background-color: var(--white);
+            transform: translateX(var(--morph-left, 0px));
+            transition: transform .34s var(--ease-in-out), background-color .34s var(--ease-in-out);
+         }
+
+      .connect-motion.is-composing .connect-compose .button-arrow
+         {
+            color: var(--ink);
+            transform: translateX(var(--morph-left, 0px));
+            transition: transform .34s var(--ease-in-out), color .34s var(--ease-in-out);
+         }
+
+      .connect-motion.is-composing .connect-compose .button-label
+         {
+            opacity: 0;
+            transition: opacity .12s var(--ease-out);
+         }
+
+      .connect-motion.is-entered.is-uncomposing .connect-compose
+         {
+            transition: clip-path .34s var(--ease-in-out), background-color .34s var(--ease-in-out), transform var(--press-out) var(--ease-out), opacity .16s var(--ease-out);
+         }
+
+      .connect-motion.is-uncomposing .connect-compose::before
+         {
+            transition: transform .34s var(--ease-in-out), background-color .34s var(--ease-in-out), width 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .connect-motion.is-uncomposing .connect-compose .button-arrow
+         {
+            transition: transform .34s var(--ease-in-out), color .34s var(--ease-in-out), left 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .connect-motion.is-uncomposing .connect-compose .button-label
+         {
+            transition: opacity .16s var(--ease-out) .22s, color 300ms ease, padding 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      /* The row itself arrives at once; Cancel fades into the room the edge
+         opens, and Submit appears only when the button has its shape. */
+      .connect-motion .connect-form .connect-form-actions
+         {
+            transform: none;
+         }
+
+      .connect-motion.is-composing .connect-form .connect-form-actions
+         {
+            transition: none;
+         }
+
+      .connect-motion .connect-form .connect-cancel
+         {
+            opacity: 0;
+         }
+
+      .connect-motion.is-composing .connect-form .connect-cancel
+         {
+            opacity: 1;
+            transition: opacity .2s var(--ease-out) .14s, color var(--press-out) var(--ease-out);
+         }
+
+      .connect-motion .connect-form .connect-send
+         {
+            visibility: hidden;
+         }
+
+      .connect-motion.is-composing .connect-form .connect-send
+         {
+            visibility: visible;
+            transition: transform var(--press-out) var(--ease-out), opacity var(--press-out) var(--ease-out), visibility 0s linear .34s;
+         }
+
+      .connect-motion .connect-form .connect-send .button-label
+         {
+            opacity: 0;
+         }
+
+      .connect-motion.is-composing .connect-form .connect-send .button-label
+         {
+            opacity: 1;
+            transition: opacity .16s var(--ease-out) .34s, color 300ms ease, padding 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .connect-motion.is-composing .connect-form .connect-field
+         {
+            transition-delay: calc(.2s + var(--i, 0) * 50ms);
          }
 
       .connect-form
