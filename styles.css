@@ -6102,6 +6102,15 @@ html.projects-snapping .skills-main
       right: calc(max(var(--edge), env(safe-area-inset-right)) - var(--page-gutter));
    }
 
+/* On a phone, What I do carries no footer: no signature, no role marks. */
+@media (max-width: 700px)
+   {
+      .skills-main .about-footer-skills
+         {
+            display: none;
+         }
+   }
+
 /* Skills ends just above Let's connect's screen, where the footer would show
    through the top bar, so it is shown only while Skills is the page. */
 .about-footer-skills
