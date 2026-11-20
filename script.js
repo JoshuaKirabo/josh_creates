@@ -3244,7 +3244,9 @@ function startSite()
             if(!width || !height) return;
             const goal = form(shape);
             const before = form(previous);
-            const size = Math.min(width * .34, height * .36);
+            // A phone's field is narrow and tall, so there the solid takes more of
+            // the width; at the laptop's share it would float in empty height.
+            const size = Math.min(width * (width < 500 ? .42 : .34), height * .36);
             const camera = 3.2;
             // The solid is seen from a little above. It turns slowly from one
             // three-quarter view to the other and leans toward the pointer.

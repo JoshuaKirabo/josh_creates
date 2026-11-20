@@ -5729,7 +5729,7 @@ html.projects-snapping .skills-main
    {
       .craft-now
          {
-            top: 16px;
+            top: 24px;
          }
 
       .craft-now span
@@ -5739,7 +5739,7 @@ html.projects-snapping .skills-main
 
       .craft-tools
          {
-            bottom: 16px;
+            bottom: 24px;
             gap: 12px;
          }
 
@@ -6169,12 +6169,12 @@ html.projects-snapping .skills-main
             top: var(--skills-top, 0px);
             flex: none;
             height: calc(100svh - var(--skills-top, 0px) - var(--footer-bottom) - 16px);
-            padding-block: 16px 0;
+            padding-block: 24px 0;
          }
 
       .craft-paged .about-block-head
          {
-            margin-bottom: 16px;
+            margin-bottom: 24px;
          }
 
       .craft-paged .craft
@@ -6187,7 +6187,7 @@ html.projects-snapping .skills-main
       .craft-paged .craft-cell
          {
             grid-area: 2 / 1;
-            padding: 20px;
+            padding: 24px 20px;
          }
 
       /* The field's caption names the discipline, so the cell keeps its name
@@ -6243,7 +6243,7 @@ html.projects-snapping .skills-main
          {
             display: block;
             flex: none;
-            margin-top: 16px;
+            margin-top: 24px;
          }
 
       /* Wider hit areas than the marks, on the same spacing. */
