@@ -733,6 +733,52 @@ function startSite()
         // On a phone Home's header is a bar in the same spot as About's.
         const heroBar = hero.querySelector('.header-bar');
         const heroToggle = hero.querySelector('.menu-toggle');
+        // The phone bar's edge is two halves that start together behind the
+        // hamburger, one over the top and one along the bottom, and meet on the
+        // left. They are traced on the bar's own 1px inner edge and rebuilt
+        // whenever its size changes.
+        const barFill = heroBar?.querySelector('.header-bar-fill');
+        const barEdges = [...(heroBar?.querySelectorAll('.header-bar-line path') || [])];
+        let barLength = 0;
+        const traceBar = () =>
+          {
+            const width = heroBar.offsetWidth;
+            const height = heroBar.offsetHeight;
+            if(!width || !height) return;
+            const radius = parseFloat(getComputedStyle(heroBar).borderTopLeftRadius) || 0;
+            const left = .5;
+            const right = width - .5;
+            const top = .5;
+            const bottom = height - .5;
+            const middle = height / 2;
+            const turn = Math.max(0, Math.min(radius - .5, middle - .5));
+            barEdges[0]?.setAttribute('d', `M${right} ${middle}V${top + turn}A${turn} ${turn} 0 0 0 ${right - turn} ${top}H${left + turn}A${turn} ${turn} 0 0 0 ${left} ${top + turn}V${middle}`);
+            barEdges[1]?.setAttribute('d', `M${right} ${middle}V${bottom - turn}A${turn} ${turn} 0 0 1 ${right - turn} ${bottom}H${left + turn}A${turn} ${turn} 0 0 1 ${left} ${bottom - turn}V${middle}`);
+            barLength = 2 * (middle - top - turn) + (right - left - 2 * turn) + Math.PI * turn;
+            barEdges.forEach(edge => edge.style.strokeDasharray = `${barLength} ${barLength}`);
+          };
+        if(heroBar && barEdges.length && 'ResizeObserver' in window)
+          {
+            new ResizeObserver(() =>
+              {
+                traceBar();
+                barShown = null;
+                schedulePaint();
+              }).observe(heroBar);
+          }
+        // Draws the phone bar for a point in the fold: the edge grows bright, then
+        // the fill comes in as the edge dims to About's own faint line.
+        let barShown = null;
+        const drawBar = (drawn, settled) =>
+          {
+            if(!barEdges.length) return;
+            const key = `${drawn.toFixed(4)} ${settled.toFixed(4)}`;
+            if(key === barShown) return;
+            barShown = key;
+            barEdges.forEach(edge => edge.style.strokeDashoffset = String(barLength * (1 - drawn)));
+            heroBar.querySelector('.header-bar-line').style.strokeOpacity = drawn ? String(.5 - .4 * settled) : '';
+            if(barFill) barFill.style.opacity = settled ? String(settled) : '';
+          };
         const aboutFooter = about.querySelector('.about-footer');
         // About's own content sits under the hero for the whole fold, so it has to
         // stay out of sight until the words have nearly landed.
@@ -1026,6 +1072,9 @@ function startSite()
             hero.style.visibility = '';
             pillLink?.style.removeProperty?.('--pill');
             pillShown = null;
+            // Without the fold the bar is About's alone: Home shows none.
+            drawBar(0, 0);
+            topbar?.classList.remove('is-bar-pending');
           }
 
         function paint(scrollPosition = window.scrollY)
@@ -1107,9 +1156,14 @@ function startSite()
                 // Home's bar and hamburger stay whole under About's copy of them and go
                 // only once it is whole too, so the bar never dims or moves. Elsewhere
                 // the hamburger leaves with the rest of the header.
+                // On a phone, Home's bar is drawn on the way: the edge from .08 to .6,
+                // the fill and the dimming edge from .45 to .78, where About's own box
+                // takes over in the same spot.
                 if(phoneLayout.matches)
                   {
                     const holding = arriving < 1 ? 1 : 0;
+                    drawBar(smooth(slice(progress, .08, .6)), smooth(slice(progress, .45, .78)));
+                    topbar?.classList.toggle('is-bar-pending', arriving < 1);
                     fade(heroBar, holding);
                     fade(heroToggle, holding);
                   }
@@ -1798,6 +1852,17 @@ function startSite()
             return true;
           };
         const ownable = event => event.cancelable && !event.defaultPrevented && !event.ctrlKey && !event.metaKey && !mobileMenu?.open;
+        // A box that scrolls on its own (a phone's Experience copy) keeps the
+        // gesture while it can still move that way; the page turns once it can't.
+        const yields = (event, direction) =>
+          {
+            for(let node = event.target; node instanceof Element && node !== document.body; node = node.parentElement)
+              {
+                if(node.scrollHeight <= node.clientHeight + 1 || !/auto|scroll/.test(getComputedStyle(node).overflowY)) continue;
+                if(direction > 0 ? node.scrollTop + node.clientHeight < node.scrollHeight - 1 : node.scrollTop > 0) return true;
+              }
+            return false;
+          };
         // Capture runs ahead of the fold's own listener, which would otherwise
         // read the swallowed momentum as a turn to Home.
         window.addEventListener('wheel', (event) =>
@@ -1805,6 +1870,22 @@ function startSite()
             if(Math.abs(event.deltaX) >= Math.abs(event.deltaY) || !ownable(event)) return;
             const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
             const fresh = flick.id !== gesture.flick;
+            // A flick that has turned the page keeps it, even over a box that
+            // could scroll. One that scrolled a box ends with that box: it neither
+            // turns the page nor runs on into it.
+            if(fresh || !gesture.owned)
+              {
+                if(yields(event, Math.sign(event.deltaY)))
+                  {
+                    gesture.yielded = flick.id;
+                    return;
+                  }
+                if(gesture.yielded === flick.id)
+                  {
+                    event.preventDefault();
+                    return;
+                  }
+              }
             gesture.flick = flick.id;
             if(!claim(Math.sign(event.deltaY), distance, fresh)) return;
             event.preventDefault();
@@ -1821,7 +1902,7 @@ function startSite()
             if(touchY === null || event.touches.length !== 1 || !ownable(event)) return;
             const dy = touchY - event.touches[0].clientY;
             touchY = event.touches[0].clientY;
-            if(!dy) return;
+            if(!dy || (!gesture.owned && yields(event, Math.sign(dy)))) return;
             const now = performance.now();
             const fresh = now - gesture.time > 180 || (Math.sign(dy) !== gesture.direction && !gesture.owned);
             gesture.time = now;
@@ -4155,6 +4236,7 @@ function startSite()
         const meet = content.querySelector('.about-hero');
         if(meet && !reducedMotion.matches && 'IntersectionObserver' in window)
           {
+            const meetFlows = () => getComputedStyle(meet).getPropertyValue('--meet-flow').trim() === '1';
             let settled = 0;
             let lastShown = 0;
             // A held turn owns the exit until Meet Josh is away or handed back. The
@@ -4164,6 +4246,13 @@ function startSite()
             new IntersectionObserver((entries) =>
               {
                 const entry = entries[entries.length - 1];
+                // The phone story reads in ordinary page flow. Keep it visible
+                // while reading instead of playing an exit partway through.
+                if(meetFlows())
+                  {
+                    meet.classList.remove('is-away', 'is-leaving', 'is-returning');
+                    return;
+                  }
                 const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
                 const now = whole ? entry.intersectionRect.height / whole : 0;
                 const rising = now > lastShown;
@@ -4201,7 +4290,7 @@ function startSite()
                 const y = window.scrollY;
                 // Only from Meet Josh's own resting place: while the fold is landing the
                 // document still reads Home's 0, which is a page stop too.
-                if(direction < 0 || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 || !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
+                if(meetFlows() || direction < 0 || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 || !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
                 return pageStops().find(top => top > y + 2);
               }, (to, edge) =>
               {
@@ -4223,7 +4312,7 @@ function startSite()
                   }, 360);
                 // Down from Meet Josh only ever cuts: a flick that cannot turn it yet
                 // (the fold's momentum, one mid-exit) is spent here rather than scrolled.
-              }, { fresh: true, still: direction => direction > 0 && Math.abs(window.scrollY - aboutStop) <= 2 });
+              }, { fresh: true, still: direction => !meetFlows() && direction > 0 && Math.abs(window.scrollY - aboutStop) <= 2 });
           }
 
         // Education arrives each time the page turns to it and resets once it has
@@ -4322,6 +4411,8 @@ function startSite()
         const panels = [...core.querySelectorAll('[role="tabpanel"]')];
         const owner = panels.map(panel => tabs.findIndex(tab => tab.getAttribute('aria-controls').split(' ').includes(panel.id)));
         const reading = core.querySelector('.core-reading');
+        // Phones set the jobs as a chain of workplace marks beside the card.
+        const chained = () => getComputedStyle(core).getPropertyValue('--core-chain').trim() === '1';
         let shown = -1;
 
         // One marker on a rail beside the list slides to the job being read and
@@ -4353,15 +4444,21 @@ function startSite()
           });
         // Each word of a workplace carries a zero-size mark on its baseline, so
         // the drawn copy can set every word exactly where the real one sits.
+        // A workplace can carry a shorter name for phones (data-phone). Both are
+        // built; the words they don't share are marked, and CSS shows one set.
         core.querySelectorAll('.core-org').forEach((org) =>
           {
-            const words = org.textContent.trim().split(/\s+/);
+            const long = org.textContent.trim().split(/\s+/);
+            const short = org.dataset.phone?.trim().split(/\s+/) || long;
+            let shared = 0;
+            while(shared < long.length && long[shared] === short[shared]) shared++;
+            const words = [...long.map((text, i) => [text, i < shared ? '' : ' core-org-long']), ...short.slice(shared).map(text => [text, ' core-org-short'])];
             org.textContent = '';
-            words.forEach((text, i) =>
+            words.forEach(([text, only], i) =>
               {
                 if(i) org.append(' ');
                 const word = document.createElement('span');
-                word.className = 'core-org-word';
+                word.className = 'core-org-word' + only;
                 const mark = document.createElement('span');
                 mark.className = 'core-org-mark';
                 word.append(mark, text);
@@ -4426,7 +4523,7 @@ function startSite()
             svg.setAttribute('width', org.clientWidth);
             svg.setAttribute('height', org.clientHeight);
             const box = org.getBoundingClientRect();
-            const strokes = [...org.querySelectorAll('.core-org-word')].map((word, i) =>
+            const strokes = [...org.querySelectorAll('.core-org-word')].filter(word => word.getClientRects().length).map((word, i) =>
               {
                 const mark = word.firstChild.getBoundingClientRect();
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -4566,6 +4663,8 @@ function startSite()
                 panel.inert = i !== index;
               });
             placeMarker();
+            // A phone's card scrolls its copy; a job opens at the top of its own.
+            if(previous !== index) panels[index].querySelector('.core-copy')?.scrollTo(0, 0);
             core.style.setProperty('--core-progress', panels.length > 1 ? index / (panels.length - 1) : 0);
             if(previous >= 0 && previous !== index) turn(previous, index);
           }
@@ -4581,6 +4680,9 @@ function startSite()
 
             if(!coreJobStops.length)
               {
+                // The chain stays beside the card as it scrolls by, so a job chosen
+                // from further down opens with the card's top in view.
+                if(chained() && reading.getBoundingClientRect().top < list.getBoundingClientRect().top - 1) sectionLandings['#experience']?.();
                 select(card);
                 return;
               }
@@ -4637,7 +4739,11 @@ function startSite()
             // a stage taller than the window never shows all of itself.
             const shownOf = (entry) =>
               {
-                const whole = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height || window.innerHeight);
+                // One taller still ends above the footer's room, so at its last stop
+                // that room is all of it there is to show.
+                const height = entry.rootBounds?.height || window.innerHeight;
+                const room = height - (parseFloat(getComputedStyle(section).paddingBottom) || 0);
+                const whole = entry.boundingClientRect.height > height ? room : Math.min(entry.boundingClientRect.height, height);
                 return whole ? entry.intersectionRect.height / whole : 0;
               };
             let lastShown = 0;
@@ -4789,7 +4895,7 @@ function startSite()
               {
                 const paragraphs = copy[i];
                 if(!paragraphs.length) return;
-                const isKisaka = panel.id === 'core-kisaka' || panel.id === 'core-kisaka-support';
+                const isKisaka = panel.id === 'core-kisaka';
                 const base = parseFloat(getComputedStyle(paragraphs[0]).fontSize);
                 // Measure the natural layout for both shrinking and growing. scrollHeight
                 // on a constrained flex panel includes overflow and can over-shrink copy.
@@ -4819,6 +4925,15 @@ function startSite()
           };
         const fitCard = () =>
           {
+            // The phone's chain lets the card grow to its copy, so nothing is fitted.
+            if(chained())
+              {
+                titles.forEach(title => (title.style.fontSize = ''));
+                metaRows.forEach((row) => { row.style.fontSize = ''; row.style.letterSpacing = ''; row.style.columnGap = ''; });
+                details.flat().forEach(words => (words.style.minWidth = ''));
+                copy.flat().forEach(paragraph => (paragraph.style.fontSize = ''));
+                return;
+              }
             fitTitles();
             fitDetails();
             fitCopy();
@@ -4875,7 +4990,14 @@ function startSite()
             sectionLandings['#experience'] = () => window.scrollTo({ top: Math.round(coreTop), behavior: 'instant' });
             const stops = [0, aboutTop, coreTop, ...coreJobStops];
             // A Core taller than the screen also stops with its bottom edge in view.
-            if(core.offsetHeight > window.innerHeight + 1 && !pinned) stops.push(coreTop + core.offsetHeight - window.innerHeight);
+            // A Core taller than the screen also stops with its bottom edge in view,
+            // and on the way there if a single turn would skip past some of it.
+            if(core.offsetHeight > window.innerHeight + 1 && !pinned)
+              {
+                const bottom = coreTop + core.offsetHeight - window.innerHeight;
+                const legs = Math.ceil((bottom - coreTop) / (window.innerHeight - 160));
+                for(let leg = 1; leg <= legs; leg++) stops.push(coreTop + (bottom - coreTop) * leg / legs);
+              }
 
             if(education)
               {

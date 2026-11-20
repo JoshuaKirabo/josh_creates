@@ -85,6 +85,11 @@
       --ease-in-out-quart: cubic-bezier(.76, 0, .24, 1);
       --press-in: 100ms;
       --press-out: 160ms;
+
+      /* A critically damped spring (Apple's damping 1, response .3s) sampled
+         for CSS: it lets go fast and settles without a visible bounce. */
+      --spring-release: linear(0, .067, .205, .358, .499, .619, .715, .79, .848, .89, .921, .944, .96, .972, .981, .986, .991, .993, .995, .997, .998, .999, 1);
+      --spring-release-time: 440ms;
       font-family: Arial, Helvetica, sans-serif;
       color: var(--white);
       background: var(--background);
@@ -1443,9 +1448,42 @@ html.menu-open
             z-index: 0;
             height: var(--bar-height);
             border-radius: var(--bar-radius);
-            background: var(--bar-fill);
-            box-shadow: var(--bar-line);
             pointer-events: none;
+         }
+
+      /* Home has no box behind the hamburger. Script draws the bar on the way
+         to About: a bright edge grows from the hamburger along the top and the
+         bottom and closes on the left where the name lands, then the fill comes
+         in and the edge dims to About's own. Both start out of sight. */
+      .header-bar-fill
+         {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: var(--bar-fill);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+            opacity: 0;
+         }
+
+      .header-bar-line
+         {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+            fill: none;
+            stroke: #fff;
+            stroke-width: 1;
+            stroke-opacity: 0;
+         }
+
+      /* About's own box waits until the drawn one is whole, then takes over
+         from it in the same spot. */
+      .menu-ready .about-topbar.is-bar-pending
+         {
+            background: transparent;
+            box-shadow: none;
          }
 
       .menu-ready .wordmark
@@ -3356,12 +3394,12 @@ html.projects-snapping
             object-position: center bottom;
          }
 
-      /* NextStep 3.95:1, SleekBoard 1.98:1, LopesEat 2:1, Style.io 1.42:1.
-         LopesEat's image draws the deer at 81% of its box, so it gets back
-         what its padding takes (its overflow is the image's clear edge).
+      /* NextStep 3.95:1, SleekBoard 1.98:1, Style.io 1.42:1, LopesEat 2:1.
          Style.io is a solid tag where the others are open strokes, so it
          steps down a little to sit at the same weight; NextStep's thin
-         wordmark steps up a little for the same reason. */
+         wordmark steps up a little for the same reason. LopesEat's image
+         draws the deer at 81% of its box, so it gets back what its padding
+         takes (its overflow is the image's clear edge). */
       #project-1
          {
             --mark-scale: .64;
@@ -3374,19 +3412,19 @@ html.projects-snapping
 
       #project-3
          {
+            --mark-scale: .88;
+         }
+
+      #project-4
+         {
             --mark-scale: 1.04;
          }
 
       /* The deer's image is clear for its bottom 9.75%; the drop puts its feet
          on the floor the other marks stand on. */
-      #project-3 .project-numeral img
+      #project-4 .project-numeral img
          {
             margin-bottom: calc(100cqh * -.1);
-         }
-
-      #project-4
-         {
-            --mark-scale: .88;
          }
 
       .project-cta
@@ -3891,6 +3929,12 @@ html.projects-snapping
       touch-action: pan-y !important;
    }
 
+/* Josh's photo stands in for the scene on phones only. */
+.about-photo
+   {
+      display: none;
+   }
+
 .about[inert] .about-scene-canvas, .about-motion:not(.is-arrived) .about-scene-canvas, .about-hero:is(.is-away, .is-leaving) .about-scene-canvas
    {
       pointer-events: none;
@@ -4172,6 +4216,13 @@ html.projects-snapping
       margin-top: 24px;
    }
 
+/* The story keeps its continuous desktop setting; phones give it paragraphs. */
+#meet-josh .about-lead p
+   {
+      display: inline;
+      margin: 0;
+   }
+
 .about-motion:not(.is-arrived) .about-hero .about-title-line
    {
       --about-fill: 0;
@@ -4303,6 +4354,33 @@ html.projects-snapping
 .about-motion.is-arrived .about-scene
    {
       transition: opacity 1s var(--ease-out), scale 1.6s var(--ease-out);
+   }
+
+/* The phone's photo develops like a print as Meet Josh lands: it comes up
+   washed out and grey, settles from a touch large, and its colour and
+   contrast come in behind it. It leaves the way the scene does. */
+.about-motion:not(.is-arrived) .about-photo, .about-motion .about-hero.is-away .about-photo
+   {
+      opacity: 0;
+      scale: 1.06;
+      filter: grayscale(1) brightness(1.6) contrast(.7);
+   }
+
+.about-motion .about-hero.is-away .about-photo
+   {
+      transition: none;
+   }
+
+.about-motion.is-arrived .about-photo
+   {
+      transition: opacity .7s var(--ease-out), scale 1.6s var(--ease-out), filter 1.8s var(--ease-out) .15s;
+   }
+
+.about-motion.is-arrived .about-hero.is-leaving .about-photo
+   {
+      opacity: 0;
+      scale: 1.02;
+      transition: opacity .3s var(--ease-out) .04s, scale .3s var(--ease-out) .04s;
    }
 
 .about-block-head
@@ -4887,6 +4965,12 @@ html.about-paging
       -webkit-tap-highlight-color: transparent;
    }
 
+/* The punctuation after a link stays on the link's line. */
+.core-desc-keep
+   {
+      white-space: nowrap;
+   }
+
 .core-desc-link-arrow
    {
       position: relative;
@@ -5155,13 +5239,13 @@ html.about-paging
 /* Tech Hub, Kisaka, Pearl, Tellistic, and GCE carry three paragraphs in the same card as the shorter jobs.
    The card does not grow: tighter spacing here, and script sizes the type
    to the room that is left. */
-#core-consultant .core-desc, #core-kisaka .core-desc, #core-intern .core-desc, #core-tellistic .core-desc, #core-gce .core-desc, #core-kisaka-support .core-desc
+#core-consultant .core-desc, #core-kisaka .core-desc, #core-intern .core-desc, #core-tellistic .core-desc, #core-gce .core-desc
    {
       margin-top: 20px;
       line-height: 1.45;
    }
 
-#core-consultant .core-desc + .core-desc, #core-kisaka .core-desc + .core-desc, #core-intern .core-desc + .core-desc, #core-tellistic .core-desc + .core-desc, #core-gce .core-desc + .core-desc, #core-kisaka-support .core-desc + .core-desc
+#core-consultant .core-desc + .core-desc, #core-kisaka .core-desc + .core-desc, #core-intern .core-desc + .core-desc, #core-tellistic .core-desc + .core-desc, #core-gce .core-desc + .core-desc
    {
       margin-top: .7em;
    }
@@ -5174,6 +5258,347 @@ html.about-paging
 #core-kisaka .core-desc-link:focus-visible
    {
       outline-color: #cc0033;
+   }
+
+/* Tellistic's link takes the maroon side of its triangle; the amber side is
+   too pale to read on the card, and the aubergine T is the card's own ink. */
+#core-tellistic .core-desc-link
+   {
+      color: #7b1523;
+   }
+
+#core-tellistic .core-desc-link:focus-visible
+   {
+      outline-color: #7b1523;
+   }
+
+/* Each job carries its workplace's mark for the phone's chain; wider layouts
+   name the job instead. */
+.core-subject-logo
+   {
+      display: none;
+   }
+
+/* A workplace's phone-only short name stays out of wider layouts. */
+.core-org-short
+   {
+      display: none;
+   }
+
+/* A card's paragraphs share one box, which only a phone's card scrolls. */
+.core-copy
+   {
+      display: contents;
+   }
+
+/* On a phone the jobs become a chain of workplace marks down the left edge,
+   threaded on one line that breaks 6px short of each mark. The line down to
+   the job being read is brighter. As on desktop, every job shares one card
+   of one size that fits the screen with the heading and footer. The title,
+   workplace and details hold still and the paragraphs scroll inside the card
+   at reading size, so script, reading --core-chain, leaves the type alone. */
+@container core (max-width: 639px)
+   {
+      .core
+         {
+            --core-chain: 1;
+         }
+
+      /* The card takes whatever height the screen leaves under the heading,
+         so the section fills the screen exactly and parks in one place. */
+      .core-stage
+         {
+            flex: 1 1 auto;
+            min-height: 0;
+         }
+
+      .core-ready
+         {
+            flex: 1 1 0;
+            display: grid;
+            grid-template-columns: 40px minmax(0, 1fr);
+            grid-template-rows: minmax(0, 1fr);
+            column-gap: 14px;
+            min-height: 388px;
+         }
+
+      .core-ready .core-subjects
+         {
+            position: sticky;
+            top: 88px;
+            align-self: start;
+            gap: 12px;
+            padding-block: 20px;
+         }
+
+      .core-ready .core-rail
+         {
+            display: none;
+         }
+
+      .core-ready .core-subject, .core-ready .core-subject:has(.core-subject-org)
+         {
+            flex: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 48px;
+            min-height: 48px;
+            padding: 0;
+            border: 0;
+            border-radius: 8px;
+            color: rgba(255, 255, 255, .4);
+            transition: color 200ms var(--ease-out);
+         }
+
+      .core-ready .core-subject > span:not(.core-subject-logo)
+         {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+         }
+
+      /* Marks share a 36×24 box, so wide wordmarks and square marks read at
+         a similar size. */
+      .core-ready .core-subject-logo
+         {
+            --logo-h: min(calc(36px / var(--logo-ratio, 1)), 24px);
+            position: relative;
+            display: block;
+            width: min(36px, 24px * var(--logo-ratio, 1));
+            aspect-ratio: var(--logo-ratio, 1);
+         }
+
+      .core-subject-logo svg
+         {
+            display: block;
+            width: 100%;
+            height: 100%;
+            fill: currentColor;
+         }
+
+      .core-ready .core-subject[aria-selected="true"]
+         {
+            color: var(--white);
+         }
+
+      .core-ready .core-subject.is-touch-pressed
+         {
+            color: rgba(255, 255, 255, .8);
+         }
+
+      .core-ready .core-subject:focus-visible
+         {
+            outline-offset: 2px;
+         }
+
+      /* Each mark draws the line from 6px off its own ink to halfway across
+         the gap on either side, so neighbours meet in one unbroken line. */
+      .core-ready .core-subject-logo::before, .core-ready .core-subject-logo::after
+         {
+            content: '';
+            position: absolute;
+            left: 50%;
+            width: 1px;
+            height: calc((48px - var(--logo-h)) / 2);
+            background-color: rgba(255, 255, 255, .55);
+            translate: -50% 0;
+            transition: background-color 200ms var(--ease-out);
+         }
+
+      .core-ready .core-subject-logo::before
+         {
+            bottom: calc(100% + 6px);
+         }
+
+      .core-ready .core-subject-logo::after
+         {
+            top: calc(100% + 6px);
+         }
+
+      .core-ready .core-subject[aria-selected="true"] .core-subject-logo::after, .core-ready .core-subject[aria-selected="true"] ~ .core-subject .core-subject-logo::before, .core-ready .core-subject[aria-selected="true"] ~ .core-subject .core-subject-logo::after
+         {
+            background-color: rgba(255, 255, 255, .18);
+         }
+
+      /* Short screens close the chain up (gap 8px, ends 4px), so it fits the
+         room the card has and Experience still parks on one screen. */
+      @media (max-height: 600px)
+         {
+            .core-ready
+               {
+                  min-height: 336px;
+               }
+
+            .core-ready .core-subjects
+               {
+                  gap: 8px;
+                  padding-block: 4px;
+               }
+
+            .core-ready .core-subject-logo::before, .core-ready .core-subject-logo::after
+               {
+                  height: calc((48px - var(--logo-h)) / 2 - 2px);
+               }
+         }
+
+      /* The line runs on past both ends, fading out. */
+      .core-ready .core-subject:first-of-type .core-subject-logo::before
+         {
+            -webkit-mask-image: linear-gradient(to top, #000, transparent);
+            mask-image: linear-gradient(to top, #000, transparent);
+         }
+
+      .core-ready .core-subject:last-child .core-subject-logo::after
+         {
+            -webkit-mask-image: linear-gradient(to bottom, #000, transparent);
+            mask-image: linear-gradient(to bottom, #000, transparent);
+         }
+
+      /* The card fills its row, so it never comes up shorter than the chain. */
+      .core-ready .core-reading
+         {
+            min-height: 0;
+            margin-top: 0;
+         }
+
+      .core-ready .core-panel
+         {
+            min-height: 0;
+            padding: 22px 20px 20px;
+         }
+
+      /* The paragraphs scroll under a soft foot; the padding lets the last
+         line clear it. */
+      #experience .core-copy
+         {
+            display: block;
+            flex: 1 1 0;
+            min-height: 0;
+            margin-top: 16px;
+            padding-bottom: 24px;
+            overflow-y: auto;
+            scrollbar-width: none;
+            -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+            mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+         }
+
+      #experience .core-copy::-webkit-scrollbar
+         {
+            display: none;
+         }
+
+      #experience .core-copy > .core-desc:first-child
+         {
+            margin-top: 0;
+         }
+
+      #experience .core-title
+         {
+            font-size: 26px;
+            line-height: 1.08;
+            white-space: normal;
+         }
+
+      #experience .core-org
+         {
+            order: 2;
+            margin-top: 10px;
+            font-size: 11px;
+            letter-spacing: .14em;
+         }
+
+      #experience .core-org-long
+         {
+            display: none;
+         }
+
+      #experience .core-org-short
+         {
+            display: inline;
+         }
+
+      /* The dates leave the details and sit under the workplace; the rest of
+         the details stay at the card's foot, under the copy. */
+      #experience .core-title
+         {
+            order: 1;
+         }
+
+      #experience .core-meta li:first-child
+         {
+            order: 3;
+            margin-top: 10px;
+         }
+
+      #experience .core-copy
+         {
+            order: 4;
+         }
+
+      #experience .core-meta li:not(:first-child)
+         {
+            order: 5;
+            margin-top: 6px;
+         }
+
+      #experience .core-meta li:nth-child(2)
+         {
+            margin-top: 14px;
+         }
+
+      /* A job without copy still keeps its other details at the card's foot. */
+      #experience .core-panel:not(:has(.core-copy)) .core-meta li:nth-child(2)
+         {
+            margin-top: auto;
+         }
+
+      #experience .core-desc
+         {
+            margin-top: 18px;
+            font-size: 15px;
+            line-height: 1.5;
+         }
+
+      #experience .core-desc + .core-desc
+         {
+            margin-top: .75em;
+         }
+
+      #experience .core-meta
+         {
+            display: contents;
+            font-size: 11px;
+            letter-spacing: .1em;
+         }
+   }
+
+/* A phone parks Experience like Projects: its eyebrow 12px under the bar
+   (which ends at 68px) and the card running to 32px off the foot of the
+   screen. The footer no longer sits on this screen, so its room goes to the
+   card. 679px is where the block falls under 640px and the chain begins. */
+@media (max-width: 679px)
+   {
+      #experience.core-section
+         {
+            padding-top: 80px;
+            padding-bottom: 32px;
+         }
+
+      /* Pinned, the stage holds the screen while the page steps through the
+         jobs beneath it, so the stage carries that spacing instead. */
+      .core-pinned #experience.core-section
+         {
+            padding-block: 0;
+         }
+
+      .core-pinned #experience .core-stage
+         {
+            padding-block: 80px 32px;
+         }
    }
 
 /* Education, after the "Evolution of AI" diptych on
@@ -5417,7 +5842,7 @@ html.about-paging
 .edu-logo-outline
    {
       fill: none;
-      stroke: rgba(255, 255, 255, .14);
+      stroke: rgba(255, 255, 255, .18);
       stroke-width: 1;
    }
 
@@ -5429,7 +5854,7 @@ html.about-paging
 
 .edu-logo-fill
    {
-      color: rgba(255, 255, 255, .05);
+      color: rgba(255, 255, 255, .07);
       clip-path: inset(0);
    }
 
@@ -5492,12 +5917,35 @@ html.about-paging
 
       .edu-title
          {
-            font-size: 38px;
+            font-size: 40px;
          }
 
       .edu-desc
          {
             font-size: 19px;
+         }
+   }
+
+/* With the room of a laptop the school names take the sheet: the title is
+   the largest thing on it, tracked in, over a mark that shows more of itself. */
+@container core (min-width: 1100px)
+   {
+      .edu-sheet
+         {
+            row-gap: 24px;
+            padding: 40px;
+         }
+
+      .edu-title
+         {
+            font-size: 56px;
+            line-height: 1.05;
+            letter-spacing: -.025em;
+         }
+
+      .edu-desc
+         {
+            font-size: 20px;
          }
    }
 
@@ -5565,6 +6013,191 @@ html.about-paging
       .about-scene
          {
             display: none;
+         }
+
+      /* Keep the photo, overlapping title and story in natural reading flow. */
+      .about-hero
+         {
+            --meet-flow: 1;
+            display: flex;
+            height: auto;
+            min-height: calc(100svh - 116px);
+            padding-bottom: max(32px, env(safe-area-inset-bottom));
+            scroll-snap-align: start;
+            scroll-margin-top: 116px;
+         }
+
+      .about-footer-fold
+         {
+            display: none;
+         }
+
+      /* Fade the image itself, without an empty containing row. The full
+         photograph keeps the hand and keyboard in view below his face. */
+      .about-photo
+         {
+            display: block;
+            flex: none;
+            align-self: stretch;
+            margin: -32px calc(-1 * var(--page-gutter)) 0;
+            -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 88%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 88%, transparent);
+            transform-origin: 50% 0;
+            pointer-events: none;
+            user-select: none;
+         }
+
+      .about-photo img
+         {
+            display: block;
+            width: 100%;
+            height: auto;
+         }
+
+      .about-hero .about-title
+         {
+            flex: none;
+            align-self: flex-start;
+            margin: -32px 0 0;
+            font-size: clamp(2.75rem, 15vw, 4.75rem);
+            text-align: left;
+         }
+
+      .about-hero .about-title-line
+         {
+            margin-left: 0;
+         }
+
+      #meet-josh .about-lead
+         {
+            display: block;
+            flex: none;
+            align-self: stretch;
+            max-width: none;
+            margin: 32px 0 0;
+            padding: 0 4px;
+            overflow: visible;
+            color: rgba(255, 255, 255, .7);
+            font-size: 1rem;
+            line-height: 1.6;
+            text-align: left;
+         }
+
+      #meet-josh .about-lead p
+         {
+            display: block;
+         }
+
+      #meet-josh .about-lead p + p
+         {
+            margin-top: 24px;
+         }
+
+      #meet-josh .about-lead .about-story-opening
+         {
+            color: var(--white);
+            font-size: 1.25rem;
+            line-height: 1.4;
+         }
+
+      /* Keep both actions within reach while the story scrolls past them. */
+      #meet-josh .about-resume
+         {
+            position: sticky;
+            bottom: 0;
+            z-index: 1;
+            flex: none;
+            flex-wrap: wrap;
+            align-self: stretch;
+            gap: 12px;
+            margin: 16px calc(-1 * var(--page-gutter)) 0;
+            padding: 16px max(var(--page-gutter), env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(var(--page-gutter), env(safe-area-inset-left));
+            background: linear-gradient(to bottom, transparent, var(--background) 16px);
+         }
+
+      #meet-josh .about-resume .button
+         {
+            flex: 1 1 8rem;
+            width: auto;
+            min-width: 0;
+            min-height: 48px;
+            padding: 12px 16px;
+            font-size: .875rem;
+         }
+
+      #meet-josh .about-resume .button::before
+         {
+            display: none;
+         }
+
+      #meet-josh .about-resume .button-primary
+         {
+            color: var(--white);
+            background: transparent;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .4);
+         }
+
+      #meet-josh .about-resume .button-inverse
+         {
+            color: var(--ink);
+            background: var(--white);
+            box-shadow: none;
+         }
+
+      #meet-josh .about-resume .button-label
+         {
+            padding: 0 24px 0 0;
+            text-align: left;
+         }
+
+      #meet-josh .about-resume .button-arrow
+         {
+            left: auto;
+            right: 12px;
+            width: 20px;
+            color: inherit;
+         }
+
+      /* Press: the button sinks under the finger and its surface lights up,
+         as iOS controls do, instead of dimming. Release: it springs back. */
+      #meet-josh .about-resume .button
+         {
+            transition:
+               transform var(--spring-release-time) var(--spring-release),
+               background-color 240ms var(--ease-out),
+               box-shadow 240ms var(--ease-out);
+         }
+
+      #meet-josh .about-resume .button.is-touch-pressed
+         {
+            transform: scale(.95);
+            opacity: 1;
+            transition:
+               transform var(--press-in) var(--ease-out),
+               background-color var(--press-in) var(--ease-out),
+               box-shadow var(--press-in) var(--ease-out);
+         }
+
+      #meet-josh .about-resume .button-primary.is-touch-pressed
+         {
+            background-color: rgba(255, 255, 255, .1);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .75);
+         }
+
+      #meet-josh .about-resume .button-inverse.is-touch-pressed
+         {
+            background-color: #dcdcdc;
+         }
+
+      /* Reduced motion keeps the surface highlight and drops the squeeze. */
+      @media (prefers-reduced-motion: reduce)
+         {
+            #meet-josh .about-resume .button,
+            #meet-josh .about-resume .button.is-touch-pressed
+               {
+                  transform: none;
+                  transition: background-color var(--press-out) var(--ease-out), box-shadow var(--press-out) var(--ease-out) !important;
+               }
          }
    }
 
@@ -8367,6 +9000,13 @@ textarea.connect-input
          {
             opacity: 1;
             scale: none;
+         }
+
+      .about-motion:not(.is-arrived) .about-photo, .about-motion .about-hero.is-away .about-photo
+         {
+            opacity: 1;
+            scale: none;
+            filter: none;
          }
    }
 

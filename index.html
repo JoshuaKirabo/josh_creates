@@ -103,8 +103,9 @@
   <a class="skip-link" href="#intro">Skip to content</a>
   <main data-entry-page="home">
     <section class="hero" id="home" aria-label="Joshua Kirabo, creative developer">
-      <!-- A phone's header bar. It sits under the name, so the name lands in it. -->
-      <span class="header-bar" aria-hidden="true"></span>
+      <!-- A phone's header bar. It sits under the name, so the name lands in it.
+           Home shows none of it; the fold draws its edge, then fills it. -->
+      <span class="header-bar" aria-hidden="true"><span class="header-bar-fill"></span><svg class="header-bar-line" focusable="false"><path/><path/></svg></span>
       <div class="wordmark-stage" aria-hidden="true">
         <div class="wordmark"><span class="intro-letter">J</span><span class="intro-letter">O</span><span class="intro-letter">S</span><span class="intro-letter">H</span></div>
       </div>
@@ -213,11 +214,22 @@
           <figure class="about-scene">
             <canvas class="about-scene-canvas" role="img" aria-label="3D scene of Josh working on a laptop on a couch, beside a floor lamp, a plant and a guitar" data-scene="assets/spline/developer-working-scene.splinecode?v=5"></canvas>
           </figure>
+          <!-- Phones get Josh's photo in place of the scene. Only the phone source
+               names the file, so a wider screen never downloads it. -->
+          <picture class="about-photo">
+            <source media="(max-width: 700px)" srcset="assets/josh_first_computer_800.webp 800w, assets/josh_first_computer_1200.webp 1200w" sizes="100vw">
+            <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Josh as a toddler at the family computer, one hand on the keyboard, looking back at the camera" width="1200" height="800" decoding="async">
+          </picture>
           <h1 class="about-title">
             <span class="about-title-line"><span class="about-title-outline">Meet</span><span class="about-title-fill" aria-hidden="true">Meet</span></span>
             <span class="about-title-line about-title-strong"><span class="about-title-outline">Josh.</span><span class="about-title-fill" aria-hidden="true">Josh.</span></span>
           </h1>
-          <p class="about-lead">I’m naturally a curious person. Growing up, I always wanted to know how everything worked, and a screwdriver was how I found out. Taking things apart got me into trouble all the time, but it also gave me my first blueprint for engineering. When we got an IBM computer, my curiosity had somewhere new to go. I spent countless hours on it, and that’s where my love for computers started. That same curiosity has carried me ever since, and not just with computers. Away from the screen, you’ll find me on another set of keys, playing piano and producing music, or lost in a drawing.</p>
+          <div class="about-lead">
+            <p class="about-story-opening">I’m naturally a curious person.</p>
+            <p>Growing up, I always wanted to know how everything worked, and a screwdriver was how I found out. Taking things apart got me into trouble all the time, but it also gave me my first blueprint for engineering.</p>
+            <p>When we got an IBM computer, my curiosity had somewhere new to go. I spent countless hours on it, and that’s where my love for computers started.</p>
+            <p>That same curiosity has carried me ever since, and not just with computers. Away from the screen, you’ll find me on another set of keys, playing piano and producing music, or lost in a drawing.</p>
+          </div>
           <p class="about-resume"><a class="button button-primary" href="resume.html"><span class="button-label">My Resume</span><span class="button-arrow" aria-hidden="true"><svg class="resume-icon-document" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><circle cx="9" cy="10" r="1.5"/><path d="M6.5 15a2.5 2.5 0 0 1 5 0M14 13h3M14 16h3M7 18h10"/></svg></span></a><a class="button button-inverse" href="#connect"><span class="button-label">Get In Touch</span><span class="button-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M20.75 3.25 10.5 13.5"/><path d="M20.75 3.25 14.25 20.5l-3.75-7-7-3.75 17.25-6.5Z"/></svg></span></a></p>
         </section>
 
@@ -229,51 +241,37 @@
           </div>
           <div class="core" data-core>
             <div class="core-subjects" role="tablist" aria-label="My Career" aria-orientation="vertical" hidden>
-              <button class="core-subject" type="button" role="tab" id="core-tab-current" aria-controls="core-current core-consultant" aria-selected="true"><span>Tech Hub Consultant</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 09/25 – Present</span></button>
-              <button class="core-subject" type="button" role="tab" id="core-tab-kisaka" aria-controls="core-kisaka" aria-selected="false" tabindex="-1"><span>Information Technology Manager</span><span class="core-subject-org">Part Time <span class="core-subject-sep" aria-hidden="true">|</span> 08/26 – Present</span></button>
-              <button class="core-subject" type="button" role="tab" id="core-tab-intern" aria-controls="core-intern" aria-selected="false" tabindex="-1"><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 05/26 – 08/26</span></button>
-              <button class="core-subject" type="button" role="tab" id="core-tab-tellistic" aria-controls="core-tellistic" aria-selected="false" tabindex="-1"><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 07/24 – 03/25</span></button>
-              <button class="core-subject" type="button" role="tab" id="core-tab-gce" aria-controls="core-gce" aria-selected="false" tabindex="-1"><span>Information Technology Support Analyst</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 10/21 – 04/24</span></button>
-              <button class="core-subject" type="button" role="tab" id="core-tab-kisaka-support" aria-controls="core-kisaka-support" aria-selected="false" tabindex="-1"><span>IT Support Assistant</span><span class="core-subject-org">Full-time <span class="core-subject-sep" aria-hidden="true">|</span> 12/19 – 11/20</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-current" aria-controls="core-current" aria-selected="true"><span class="core-subject-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg viewBox="0 0 656 286" focusable="false"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg></span><span>Lead Tech Hub Consultant</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 01/27 – Present</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-kisaka" aria-controls="core-kisaka" aria-selected="false" tabindex="-1"><span class="core-subject-logo" style="--logo-ratio: 1" aria-hidden="true"><svg viewBox="0 0 160 160" focusable="false"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg></span><span>IT Operations Associate</span><span class="core-subject-org">Full Time <span class="core-subject-sep" aria-hidden="true">|</span> 08/26 – 12/26</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-intern" aria-controls="core-intern" aria-selected="false" tabindex="-1"><span class="core-subject-logo" style="--logo-ratio: 1.1111" aria-hidden="true"><svg viewBox="0 0 120 108" focusable="false"><use href="assets/workplace-logos/pearl.svg#logo-pearl"/></svg></span><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 05/26 – 08/26</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-consultant" aria-controls="core-consultant" aria-selected="false" tabindex="-1"><span class="core-subject-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg viewBox="0 0 656 286" focusable="false"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg></span><span>Tech Hub Consultant</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 09/25 – 05/26</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-tellistic" aria-controls="core-tellistic" aria-selected="false" tabindex="-1"><span class="core-subject-logo" style="--logo-ratio: 1.24" aria-hidden="true"><svg viewBox="0 0 620 500" focusable="false"><use href="assets/workplace-logos/tellistic.svg#logo-tellistic"/></svg></span><span>Software Engineer</span><span class="core-subject-org">Internship <span class="core-subject-sep" aria-hidden="true">|</span> 07/24 – 02/25</span></button>
+              <button class="core-subject" type="button" role="tab" id="core-tab-gce" aria-controls="core-gce" aria-selected="false" tabindex="-1"><span class="core-subject-logo" style="--logo-ratio: 2.2864" aria-hidden="true"><svg viewBox="0 0 942 412" focusable="false"><use href="assets/workplace-logos/gce.svg#logo-gce"/></svg></span><span>Information Technology Support Analyst</span><span class="core-subject-org">Student Worker <span class="core-subject-sep" aria-hidden="true">|</span> 10/21 – 04/24</span></button>
             </div>
             <div class="core-reading">
               <article class="core-panel" id="core-current" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
                 <span class="core-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg><span class="core-logo-fill"><svg viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg></span></span>
                 <h3 class="core-title">Lead Tech Hub Consultant</h3>
                 <p class="core-org">Arizona State University Tech Hub</p>
-                <p class="core-desc">At ASU’s Polytechnic campus, I lead a team of about 5 consultants.</p>
                 <ul class="core-meta" aria-label="Role details">
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>May 2026 – Present</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Student Worker</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Tempe, Arizona</span></li>
-                </ul>
-              </article>
-              <article class="core-panel" id="core-consultant" role="tabpanel" aria-labelledby="core-tab-current" tabindex="0">
-                <span class="core-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg><span class="core-logo-fill"><svg viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg></span></span>
-                <h3 class="core-title">Tech Hub Consultant</h3>
-                <p class="core-org">Arizona State University Tech Hub</p>
-                <p class="core-desc">In this role, I provided walk-in technical support to ASU students at the Tech Hub, mainly at the Polytechnic campus with some shifts at Tempe. Most of the work was account and network troubleshooting, such as ASURITE activation errors, sign-in lockouts, Duo, and WiFi, along with restoring Windows computers. Terminal and PowerShell were everyday tools in the job.</p>
-                <p class="core-desc">I was also on the team building the Tech Hub’s RAG chatbot on ASU’s CreateAI platform. I trimmed its system prompt to about 52 lines so it gave the simplest fix first, found a bug where its knowledge-base-only mode missed answers that were in its documents, which was escalated to the CreateAI team, and stress-tested its guardrails with prompt injections and privacy probes.</p>
-                <p class="core-desc">At Poly, I took it upon myself to improve the workstations. I located dead Ethernet ports by their jack IDs for the network team to activate, catalogued unused Macs, and tested a Zoom setup that lets Tempe staff help Poly students during coverage gaps. This work led to my promotion to Lead at Poly in May 2026.</p>
-                <ul class="core-meta" aria-label="Role details">
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Sep 2025 – May 2026</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Jan 2027 – Present</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Student Worker</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Tempe, Arizona</span></li>
                 </ul>
               </article>
               <article class="core-panel" id="core-kisaka" role="tabpanel" aria-labelledby="core-tab-kisaka" tabindex="0">
-                <span class="core-logo" style="--logo-ratio: 1.0172" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 118 116"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg><span class="core-logo-fill"><svg viewBox="0 0 118 116"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg></span></span>
-                <h3 class="core-title">Information Technology Manager</h3>
-                <p class="core-org">Kisaka and Company, Certified Public Accountants</p>
-                <p class="core-desc">I lead technology at Kisaka across software engineering, IT operations, and infrastructure. I design, build, deploy, and maintain the software that supports the firm’s internal operations, alongside its <a class="core-desc-link" href="https://www.kisaka.ug/" target="_blank" rel="noopener noreferrer">website<span class="core-desc-link-arrow" aria-hidden="true"><svg class="core-desc-link-arrow-icon" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="core-desc-link-arrow-icon core-desc-link-arrow-icon--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a>, integrations, automation, and the scripts used to provision and configure new computers. Where existing software cannot meet an operational need, I build what the firm requires.</p>
-                <p class="core-desc">I also plan and manage the technology environment that work depends on, covering workstations, laptops, printers, servers, networking, and the software that operates them. My responsibilities extend to technical support, security, backups and recovery, asset inventories, policies, documentation, and change control, as well as coordinating technology projects with staff and vendors.</p>
-                <p class="core-desc">This role gives me responsibility across the full life of the firm’s technology, from writing the software and deploying the systems to maintaining the infrastructure that keeps them running.</p>
+                <span class="core-logo" style="--logo-ratio: 1" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 160 160"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg><span class="core-logo-fill"><svg viewBox="0 0 160 160"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg></span></span>
+                <h3 class="core-title">IT Operations Associate</h3>
+                <p class="core-org" data-phone="Kisaka and Company, CPA">Kisaka and Company, Certified Public Accountants</p>
+                <div class="core-copy">
+                  <p class="core-desc">I was responsible for the full life of Kisaka’s technology, across software engineering, IT operations, and infrastructure. I designed, built, deployed, and maintained the software that supported the firm’s internal operations, alongside its <span class="core-desc-keep"><a class="core-desc-link" href="https://www.kisaka.ug/" target="_blank" rel="noopener noreferrer">website<span class="core-desc-link-arrow" aria-hidden="true"><svg class="core-desc-link-arrow-icon" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="core-desc-link-arrow-icon core-desc-link-arrow-icon--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a>,</span> integrations, automation, and the scripts used to provision and configure new computers. Where existing software could not meet a need, I built what the firm required, including an <a class="core-desc-link" href="#" data-placeholder-link>AI-assisted proposal workflow<span class="core-desc-link-arrow" aria-hidden="true"><svg class="core-desc-link-arrow-icon" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="core-desc-link-arrow-icon core-desc-link-arrow-icon--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a> that traced every requirement in a request for proposals to its source and cut the managing partner’s time on a proposal from 3 days to under an hour.</p>
+                  <p class="core-desc">I also ran IT audit engagements for the firm’s clients, testing ICT and cybersecurity controls against ISO/IEC 27001:2022 and CIS benchmarks, using PowerShell and Python scripts that cut a full week’s work down to 30 minutes.</p>
+                </div>
                 <ul class="core-meta" aria-label="Role details">
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Aug 2026 – Present</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Part Time</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/></svg><span>Remote</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Aug 2026 – Dec 2026</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Full Time</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Kampala, Uganda</span></li>
                 </ul>
               </article>
@@ -281,9 +279,11 @@
                 <span class="core-logo" style="--logo-ratio: 1.1111" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 120 108"><use href="assets/workplace-logos/pearl.svg#logo-pearl"/></svg><span class="core-logo-fill"><svg viewBox="0 0 120 108"><use href="assets/workplace-logos/pearl.svg#logo-pearl"/></svg></span></span>
                 <h3 class="core-title">Software Engineer</h3>
                 <p class="core-org">Pearl Accounting Solutions</p>
-                <p class="core-desc">During this internship, I worked on a company-wide project to move Pearl’s SACCO ledger system to the cloud. It was a LAN-hosted Microsoft Access application written in VBA, so it could only be accessed from SACCO offices. Our 5 person team rebuilt it in Java Spring Boot with Thymeleaf, and by the end of my internship it was live for about 15 SACCOs.</p>
-                <p class="core-desc">Uganda’s unreliable power and internet ruled out an on-site server, and a VPS would have added complexity, so we deployed on Railway. During the deployment, I wrote the YAML pipeline that tested each change to main, built a Docker image, and deployed it automatically. I redesigned the dashboard and sidebar and gave the dashboard its own phone layout. I also taught the team to use AI agents, mainly Claude Code.</p>
-                <p class="core-desc">I audited the system’s security through code review, automated scanners, and live tests on a copy of the application. I found 26 vulnerabilities, 4 of them critical, and fixed them. Alongside the fixes, I recommended platforms for authentication and audit logging.</p>
+                <div class="core-copy">
+                  <p class="core-desc">During this internship, I worked on a company-wide project to move Pearl’s SACCO ledger system to the cloud. It was a LAN-hosted Microsoft Access application written in VBA, so it could only be accessed from SACCO offices. Our 5 person team rebuilt it in Java Spring Boot with Thymeleaf, and by the end of my internship it was live for about 15 SACCOs.</p>
+                  <p class="core-desc">We deployed on Railway, and I wrote the YAML pipeline that tested each change to main, built a Docker image, and deployed it automatically. I redesigned the dashboard and sidebar and gave the dashboard its own phone layout. I also taught the team to use AI agents, mainly Claude Code.</p>
+                  <p class="core-desc">I audited the system’s security through code review, automated scanners, and live tests on a copy of the application. I found 26 vulnerabilities, 4 of them critical, and fixed them. Alongside the fixes, I recommended platforms for authentication and audit logging.</p>
+                </div>
                 <ul class="core-meta" aria-label="Role details">
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>May 2026 – Aug 2026</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Internship</span></li>
@@ -291,15 +291,33 @@
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Kampala, Uganda</span></li>
                 </ul>
               </article>
+              <article class="core-panel" id="core-consultant" role="tabpanel" aria-labelledby="core-tab-consultant" tabindex="0">
+                <span class="core-logo" style="--logo-ratio: 2.2937" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg><span class="core-logo-fill"><svg viewBox="0 0 656 286"><use href="assets/workplace-logos/asu.svg#logo-asu"/></svg></span></span>
+                <h3 class="core-title">Tech Hub Consultant</h3>
+                <p class="core-org">Arizona State University Tech Hub</p>
+                <div class="core-copy">
+                  <p class="core-desc">In this role, I provided walk-in technical support to ASU students at the Tech Hub, mainly at the Polytechnic campus with some shifts at Tempe. Most of the work was account and network troubleshooting, such as ASURITE activation errors, sign-in lockouts, Duo, and WiFi, along with restoring Windows computers. Terminal and PowerShell were everyday tools in the job.</p>
+                  <p class="core-desc">I was also on the team building the Tech Hub’s RAG chatbot on ASU’s CreateAI platform. I trimmed its system prompt to about 52 lines so it gave the simplest fix first, found a bug where its knowledge-base-only mode missed answers that were in its documents, which was escalated to the CreateAI team, and stress-tested its guardrails with prompt injections and privacy probes.</p>
+                  <p class="core-desc">At Poly, I took it upon myself to improve the workstations. I located dead Ethernet ports by their jack IDs for the network team to activate, catalogued unused Macs, and tested a Zoom setup that lets Tempe staff help Poly students during coverage gaps. This work led to my promotion to Lead at Poly in May 2026.</p>
+                </div>
+                <ul class="core-meta" aria-label="Role details">
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Sep 2025 – May 2026</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Student Worker</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Tempe, Arizona</span></li>
+                </ul>
+              </article>
               <article class="core-panel" id="core-tellistic" role="tabpanel" aria-labelledby="core-tab-tellistic" tabindex="0">
                 <span class="core-logo" style="--logo-ratio: 1.24" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 620 500"><use href="assets/workplace-logos/tellistic.svg#logo-tellistic"/></svg><span class="core-logo-fill"><svg viewBox="0 0 620 500"><use href="assets/workplace-logos/tellistic.svg#logo-tellistic"/></svg></span></span>
                 <h3 class="core-title">Software Engineer</h3>
                 <p class="core-org">Tellistic Technology Services</p>
-                <p class="core-desc">During this internship, I worked on a project to turn survey responses collected through SurveyCTO into structured data for a client’s analysis and reporting. I built a Python-based ETL pipeline using Azure Data Factory, Azure Databricks, and Azure SQL to automate the movement of data from raw submissions to database tables.</p>
-                <p class="core-desc">Much of the work involved reconciling complex survey structures with a relational database schema. I flattened nested repeat groups, standardized numeric and date fields through explicit type casting, and handled null values before loading. I also troubleshot duplicate-record issues and configured wildcard file paths to accommodate Spark’s dynamically generated output filenames, helping the pipeline run consistently as new data arrived.</p>
-                <p class="core-desc">I took ownership of the core processing logic, learning unfamiliar tools through documentation, tutorials, and hands-on debugging. The project brought ingestion, data transformation, and database loading together into a repeatable workflow that prepared survey data for downstream analysis and reporting.</p>
+                <div class="core-copy">
+                  <p class="core-desc">During this internship, I worked on a project to turn survey responses collected through SurveyCTO into structured data for a client’s analysis and reporting. I built a <a class="core-desc-link" href="#" data-placeholder-link>Python-based ETL pipeline<span class="core-desc-link-arrow" aria-hidden="true"><svg class="core-desc-link-arrow-icon" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="core-desc-link-arrow-icon core-desc-link-arrow-icon--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a> using Azure Data Factory, Azure Databricks, and Azure SQL to automate the movement of data from raw submissions to database tables.</p>
+                  <p class="core-desc">Much of the work involved reconciling complex survey structures with a relational database schema. I flattened nested repeat groups, standardized numeric and date fields through explicit type casting, and handled null values before loading. I also troubleshot duplicate-record issues and configured wildcard file paths to accommodate Spark’s dynamically generated output filenames, helping the pipeline run consistently as new data arrived.</p>
+                  <p class="core-desc">I took ownership of the core processing logic, learning unfamiliar tools through documentation, tutorials, and hands-on debugging. The project brought ingestion, data transformation, and database loading together into a repeatable workflow that prepared survey data for downstream analysis and reporting.</p>
+                </div>
                 <ul class="core-meta" aria-label="Role details">
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Jul 2024 – Mar 2025</span></li>
+                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Jul 2024 – Feb 2025</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Internship</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/></svg><span>Remote</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Sammamish, Washington</span></li>
@@ -309,28 +327,16 @@
                 <span class="core-logo" style="--logo-ratio: 2.2864" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 942 412"><use href="assets/workplace-logos/gce.svg#logo-gce"/></svg><span class="core-logo-fill"><svg viewBox="0 0 942 412"><use href="assets/workplace-logos/gce.svg#logo-gce"/></svg></span></span>
                 <h3 class="core-title">Information Technology Support Analyst</h3>
                 <p class="core-org">Grand Canyon Education, Inc.</p>
-                <p class="core-desc">I worked on the IT Help Desk for Grand Canyon Education as a Level 1 Analyst, supporting the university’s staff and faculty over the phone. On most calls I connected to the person’s screen through our internal remote access tool and fixed the issue while they were still on the line, from accounts in Active Directory to mailbox and sign-in problems in the Exchange Admin Center and Microsoft Entra ID (was called Azure AD at that time), along with VPN, printers, phones, and Office.</p>
-                <p class="core-desc">Every call became a ticket in CA Service Desk. Most of mine were closed on the call, and the rest I routed to the right team, often topping the daily board for tickets moved. In total, I created, closed, and moved more than 500 tickets.</p>
-                <p class="core-desc">Once a week I worked at the Nerd Herd, GCU’s walk-in tech support, helping students with hardware repairs, virus removal, and getting onto the campus network.</p>
+                <div class="core-copy">
+                  <p class="core-desc">I worked on the IT Help Desk for Grand Canyon Education as a Level 1 Analyst, supporting the university’s staff and faculty over the phone. On most calls I connected to the person’s screen through our internal remote access tool and fixed the issue while they were still on the line, from accounts in Active Directory to mailbox and sign-in problems in the Exchange Admin Center and Microsoft Entra ID (was called Azure AD at that time), along with VPN, printers, phones, and Office.</p>
+                  <p class="core-desc">Every call became a ticket in CA Service Desk. Most of mine were closed on the call, and the rest I routed to the right team, often topping the daily board for tickets moved. In total, I created, closed, and moved more than 500 tickets.</p>
+                  <p class="core-desc">Once a week I worked at the Nerd Herd, GCU’s walk-in tech support, helping students with hardware repairs, virus removal, and getting onto the campus network.</p>
+                </div>
                 <ul class="core-meta" aria-label="Role details">
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Oct 2021 – Apr 2024</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Part Time</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
                   <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Phoenix, Arizona</span></li>
-                </ul>
-              </article>
-              <article class="core-panel" id="core-kisaka-support" role="tabpanel" aria-labelledby="core-tab-kisaka-support" tabindex="0">
-                <span class="core-logo" style="--logo-ratio: 1.0172" aria-hidden="true"><svg class="core-logo-outline" viewBox="0 0 118 116"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg><span class="core-logo-fill"><svg viewBox="0 0 118 116"><use href="assets/workplace-logos/kisaka.svg#logo-kisaka"/></svg></span></span>
-                <h3 class="core-title">IT Support Assistant</h3>
-                <p class="core-org">Kisaka and Company, Certified Public Accountants</p>
-                <p class="core-desc">I assisted the IT manager with day-to-day technical support for the firm’s staff, responding to calls about Windows computers, Office applications, printers, and other peripherals. I resolved most printer issues independently, troubleshot unresponsive applications, and carried out initial checks on connectivity problems. When an issue needed further attention, I passed it to the manager with details of what I had tried, flagging recurring faults and damaged equipment.</p>
-                <p class="core-desc">I also prepared Windows computers for use, connected monitors, keyboards, mouses, and printers, configured local administrator accounts, and downloaded, installed, and activated software. I helped staff with everyday tasks in Office, printing, scanning, and saving files, alongside setting up projectors and connecting laptops for meetings.</p>
-                <p class="core-desc">During quieter periods, I helped transfer client information from paper records into Excel spreadsheets, supporting colleagues with data entry to help work move faster.</p>
-                <ul class="core-meta" aria-label="Role details">
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Dec 2019 – Nov 2020</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Full-time</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3.5 20.5h17"/><path d="M5.5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 15.5 5v15.5"/><path d="M15.5 9.5H17a1.5 1.5 0 0 1 1.5 1.5v9.5"/><path d="M8.5 7.5h1M11.5 7.5h1M8.5 11h1M11.5 11h1M8.5 14.5h1M11.5 14.5h1"/></svg><span>On Site</span></li>
-                  <li><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.25"/></svg><span>Kampala, Uganda</span></li>
                 </ul>
               </article>
             </div>
@@ -420,9 +426,28 @@
               </a>
             </li>
             <li class="project-card" id="project-3" data-project>
-              <a class="project-link" href="projects/lopeseat.html" aria-labelledby="project-3-name" aria-describedby="project-3-desc">
+              <a class="project-link" href="projects/styleio.html" aria-labelledby="project-3-name" aria-describedby="project-3-desc">
                 <div class="project-top">
                   <span class="project-index">03</span>
+                  <ul class="project-tags" aria-label="Built with">
+                  <li><svg class="project-tag-icon project-tag-icon--nextdotjs" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-nextdotjs"/></svg>Next.js</li>
+                  <li><svg class="project-tag-icon project-tag-icon--fastapi" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-fastapi"/></svg>FastAPI</li>
+                  <li><svg class="project-tag-icon project-tag-icon--postgresql" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-postgresql"/></svg>Postgres</li>
+                  <li><svg class="project-tag-icon project-tag-icon--pytorch" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-pytorch"/></svg>PyTorch</li>
+                  </ul>
+                </div>
+                <div class="project-body">
+                  <h2 class="project-name" id="project-3-name"><span class="project-name-outline">Style.io</span><span class="project-name-fill" aria-hidden="true">Style.io</span></h2>
+                  <p class="project-desc" id="project-3-desc">Outfit matcher for your own wardrobe. Drop in a screenshot of a look you like and it finds the closest pieces in your closet, put together as up to three whole outfits you can save or turn down.</p>
+                </div>
+                <span class="project-cta"><span class="project-cta-label">View this project</span><span class="project-cta-arrow-box" aria-hidden="true"><svg class="project-cta-arrow" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="project-cta-arrow project-cta-arrow--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></span>
+                <span class="project-numeral project-numeral--image" aria-hidden="true"><img class="project-numeral-outline" src="assets/project-logos/styleio.svg" width="319" height="224" alt="" decoding="async"><span class="project-numeral-fill"><img src="assets/project-logos/styleio.svg" width="319" height="224" alt="" decoding="async"></span></span>
+              </a>
+            </li>
+            <li class="project-card" id="project-4" data-project>
+              <a class="project-link" href="projects/lopeseat.html" aria-labelledby="project-4-name" aria-describedby="project-4-desc">
+                <div class="project-top">
+                  <span class="project-index">04</span>
                   <ul class="project-tags" aria-label="Built with">
                   <li><svg class="project-tag-icon project-tag-icon--swift" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-swift"/></svg>Swift</li>
                   <li><svg class="project-tag-icon project-tag-icon--nodedotjs" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-nodedotjs"/></svg>Node.js</li>
@@ -431,30 +456,11 @@
                   </ul>
                 </div>
                 <div class="project-body">
-                  <h2 class="project-name" id="project-3-name"><span class="project-name-outline">LopesEat</span><span class="project-name-fill" aria-hidden="true">LopesEat</span></h2>
-                  <p class="project-desc" id="project-3-desc">Senior capstone mobile app that suggests on-campus meals for GCU students based on their health goals.</p>
+                  <h2 class="project-name" id="project-4-name"><span class="project-name-outline">LopesEat</span><span class="project-name-fill" aria-hidden="true">LopesEat</span></h2>
+                  <p class="project-desc" id="project-4-desc">Senior capstone mobile app that suggests on-campus meals for GCU students based on their health goals.</p>
                 </div>
                 <span class="project-cta"><span class="project-cta-label">View this project</span><span class="project-cta-arrow-box" aria-hidden="true"><svg class="project-cta-arrow" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="project-cta-arrow project-cta-arrow--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></span>
                 <span class="project-numeral project-numeral--image" aria-hidden="true"><img class="project-numeral-outline" src="assets/project-logos/lopeseat.png" width="1774" height="887" alt="" decoding="async"><span class="project-numeral-fill"><img src="assets/project-logos/lopeseat.png" width="1774" height="887" alt="" decoding="async"></span></span>
-              </a>
-            </li>
-            <li class="project-card" id="project-4" data-project>
-              <a class="project-link" href="projects/styleio.html" aria-labelledby="project-4-name" aria-describedby="project-4-desc">
-                <div class="project-top">
-                  <span class="project-index">04</span>
-                  <ul class="project-tags" aria-label="Built with">
-                  <li><svg class="project-tag-icon project-tag-icon--nextdotjs" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-nextdotjs"/></svg>Next.js</li>
-                  <li><svg class="project-tag-icon project-tag-icon--tailwindcss" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-tailwindcss"/></svg>Tailwind CSS</li>
-                  <li><svg class="project-tag-icon project-tag-icon--python" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-python"/></svg>Python</li>
-                  <li><svg class="project-tag-icon project-tag-icon--pytorch" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#icon-pytorch"/></svg>PyTorch</li>
-                  </ul>
-                </div>
-                <div class="project-body">
-                  <h2 class="project-name" id="project-4-name"><span class="project-name-outline">Style.io</span><span class="project-name-fill" aria-hidden="true">Style.io</span></h2>
-                  <p class="project-desc" id="project-4-desc">Outfit matcher for your own wardrobe. Drop in a screenshot of a look you like and it finds the closest pieces in your closet, put together as up to three whole outfits you can save or turn down.</p>
-                </div>
-                <span class="project-cta"><span class="project-cta-label">View this project</span><span class="project-cta-arrow-box" aria-hidden="true"><svg class="project-cta-arrow" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg><svg class="project-cta-arrow project-cta-arrow--ghost" viewBox="0 0 24 24" focusable="false"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></span>
-                <span class="project-numeral project-numeral--image" aria-hidden="true"><img class="project-numeral-outline" src="assets/project-logos/styleio.svg" width="319" height="224" alt="" decoding="async"><span class="project-numeral-fill"><img src="assets/project-logos/styleio.svg" width="319" height="224" alt="" decoding="async"></span></span>
               </a>
             </li>
               </ol>
@@ -464,8 +470,8 @@
               <ol role="list">
             <li><a href="#project-1" data-project-jump><span>01</span> <span class="projects-rail-name">NextStep</span></a></li>
             <li><a href="#project-2" data-project-jump><span>02</span> <span class="projects-rail-name">SleekBoard</span></a></li>
-            <li><a href="#project-3" data-project-jump><span>03</span> <span class="projects-rail-name">LopesEat</span></a></li>
-            <li><a href="#project-4" data-project-jump><span>04</span> <span class="projects-rail-name">Style.io</span></a></li>
+            <li><a href="#project-3" data-project-jump><span>03</span> <span class="projects-rail-name">Style.io</span></a></li>
+            <li><a href="#project-4" data-project-jump><span>04</span> <span class="projects-rail-name">LopesEat</span></a></li>
               </ol>
             </nav>
           </div>
