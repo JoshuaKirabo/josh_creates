@@ -6140,6 +6140,21 @@ html.projects-snapping .connect-main
       scroll-snap-align: start;
    }
 
+/* Let's connect ends the page, and iOS Safari's toolbar floats over its
+   last stretch: the page, one screen deep from the bar, ran out the toolbar's
+   height short. It could not scroll Let's connect up against the bar, and
+   below the footer Safari filled the toolbar with its own light colour. The
+   page carries on under the toolbar, as the hero's portrait does, so
+   Let's connect rests against the bar and the toolbar sits over the page's
+   own dark. Elsewhere the large and small viewports match and it adds
+   nothing. */
+body::after
+   {
+      content: '';
+      display: block;
+      height: calc(100lvh - 100svh);
+   }
+
 .connect-main:focus
    {
       outline: none;
