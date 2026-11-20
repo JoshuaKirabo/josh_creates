@@ -4250,6 +4250,8 @@ function startSite()
                 // while reading instead of playing an exit partway through.
                 if(meetFlows())
                   {
+                    // Experience's cut back up owns it while it plays in.
+                    if(meet.classList.contains('is-phone-return')) return;
                     meet.classList.remove('is-away', 'is-leaving', 'is-returning');
                     return;
                   }
@@ -4777,6 +4779,11 @@ function startSite()
               }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
             arrival.observe(section.querySelector('.core-stage') || section);
 
+            // On phones Meet Josh reads in page flow and has no turn of its own, so
+            // the cut back up to it brings it back itself (see .is-phone-return).
+            const meet = document.querySelector('#about .about-hero');
+            const meetFlows = () => getComputedStyle(meet).getPropertyValue('--meet-flow').trim() === '1';
+            let phoneReturnTimer = 0;
             // Scrolling on past the first job, or the last, holds the page for the
             // exit, then turns it.
             const leaveTarget = (direction) =>
@@ -4800,8 +4807,22 @@ function startSite()
                 const cut = Math.abs(to - aboutStop) <= 2;
                 exitTimer = setTimeout(() =>
                   {
+                    // A phone's Meet Josh is emptied while it is still out of sight, so
+                    // the cut lands on a clear page, and is played in on the next frame.
+                    const phoneReturn = cut && !!meet && meetFlows();
+                    if(phoneReturn)
+                      {
+                        clearTimeout(phoneReturnTimer);
+                        meet.classList.add('is-away', 'is-returning', 'is-phone-return');
+                      }
                     if(cut) window.scrollTo({ top: to, behavior: 'instant' });
                     else glideTo(to);
+                    if(phoneReturn) requestAnimationFrame(() => requestAnimationFrame(() =>
+                      {
+                        meet.classList.remove('is-away');
+                        // The longest piece, the photo's colour, is done by 1.5s.
+                        phoneReturnTimer = setTimeout(() => meet.classList.remove('is-returning', 'is-phone-return'), 1600);
+                      }));
                     // A turn that never got away hands the section back.
                     exitTimer = setTimeout(() =>
                       {

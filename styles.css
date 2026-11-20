@@ -4383,6 +4383,76 @@ html.projects-snapping
       transition: opacity .3s var(--ease-out) .04s, scale .3s var(--ease-out) .04s;
    }
 
+/* A phone coming back up from Experience. Meet Josh reads in flow there and
+   has no turn of its own, so Experience's cut brings it back: the page is
+   emptied out of sight, then it plays in quicker than the first arrival and
+   from above, the way the page travelled. The photo develops again, the
+   outline comes up, the title fills from the right, the story settles down
+   a paragraph at a time and the actions follow. Script adds .is-phone-return
+   for the length of it. */
+@media (max-width: 700px)
+   {
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-photo
+         {
+            transition: opacity .6s var(--ease-out), scale 1.2s var(--ease-out), filter 1.4s var(--ease-out) .1s;
+         }
+
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-title-outline
+         {
+            transition: opacity .45s var(--ease-out) .1s;
+         }
+
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-title-line
+         {
+            transition: --about-fill .9s var(--ease-out) .2s;
+         }
+
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-title-strong
+         {
+            transition-delay: .32s;
+         }
+
+      /* The story moves a paragraph at a time, so the block itself holds still. */
+      .about-motion #meet-josh.is-phone-return .about-lead
+         {
+            opacity: 1;
+            transform: none;
+            transition: none;
+         }
+
+      .about-motion #meet-josh.is-phone-return.is-away .about-lead p
+         {
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: none;
+         }
+
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-lead p
+         {
+            transition: opacity .6s var(--ease-out) calc(.34s + var(--p, 0) * 70ms), transform .6s var(--ease-out) calc(.34s + var(--p, 0) * 70ms);
+         }
+
+      #meet-josh .about-lead p:nth-child(2)
+         {
+            --p: 1;
+         }
+
+      #meet-josh .about-lead p:nth-child(3)
+         {
+            --p: 2;
+         }
+
+      #meet-josh .about-lead p:nth-child(4)
+         {
+            --p: 3;
+         }
+
+      .about-motion.is-arrived #meet-josh.is-phone-return:not(.is-away) .about-resume
+         {
+            transition: opacity .55s var(--ease-out) .6s, transform .55s var(--ease-out) .6s;
+         }
+   }
+
 .about-block-head
    {
       display: flex;
