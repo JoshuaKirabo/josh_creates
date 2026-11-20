@@ -1390,7 +1390,9 @@ span.nav-link
       display: none;
    }
 
-html.menu-open, html.menu-open body
+/* Only the root locks. Hiding body's overflow too made body a scroll box, and
+   About's sticky layers jumped a screen behind the menu while it was open. */
+html.menu-open
    {
       overflow: hidden;
       overscroll-behavior: none;
@@ -1577,7 +1579,10 @@ html.menu-open, html.menu-open body
             overscroll-behavior: contain;
             /* Clip the black surface and links together, centered on the live control. */
             clip-path: circle(24px at var(--menu-reveal-x, 44px) var(--menu-reveal-y, 32px));
-            transition: clip-path 280ms var(--ease-out);
+            /* Closing shrinks the circle back into the button. An ease-out here
+               swallowed most of the screen in the first frames, so the close
+               eases in and out over a little longer than the open. */
+            transition: clip-path 360ms var(--ease-in-out-cubic);
          }
 
       .mobile-menu[open]
@@ -1588,6 +1593,7 @@ html.menu-open, html.menu-open body
       .mobile-menu.is-open
          {
             clip-path: circle(var(--menu-reveal-radius, 150vmax) at var(--menu-reveal-x, 44px) var(--menu-reveal-y, 32px));
+            transition: clip-path 280ms var(--ease-out);
          }
 
       .mobile-menu::backdrop
@@ -7939,7 +7945,9 @@ html.project-sheet-open
       overflow: hidden;
    }
 
-body > :not(.site-backdrop, .project-sheet)
+/* The menu keeps its own transition: this one outranked it and left the
+   menu snapping shut instead of closing into its button. */
+body > :not(.site-backdrop, .project-sheet, .mobile-menu)
    {
       transition: opacity .24s var(--ease-out);
    }

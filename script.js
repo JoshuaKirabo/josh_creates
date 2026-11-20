@@ -1004,8 +1004,11 @@ function startSite()
               }
             else pillWindow = [.62, .92];
             const travelling = new Set(navFolds.map(plan => plan.mover));
+            // A phone's links wait unseen in the closed menu. Fading them with the
+            // header left them at zero, so the menu opened empty past Home.
+            headerRest.forEach(control => fade(control, 1));
             headerRest = [...(hero.querySelectorAll?.('.nav-link') || [])]
-              .filter(control => !travelling.has(control));
+              .filter(control => !travelling.has(control) && !control.closest?.('.mobile-menu') && control.getClientRects().length);
             root.classList.remove('fold-measuring');
           }
 
