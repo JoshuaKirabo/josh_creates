@@ -7208,6 +7208,40 @@ textarea.connect-input
             margin-bottom: 0;
          }
 
+      /* Up in the eyebrow the flag sits a screen's height from its word, so
+         on a phone it comes down to open the lead's line, on the column's
+         left edge just above the word it names; the lead's text steps in
+         past it (32px flag, 12px gap). Opening the form cuts it out with
+         the lead, frame and all, so it never lies over a field. Without
+         anchor positioning it stays in the eyebrow. */
+      @supports (anchor-name: --connect-lead)
+         {
+            .connect-section .about-block-head
+               {
+                  position: relative;
+               }
+
+            .connect-lead
+               {
+                  anchor-name: --connect-lead;
+                  padding-left: 44px;
+               }
+
+            .connect-section .greeting-mark
+               {
+                  position: absolute;
+                  position-anchor: --connect-lead;
+                  top: anchor(center);
+                  left: anchor(left);
+                  translate: 0 -50%;
+               }
+
+            .connect-section.is-composing .greeting-mark
+               {
+                  visibility: hidden;
+               }
+         }
+
       .connect-title
          {
             grid-row: 3;
