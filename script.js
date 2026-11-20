@@ -4858,7 +4858,14 @@ function startSite()
             aboutStop = Math.round(aboutTop);
             let coreTop = aboutTop;
             for(let node = core; node && node !== about; node = node.offsetParent) coreTop += node.offsetTop;
+            // The page's end is measured without the snap markers, which sit in the
+            // page too. A first measure taken before the stylesheet lands puts the
+            // end marker 45,000px down, and counted, it held the page that tall
+            // for good: every later measure found the end where it had left it.
+            const snaps = document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap');
+            snaps.forEach(snap => (snap.style.display = 'none'));
             const end = root.scrollHeight - window.innerHeight;
+            snaps.forEach(snap => (snap.style.display = ''));
             // A pinned Core stops once per card; its runway splits evenly between them.
             const step = pinned ? (core.offsetHeight - window.innerHeight) / (jobs - 1) : 0;
             coreJobStops = pinned ? Array.from({ length: jobs }, (_, i) => Math.round(coreTop + i * step)) : [];
@@ -4874,7 +4881,11 @@ function startSite()
                 stops.push(educationTop);
                 sectionLandings['#education'] = () => window.scrollTo({ top: Math.round(educationTop), behavior: 'instant' });
               }
-            stops.push(end);
+            // The page end is a stop only while About ends the page. Let's connect
+            // has its own stop now, and the page runs on past it under Safari's
+            // toolbar; an end stop there pulled Let's connect 64px up under the bar
+            // and fought the hold that keeps it in place.
+            if(!document.querySelector('.connect-main')) stops.push(end);
             const offsets = [...new Set(stops.map(Math.round))].filter(y => y >= 0 && y <= end);
 
             while(markers.length < offsets.length)
@@ -6353,6 +6364,22 @@ function startSite()
         const craft = skills?.querySelector('.craft-section');
         const connect = document.querySelector('.connect-main');
         const connectSection = connect?.querySelector('.connect-section');
+        // Skills and Let's connect rest on markers placed in the page, as the
+        // cards do. WebKit misplaced each section's own snap point inside About:
+        // Let's connect's page fell back to Skills or ran on past it, and with
+        // nothing else near, a turn to Skills fell back to the last card.
+        const sectionSnap = (section) =>
+          {
+            if(!section) return null;
+            const snap = document.createElement('span');
+            snap.className = 'section-snap';
+            snap.setAttribute('aria-hidden', 'true');
+            document.body.append(snap);
+            section.classList.add('has-snap-marker');
+            return snap;
+          };
+        const skillsSnap = sectionSnap(skills);
+        const connectSnap = sectionSnap(connect);
         const phone = window.matchMedia('(max-width: 700px)');
         // Scroll pixels per pixel of horizontal travel.
         const PACE = 1.15;
@@ -6403,6 +6430,8 @@ function startSite()
             // Where the track rests for each card. The first ones can't reach the
             // middle on a wide screen, so they rest at the start.
             geometry.stops = geometry.centers.map(center => Math.min(travel, Math.max(0, center - viewWidth / 2)));
+            if(skillsSnap) skillsSnap.style.top = `${Math.round(skillsStop())}px`;
+            if(connectSnap) connectSnap.style.top = `${Math.round(connectStop())}px`;
             // Markers sit in the page where it must stop for each card, as About's
             // do. Inside the runway WebKit snapped up to 78px short of them, so the
             // track rested off centre.

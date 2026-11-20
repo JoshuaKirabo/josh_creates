@@ -6138,7 +6138,7 @@ html.projects-snapping .skills-main
       display: none;
    }
 
-.craft-snap
+.craft-snap, .section-snap
    {
       position: absolute;
       left: 0;
@@ -6337,6 +6337,13 @@ html.projects-snapping .skills-main
 html.projects-snapping .connect-main
    {
       scroll-snap-align: start;
+   }
+
+/* Script gives Skills and Let's connect markers in the page to rest on
+   instead; WebKit misplaces their own snap points inside About. */
+html.projects-snapping :is(.skills-main, .connect-main).has-snap-marker
+   {
+      scroll-snap-align: none;
    }
 
 /* Let's connect ends the page, and iOS Safari's toolbar floats over its
