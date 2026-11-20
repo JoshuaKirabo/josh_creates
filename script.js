@@ -577,6 +577,11 @@ function startSite()
     // Keep the field still until the entrance starts. Skipping or omitting the intro
     // releases it immediately; otherwise it wakes with the shared intro clock.
     let starsReady = !document.documentElement.classList.contains('intro-pending');
+    // Settles when the entrance has finished or been skipped, or at once when
+    // there is none. Heavy work that can wait for it starts here.
+    let releaseIntro;
+    const introSettled = new Promise(resolve => (releaseIntro = resolve));
+    if(starsReady) releaseIntro();
     function pointerFromEvent(event)
       {
         return {
@@ -754,7 +759,9 @@ function startSite()
             // Once both copies occupy the same position, blend their rasterization and
             // outline weight. A hard swap made the small JOSH suddenly turn much bolder.
             const handover = smooth(slice(progress, plan.handoverStart ?? .92, plan.handoverEnd ?? .999));
-            plan.mover.style.opacity = String(1 - handover);
+            // At rest the entrance's rules own opacity. A 1 written here showed the
+            // signature for a moment before the entrance had hidden it.
+            plan.mover.style.opacity = progress > 0 ? String(1 - handover) : '';
             fade(plan.reveal, handover);
             // Icons have no counterpart on the hero, so they join the word as it lands
             // instead of popping in with the handover. Ease-out: fast at first sight.
@@ -797,7 +804,9 @@ function startSite()
             const x = plan.fromX + (plan.toX - plan.fromX) * travel;
             const y = plan.fromY + (plan.toY - plan.fromY) * travel;
             plan.mover.style.transform = `translate3d(${x - plan.originX - (plan.fromX - plan.originX) * scaleX}px, ${y - plan.originY - (plan.fromY - plan.originY) * scale}px, 0) scale(${scaleX}, ${scale})`;
-            plan.mover.style.opacity = String(1 - collapse);
+            // Handed back at rest, like the fold's: a written 1 flashed the role
+            // lines on screen ahead of the name.
+            plan.mover.style.opacity = progress > 0 ? String(1 - collapse) : '';
             // Both lines of a role share one icon; only the trailing one drives it,
             // so the strokes finish drawing as the last word goes.
             if(!plan.drives) return;
@@ -1959,6 +1968,7 @@ function startSite()
           };
         // Everything the scene needs is asked for at once when the page settles:
         // downloads run off the main thread, so they cost the entrance nothing.
+        // Running the runtime does, so that waits with the build.
         let runtime = null;
         let bytes = null;
         const fetchScene = () =>
@@ -1975,13 +1985,11 @@ function startSite()
                 if(as) link.as = as;
                 document.head.append(link);
               }
-            runtime = import(SPLINE_RUNTIME);
             // The file is most of the wait, so it fills the dial to 80%; the rest
             // is building the scene and its first frames.
             bytes = fetch(new URL(canvas.dataset.scene, document.baseURI).href)
               .then(response => response.ok ? readCounted(response, part => loader?.set(part * .8)) : Promise.reject(new Error(response.status)));
             // Settled here so a failure waits for load to handle it.
-            runtime.catch(() => {});
             bytes.catch(() => {});
           };
         const load = async () =>
@@ -1990,6 +1998,7 @@ function startSite()
             gateSceneFrames();
             try
               {
+                runtime = import(SPLINE_RUNTIME);
                 const [{ Application }, data] = await Promise.all([runtime, bytes]);
                 loader?.set(.84);
                 // The scene's own script drives everything that moves: the typing and
@@ -2057,10 +2066,15 @@ function startSite()
             requested = true;
             showLoader();
             fetchScene();
-            // Building the scene does hold the main thread, so that part still waits
-            // for a quiet moment.
-            if('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 2000 });
-            else setTimeout(load, 200);
+            // Building the scene holds the main thread, and its first frames keep the
+            // GPU busy for about a second. Both landed in the middle of Home's
+            // entrance and dropped it to 20 frames a second, so they wait for it to
+            // finish, and then for a quiet moment.
+            introSettled.then(() =>
+              {
+                if('requestIdleCallback' in window) requestIdleCallback(load, { timeout: 2000 });
+                else setTimeout(load, 200);
+              });
           };
         // A window widened past a phone's loads the scene then; narrowed, it stops.
         wide.addEventListener('change', () =>
@@ -4669,6 +4683,7 @@ function startSite()
                 return;
               }
             finished = true;
+            releaseIntro();
             const settle = !reducedMotion.matches && ['wheel', 'touchstart', 'scroll'].includes(event?.type);
             const elements = [...hero.querySelectorAll('.portrait-stage, .hero-heading-line, .site-header, .signature')];
             const navSlides = [...hero.querySelectorAll('.nav-label > .scramble-text')];
