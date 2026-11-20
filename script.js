@@ -6136,7 +6136,7 @@ function startSite()
             const snap = document.createElement('span');
             snap.className = 'projects-snap';
             snap.setAttribute('aria-hidden', 'true');
-            runway.append(snap);
+            document.body.append(snap);
             return snap;
           });
         let geometry = null;
@@ -6175,11 +6175,12 @@ function startSite()
             // Where the track rests for each card. The first ones can't reach the
             // middle on a wide screen, so they rest at the start.
             geometry.stops = geometry.centers.map(center => Math.min(travel, Math.max(0, center - viewWidth / 2)));
-            // Markers sit in the runway where the page must stop for each card.
-            const runwayTop = geometry.start + stickyTop;
+            // Markers sit in the page where it must stop for each card, as About's
+            // do. Inside the runway WebKit snapped up to 78px short of them, so the
+            // track rested off centre.
             snaps.forEach((snap, index) =>
               {
-                snap.style.top = `${scrollFor(index) - runwayTop}px`;
+                snap.style.top = `${Math.round(scrollFor(index))}px`;
               });
             // The labels are spread out by their own widths, so the line has to stop
             // under each one instead of moving in even steps. It reaches further into
