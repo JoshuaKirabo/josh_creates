@@ -6336,6 +6336,7 @@ function startSite()
         const onSkills = () => skills.getBoundingClientRect().top < window.innerHeight / 2;
         const connectStop = () => Math.min(pageTop(connect) - geometry.barEnd, root.scrollHeight - window.innerHeight);
         const onConnect = () => Boolean(connect) && connect.getBoundingClientRect().top < window.innerHeight / 2;
+        const heldOnConnect = () => onConnect() && !connectSection?.classList.contains('is-composing');
         function cut(top, direction)
           {
             spendTurnMomentum();
@@ -6502,7 +6503,25 @@ function startSite()
               {
                 if(direction > 0 || turning || !geometry) return;
                 if(Math.abs(window.scrollY - connectStop()) <= 2) return 'skills';
-              }, turnConnectToSkills, { fresh: true });
+              }, turnConnectToSkills,
+              {
+                fresh: true,
+                // The page runs on under Safari's toolbar past Let's connect, so
+                // nothing scrolls on from its stop. The open form is left free,
+                // since the keyboard may need the page to move.
+                still: direction => direction > 0 && heldOnConnect() && window.scrollY >= connectStop() - 2
+              });
+            // When Safari's toolbar grows or shrinks, the browser can carry the
+            // page past Let's connect's stop. It goes straight back, as does any
+            // scroll that came to rest past it.
+            const holdConnect = () =>
+              {
+                if(!heldOnConnect() || turning || !geometry) return;
+                const stop = connectStop();
+                if(window.scrollY > stop + 2) window.scrollTo({ top: stop, behavior: 'instant' });
+              };
+            window.addEventListener('resize', () => requestAnimationFrame(holdConnect), { passive: true });
+            window.addEventListener('scrollend', holdConnect, { passive: true });
             document.querySelectorAll('.section-nav-link[href="#connect"]').forEach((link) =>
               {
                 link.addEventListener('click', (event) =>

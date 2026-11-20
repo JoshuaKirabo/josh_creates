@@ -6125,12 +6125,16 @@ html.projects-snapping .skills-main
    }
 
 /* Let's connect follows Skills and rests the same way: against the bar, one
-   screen tall, its greeting centred in the room above the footer. */
+   screen tall, its greeting centred in the room above the footer. The screen
+   is the one it has now: as Safari's toolbar grows or shrinks, the section
+   follows it and spreads or gathers its rows to fit, its actions and footer
+   always on the foot of what shows. */
 .connect-main
    {
       display: flex;
       flex-direction: column;
       min-height: calc(100svh - var(--skills-top, 0px));
+      min-height: calc(100dvh - var(--skills-top, 0px));
       padding-bottom: calc(var(--footer-bottom) + 48px);
       scroll-margin-top: var(--skills-top, 0px);
    }
@@ -6146,13 +6150,18 @@ html.projects-snapping .connect-main
    below the footer Safari filled the toolbar with its own light colour. The
    page carries on under the toolbar, as the hero's portrait does, so
    Let's connect rests against the bar and the toolbar sits over the page's
-   own dark. Elsewhere the large and small viewports match and it adds
-   nothing. */
-body::after
+   own dark. It runs a little further than the toolbar, so Let's connect's
+   stop is never the very end of the page, where Safari opens its toolbar
+   and carries the page up with it; script keeps the page from scrolling
+   into that room. Phones only, where the toolbar floats. */
+@media (max-width: 700px)
    {
-      content: '';
-      display: block;
-      height: calc(100lvh - 100svh);
+      body::after
+         {
+            content: '';
+            display: block;
+            height: calc(100lvh - 100svh + 64px);
+         }
    }
 
 .connect-main:focus
@@ -7266,6 +7275,14 @@ textarea.connect-input
       .connect-section
          {
             justify-content: flex-start;
+         }
+
+      /* The footer settles on the foot of the screen. Safari's toolbar
+         already clears the home indicator, so the footer keeps only a
+         small margin off the edge, not the indicator's inset too. */
+      .connect-main + .about-footer
+         {
+            bottom: 12px;
          }
 
       .connect-section .about-block-head
