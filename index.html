@@ -30,12 +30,11 @@
     }
   </style>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <link rel="preload" href="assets/josh_portrait_cartoon_bw.png" as="image" fetchpriority="high">
+  <link rel="preload" href="assets/josh_portrait_cartoon.webp" as="image" type="image/webp" fetchpriority="high">
   <link rel="preload" href="assets/fonts/instrument-serif-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/Haval-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/unbounded-latin-700-overlap.woff2" as="font" type="font/woff2" crossorigin media="(min-width: 701px)">
   <link rel="preload" href="assets/fonts/unbounded-latin-700-merged.woff2" as="font" type="font/woff2" crossorigin media="(max-width: 700px)">
-  <link rel="preload" href="assets/josh_portrait_cartoon_mask.png" as="image">
   <script>
     // Hide only when the browser can run the intro; otherwise show the page normally.
     // A deep link skips it, but #home is still Home: the Home links leave it in the address.
@@ -48,7 +47,7 @@
   <link rel="preload" href="assets/fonts/google-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/bounded-variable.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css?v=onepage33">
-  <script src="script.js?v=onepage17" defer></script>
+  <script src="script.js?v=onepage18" defer></script>
 </head>
 <body>
   <div class="site-backdrop" aria-hidden="true">
@@ -138,29 +137,10 @@
       <div class="portrait-scroll">
       <div class="portrait-stage">
         <div class="hero-atmosphere" aria-hidden="true"><span class="ambient-light"></span></div>
-        <svg class="portrait portrait-cartoon" viewBox="0 0 1015 1549" width="1015" height="1549" role="img" aria-labelledby="portrait-title">
-          <title id="portrait-title">Black-and-white cartoon portrait of Joshua Kirabo wearing glasses and a white textured shirt</title>
-          <defs>
-            <!-- SVG luminance masks avoid Safari's CSS raster-mask rendering issue. -->
-            <mask id="portrait-cutout" maskUnits="userSpaceOnUse" x="0" y="0" width="1015" height="1549" style="mask-type: luminance">
-              <image href="assets/josh_portrait_cartoon_mask.png" width="1015" height="1549" />
-            </mask>
-            <filter id="portrait-darken" color-interpolation-filters="sRGB">
-              <feColorMatrix type="matrix" values=".26 0 0 0 0  0 .26 0 0 0  0 0 .26 0 0  0 0 0 1 0" />
-            </filter>
-            <linearGradient id="portrait-shade-gradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="25%" stop-color="white" stop-opacity="0" />
-              <stop offset="37%" stop-color="white" />
-            </linearGradient>
-            <mask id="portrait-shading" maskUnits="userSpaceOnUse" x="0" y="0" width="1015" height="1549" style="mask-type: alpha">
-              <rect width="1015" height="1549" fill="url(#portrait-shade-gradient)" />
-            </mask>
-          </defs>
-          <g id="josh-portrait-figure" mask="url(#portrait-cutout)">
-            <image href="assets/josh_portrait_cartoon_bw.png" width="1015" height="1549" />
-            <image filter="url(#portrait-darken)" href="assets/josh_portrait_cartoon_bw.png" width="1015" height="1549" mask="url(#portrait-shading)" />
-          </g>
-        </svg>
+        <!-- One flat image: the cutout, and the shading below the shoulders, are
+             baked in. Drawn live from an SVG mask and filter, Safari redrew the
+             whole figure whenever the portrait moved, at about 230ms a time. -->
+        <img class="portrait portrait-cartoon" src="assets/josh_portrait_cartoon.webp" width="1015" height="1549" decoding="sync" alt="Black-and-white cartoon portrait of Joshua Kirabo wearing glasses and a white textured shirt">
       </div>
 
       </div>

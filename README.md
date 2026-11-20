@@ -10,7 +10,7 @@ Open `index.html` directly, or serve this directory with any static web server.
 - `articles/` — one page per blog article, reached from its Insights card with the page-turn transition. Each reuses the Blog's top bar and heading styles, plus `blog/article.css` for the reading column; the text is reproduced from the original post
 - `styles.css` — viewport-sized layout, phone and landscape adaptations, and reduced-motion support
 - `script.js` — name-first loading animation, navigation hover, and current year
-- `assets/josh_portrait_cartoon_bw.png` and its mask — the current monochrome portrait
+- `assets/josh_portrait_cartoon.webp` — the current monochrome portrait, as Home draws it: `josh_portrait_cartoon_bw.png` cut out with its mask and shaded below the shoulders, baked into one image. The two PNGs are its sources and are no longer loaded
 - `assets/josh_workspace.webp` (and a 900px copy) — the Meet Josh scene, standing in for the planned 3D scene; `josh_workspace_source.png` is the original
 - `assets/workplace-logos/` — employer marks on the About Experience cards (see `assets/workplace-logos-source.txt`)
 

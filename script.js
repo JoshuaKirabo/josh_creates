@@ -3042,6 +3042,27 @@ function startSite()
         // first paints, it costs a beat of the blank screen the turn cuts to;
         // built on the entrance's first frame, it froze the heading mid-draw.
         form(CRAFT_ORDER[0]);
+        // The others were built the first time each was shown, so the first round
+        // froze for 90ms or more (200ms in Safari) every three seconds. They are
+        // built ahead instead: one at a time once the entrance is over, and never
+        // within a second of a scroll, so a build cannot land in a page turn.
+        const ahead = CRAFT_ORDER.slice(1);
+        let lastMoved = -Infinity;
+        const moved = () => (lastMoved = performance.now());
+        const buildAhead = () =>
+          {
+            if(!ahead.length)
+              {
+                window.removeEventListener('scroll', moved);
+                window.removeEventListener('wheel', moved);
+                return;
+              }
+            if(performance.now() - lastMoved > 1000 && !document.hidden) form(ahead.shift());
+            setTimeout(buildAhead, 700);
+          };
+        window.addEventListener('scroll', moved, { passive: true });
+        window.addEventListener('wheel', moved, { passive: true });
+        introSettled.then(() => setTimeout(buildAhead, 1500));
         const now = new Float32Array(COUNT * 3);
         // Which way each point's patch of skin faces. It turns toward the new
         // solid's as the point flies, so a point in flight is lit half way.
@@ -4794,11 +4815,9 @@ function startSite()
         try
           {
             const portrait = new Image();
-            portrait.src = 'assets/josh_portrait_cartoon_bw.png';
-            const mask = new Image();
-            mask.src = 'assets/josh_portrait_cartoon_mask.png';
+            portrait.src = 'assets/josh_portrait_cartoon.webp';
             await Promise.race([
-              Promise.allSettled([document.fonts.ready, portrait.decode(), mask.decode()]),
+              Promise.allSettled([document.fonts.ready, portrait.decode()]),
               new Promise((resolve) => (readyTimeout = setTimeout(resolve, 2000)))
             ]);
             clearTimeout(readyTimeout);
