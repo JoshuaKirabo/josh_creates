@@ -14,31 +14,109 @@ function startSite()
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
 
-    // A turn cuts mid-flick, and a trackpad keeps sending that flick's momentum
-    // to wherever the page lands. Left alone it carried on past the cut: landing
-    // on Projects' last card from Skills, it stepped the track back a card, so
-    // getting back to Skills took three flicks. The tail is spent here, ahead of
-    // every other wheel listener, until it dies away or the reader turns the
-    // other way.
-    let turnMomentum = null;
+    // One flick turns one page, so every wheel event has to be read as part of
+    // a flick. A trackpad keeps sending a flick's momentum for a second or more
+    // after the fingers lift, and waiting for that to go quiet left the page
+    // deaf to the next flick: a second one laid on the first one's tail did
+    // nothing. A tail only ever decays, so a new flick shows as the opposite: a
+    // delta well above the last few, or one that climbs twice running. A flick
+    // the other way is always new. Each flick gets a number; whoever turns a
+    // page on one spends the rest of that number's events.
+    const flick = { id: 0, time: -Infinity, stamp: 0, direction: 0, against: 0, recent: [], last: 0, rises: 0, riseFrom: 0, startedAt: -Infinity, turnAt: -Infinity };
     window.addEventListener('wheel', (event) =>
       {
-        if(!turnMomentum) return;
+        if(event.ctrlKey || !event.deltaY || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
         const now = performance.now();
         const direction = Math.sign(event.deltaY);
-        if(now > turnMomentum.until || now - turnMomentum.last > 180 || (direction && direction !== turnMomentum.direction))
+        const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+        const gap = now - flick.time;
+        // Sized per 60Hz frame off the event's own clock, so a 120Hz screen and
+        // events delivered late or merged still read as the same flick.
+        const stamp = event.timeStamp > 0 ? event.timeStamp : now;
+        const stampGap = stamp - flick.stamp;
+        const size = distance / (stampGap >= 130 ? 1 : Math.max(.5, Math.round(stampGap / (1000 / 120)) / 2));
+        flick.time = now;
+        flick.stamp = stamp;
+        let fresh = gap > 180;
+        if(direction !== flick.direction)
           {
-            turnMomentum = null;
-            return;
+            // A stray delta the other way is jitter until it adds up.
+            flick.against = fresh ? 0 : flick.against + distance;
+            if(!fresh && flick.against < 6) return;
+            fresh = true;
           }
-        turnMomentum.last = now;
+        else
+          {
+            flick.against = 0;
+            // While a page turns the main thread is busy, and the browser hands the
+            // tail over late, merged into one large delta after a pause. A new flick
+            // after a real pause starts small instead.
+            if(fresh && now - flick.turnAt < 800 && (distance * 16 / gap >= 2 || gap < 400)) fresh = false;
+            if(!fresh)
+              {
+                const settled = now - flick.startedAt > 240 && now - flick.turnAt > 400;
+                const surge = settled && flick.recent.length > 0 && size >= 10 && size > Math.max(...flick.recent) * 1.8;
+                if(size > flick.last)
+                  {
+                    if(!flick.rises) flick.riseFrom = flick.last;
+                    flick.rises++;
+                  }
+                else flick.rises = 0;
+                fresh = surge || (settled && flick.rises >= 2 && size >= 6 && size >= Math.max(1, flick.riseFrom) * 1.5);
+              }
+            else flick.recent.length = 0;
+          }
+        flick.recent.push(size);
+        if(flick.recent.length > 4) flick.recent.shift();
+        flick.last = size;
+        if(!fresh) return;
+        flick.id++;
+        flick.direction = direction;
+        flick.against = 0;
+        flick.rises = 0;
+        flick.startedAt = now;
+      }, { passive: true, capture: true });
+
+    // A turn cuts mid-flick, and the trackpad keeps sending that flick's momentum
+    // to wherever the page lands. Left alone it carried on past the cut: landing
+    // on Projects' last card from Skills, it stepped the track back a card, so
+    // getting back to Skills took three flicks. The rest of the flick is spent
+    // here, ahead of every other wheel listener, until the next flick starts.
+    let turnMomentum = null;
+    // Some turns glide to the next page instead of cutting. A wheel that reached
+    // the browser mid-glide stopped it short, between two pages, and every flick
+    // after that scrolled loose. Until the glide lands the wheel is held.
+    let glide = null;
+    window.addEventListener('wheel', (event) =>
+      {
+        if(glide && performance.now() > glide.until) glide = null;
+        if(!glide)
+          {
+            if(turnMomentum === null) return;
+            if(flick.id !== turnMomentum)
+              {
+                turnMomentum = null;
+                return;
+              }
+          }
+        if(event.ctrlKey) return;
         if(event.cancelable) event.preventDefault();
+        event.pageTurn = true;
         event.stopImmediatePropagation();
       }, { passive: false, capture: true });
-    function spendTurnMomentum(direction)
+    window.addEventListener('scroll', () =>
       {
-        const now = performance.now();
-        turnMomentum = { direction, last: now, until: now + 2500 };
+        if(glide && Math.abs(window.scrollY - glide.to) <= 1) glide = null;
+      }, { passive: true });
+    function spendTurnMomentum()
+      {
+        turnMomentum = flick.id;
+        flick.turnAt = performance.now();
+      }
+    function glideTo(top)
+      {
+        if(Math.abs(window.scrollY - top) > 1) glide = { to: top, until: performance.now() + 1500 };
+        window.scrollTo({ top, behavior: 'smooth' });
       }
 
     // Touch feedback follows contact, while native scrolling and click timing stay intact.
@@ -1179,10 +1257,13 @@ function startSite()
           }
 
         // Only own gestures across the fold. Content below it, nested scrollers,
-        // horizontal gestures, zoom and reduced motion remain native.
+        // horizontal gestures, zoom and reduced motion remain native. So does a
+        // gesture someone else has cancelled, apart from Meet Josh's scene: its
+        // runtime cancels every wheel over the canvas, which left a flick up from
+        // there doing nothing. One a page turn has spent stays spent.
         function canOwnGesture(event, direction)
           {
-            if(reducedMotion.matches || mobileMenu?.open || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.cancelable === false) return false;
+            if(reducedMotion.matches || mobileMenu?.open || event.pageTurn || (event.defaultPrevented && !event.target?.closest?.('.about-scene')) || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.cancelable === false) return false;
 
             for(let node = event.target; node && node !== document.body && node !== root; node = node.parentElement)
               {
@@ -1661,19 +1742,20 @@ function startSite()
     // turn the page but must not scroll it either, so a page that only ever cuts
     // is never seen gliding to its neighbour. With `wheelOnly`, touch keeps native
     // scrolling.
-    function holdPageTurns(target, leave, { fresh = false, still = () => false, wheelOnly = false } = {})
+    function holdPageTurns(target, leave, { fresh: freshOnly = false, still = () => false, wheelOnly = false } = {})
       {
-        const gesture = { time: -Infinity, direction: 0, distance: 0, owned: false, eligible: true };
+        const gesture = { flick: -1, time: -Infinity, direction: 0, distance: 0, owned: false, eligible: true };
         // Returns true when this movement belongs to the exit and must not scroll.
-        const claim = (direction, distance, now) =>
+        // `fresh` says it opens a new gesture: the wheel's next flick, or a finger
+        // moving again after a pause or the other way.
+        const claim = (direction, distance, fresh) =>
           {
-            if(now - gesture.time > 180 || direction !== gesture.direction)
+            if(fresh)
               {
-                gesture.owned = gesture.owned && now - gesture.time <= 180;
-                gesture.distance = 0;
+                gesture.owned = false;
                 gesture.eligible = true;
               }
-            gesture.time = now;
+            if(fresh || direction !== gesture.direction) gesture.distance = 0;
             gesture.direction = direction;
             if(gesture.owned) return true;
             const to = gesture.eligible ? target(direction) : undefined;
@@ -1682,13 +1764,14 @@ function startSite()
                 // With `fresh`, a gesture that began somewhere this section does not
                 // own (the fold's momentum, a snap in flight) never turns into an
                 // exit when it reaches it; the next flick does.
-                if(fresh) gesture.eligible = false;
+                if(freshOnly) gesture.eligible = false;
                 return still(direction);
               }
             gesture.distance += distance;
             if(gesture.distance >= 12)
               {
                 gesture.owned = true;
+                flick.turnAt = performance.now();
                 leave(to, window.scrollY);
               }
             return true;
@@ -1700,7 +1783,11 @@ function startSite()
           {
             if(Math.abs(event.deltaX) >= Math.abs(event.deltaY) || !ownable(event)) return;
             const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
-            if(claim(Math.sign(event.deltaY), distance, performance.now())) event.preventDefault();
+            const fresh = flick.id !== gesture.flick;
+            gesture.flick = flick.id;
+            if(!claim(Math.sign(event.deltaY), distance, fresh)) return;
+            event.preventDefault();
+            event.pageTurn = true;
           }, { passive: false, capture: true });
         if(wheelOnly) return;
         let touchY = null;
@@ -1713,7 +1800,11 @@ function startSite()
             if(touchY === null || event.touches.length !== 1 || !ownable(event)) return;
             const dy = touchY - event.touches[0].clientY;
             touchY = event.touches[0].clientY;
-            if(dy && claim(Math.sign(dy), Math.abs(dy), performance.now())) event.preventDefault();
+            if(!dy) return;
+            const now = performance.now();
+            const fresh = now - gesture.time > 180 || (Math.sign(dy) !== gesture.direction && !gesture.owned);
+            gesture.time = now;
+            if(claim(Math.sign(dy), Math.abs(dy), fresh)) event.preventDefault();
           }, { passive: false, capture: true });
       }
 
@@ -3945,7 +4036,7 @@ function startSite()
                 clearTimeout(exitTimer);
                 exitTimer = setTimeout(() =>
                   {
-                    window.scrollTo({ top: to, behavior: 'smooth' });
+                    glideTo(to);
                     exitTimer = setTimeout(() =>
                       {
                         // Landed on the next page: a strip of Education can still show
@@ -4344,14 +4435,29 @@ function startSite()
                 const cut = Math.abs(to - aboutStop) <= 2;
                 exitTimer = setTimeout(() =>
                   {
-                    window.scrollTo({ top: to, behavior: cut ? 'instant' : 'smooth' });
+                    if(cut) window.scrollTo({ top: to, behavior: 'instant' });
+                    else glideTo(to);
                     // A turn that never got away hands the section back.
                     exitTimer = setTimeout(() =>
                       {
                         if(Math.abs(window.scrollY - edge) <= 2) section.classList.remove('is-leaving');
                       }, 1200);
                   }, cut ? 360 : 320);
-              }, { still });
+                // Only a flick that began on the first or last job leaves: one that
+                // stepped onto it has spent itself on the step.
+              }, { fresh: true, still });
+            // Between jobs the wheel steps one job a flick, as Projects steps its
+            // cards: the stage is pinned, so the page cuts to the job's stop and
+            // only the card changes. Left to the browser's snap, a flick shorter
+            // than half a screen slid the page a little and sprang back.
+            holdPageTurns((direction) =>
+              {
+                if(!coreJobStops.length || section.classList.contains('is-leaving')) return;
+                const y = window.scrollY;
+                const at = coreJobStops.findIndex(top => Math.abs(top - y) <= 2);
+                if(at < 0) return;
+                return coreJobStops[at + direction];
+              }, to => window.scrollTo({ top: to, behavior: 'instant' }), { wheelOnly: true });
           }
 
         // A title keeps to one line: one that runs past the panel scales its type
@@ -6186,7 +6292,8 @@ function startSite()
             return stops[at + direction];
           }, (to) =>
           {
-            window.scrollTo({ top: to, behavior: to < geometry.start ? 'smooth' : 'instant' });
+            if(to < geometry.start) glideTo(to);
+            else window.scrollTo({ top: to, behavior: 'instant' });
           }, { wheelOnly: true });
         // Skills follows on this page. Scrolling on from the last card plays
         // Projects' exit in place, cuts to Skills and lets Skills enter; scrolling
@@ -6203,7 +6310,7 @@ function startSite()
         const onConnect = () => Boolean(connect) && connect.getBoundingClientRect().top < window.innerHeight / 2;
         function cut(top, direction)
           {
-            spendTurnMomentum(direction);
+            spendTurnMomentum();
             window.scrollTo({ top, behavior: 'instant' });
           }
         function turnToSkills()
