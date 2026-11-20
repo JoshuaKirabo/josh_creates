@@ -5659,14 +5659,20 @@ html.about-paging
          }
 
       /* Pinned, the stage holds the screen while the page steps through the
-         jobs beneath it, so the stage carries that spacing instead. */
+         jobs beneath it, so the stage carries that spacing instead. The
+         screen is the one Safari leaves now, as What I do's is, so the card
+         grows or shrinks with the toolbar. Only the stage follows it: the
+         runway between jobs stays a small screen each, so a job's stop holds
+         still while the toolbar moves. */
       .core-pinned #experience.core-section
          {
+            height: calc((var(--core-steps) - 1) * 100svh + 100dvh);
             padding-block: 0;
          }
 
       .core-pinned #experience .core-stage
          {
+            height: 100dvh;
             padding-block: 80px 32px;
          }
    }
@@ -6066,6 +6072,12 @@ html.about-paging
       .core-section, .edu-section
          {
             padding-top: 4rem;
+         }
+
+      /* Education fills the screen Safari leaves now, as What I do does. */
+      .edu-section
+         {
+            min-height: 100dvh;
          }
 
       .about:has(.core-section)
