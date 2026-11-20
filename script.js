@@ -3219,6 +3219,11 @@ function startSite()
         let resumeTimer = 0;
         let pointer = 0;
         let yaw = 0;
+        // On a phone the panel shows one discipline at a time and scrolling picks
+        // it, so the field stops cycling on its own. `entered` says the points
+        // are on show, so a pick made while Skills is away only marks the cell.
+        let paged = false;
+        let entered = false;
 
 
         function measure()
@@ -3414,6 +3419,20 @@ function startSite()
             for(let i = 0; i < COUNT; i++) setOff[i] = time + Math.max(0, screenY[i] / (height || 1)) * .75 + lag[i] * .08;
           }
 
+        // The cell on show is the only one standing. Those before it have lifted
+        // away and those after wait below, so the text always leaves and arrives
+        // the way the page is going.
+        function showCell(name)
+          {
+            const at = CRAFT_ORDER.indexOf(name);
+            cells.forEach((cell) =>
+              {
+                const index = CRAFT_ORDER.indexOf(cell.dataset.shape);
+                cell.classList.toggle('is-shown', paged && index === at);
+                cell.classList.toggle('is-past', paged && index < at);
+              });
+          }
+
         function light(name, mode)
           {
             cells.forEach((cell) =>
@@ -3432,7 +3451,7 @@ function startSite()
         function advance()
           {
             clearTimeout(cycleTimer);
-            if(held || still) return;
+            if(held || still || paged) return;
             const next = CRAFT_ORDER[(CRAFT_ORDER.indexOf(shape) + 1) % CRAFT_ORDER.length];
             morph(next);
             light(next, 'lit');
@@ -3440,6 +3459,7 @@ function startSite()
           }
         function hold(cell)
           {
+            if(paged) return;
             clearTimeout(resumeTimer);
             clearTimeout(cycleTimer);
             held = cell.dataset.shape;
@@ -3448,6 +3468,7 @@ function startSite()
           }
         function release(cell)
           {
+            if(paged) return;
             if(held !== cell.dataset.shape || cell.matches(':focus-within')) return;
             held = null;
             light(null);
@@ -3484,18 +3505,22 @@ function startSite()
         document.addEventListener('visibilitychange', play);
         measure();
 
+        let pick = CRAFT_ORDER[0];
         return {
           // Arriving, the points rise out of a flat line across the middle
-          // straight into the first discipline, and the cycle starts over.
+          // straight into the first discipline, and the cycle starts over. Paged,
+          // they rise into whichever discipline the scroll has picked.
           enter()
             {
               clearTimeout(cycleTimer);
               clearTimeout(resumeTimer);
+              entered = true;
               held = null;
-              shape = previous = CRAFT_ORDER[0];
+              shape = previous = paged ? pick : CRAFT_ORDER[0];
               gathering = true;
               caption(shape);
-              light(shape, still ? 'held' : 'lit');
+              showCell(shape);
+              light(shape, still || paged ? 'held' : 'lit');
               if(still)
                 {
                   draw(0, 0);
@@ -3514,19 +3539,68 @@ function startSite()
               sweepAt = time;
               for(let i = 0; i < COUNT; i++) setOff[i] = time + lag[i] * .35;
               play();
-              cycleTimer = setTimeout(advance, CRAFT_DWELL[shape]);
+              if(!paged) cycleTimer = setTimeout(advance, CRAFT_DWELL[shape]);
             },
           leave()
             {
               clearTimeout(cycleTimer);
               clearTimeout(resumeTimer);
+              entered = false;
               play();
+            },
+          // Scroll picks a discipline. On show, the points morph to it and its
+          // cell stands in for the last one.
+          page(name)
+            {
+              pick = name;
+              if(!paged) return;
+              showCell(name);
+              if(!entered) return;
+              morph(name);
+              light(name, 'held');
+            },
+          // Phones page; anything wider goes back to cycling.
+          setPaged(on)
+            {
+              if(on === paged) return;
+              paged = on;
+              clearTimeout(cycleTimer);
+              clearTimeout(resumeTimer);
+              held = null;
+              showCell(on ? pick : null);
+              if(!entered) return;
+              if(on)
+                {
+                  morph(pick);
+                  light(pick, 'held');
+                }
+              else
+                {
+                  light(shape, still ? 'held' : 'lit');
+                  if(!still) cycleTimer = setTimeout(advance, CRAFT_DWELL[shape]);
+                }
             },
           sync: play
         };
       }
 
+    // Where an element sits in the page. Inside About the section is pinned for
+    // the fold, so its box is not where it scrolls to. Past the fold About
+    // scrolls in flow from the fold distance.
+    function aboutPageTop(element)
+      {
+        const root = document.documentElement;
+        const about = element.closest('#about');
+        if(!about || !root.classList.contains('section-scroll-ready') || reducedMotion.matches) return element.getBoundingClientRect().top + window.scrollY;
+        let top = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
+        for(let node = element; node && node !== about; node = node.offsetParent) top += node.offsetTop;
+        return top;
+      }
+
     let craftStage = { enter() {}, leave() {} };
+    // How far Skills scrolls past its first discipline on a phone, where it
+    // pages; nothing anywhere wider. The turns to and from it read this.
+    let craftTravel = () => 0;
     // Skills' panel. It arrives once it is on screen: the frame draws round, the
     // hairlines grow, the copy rises and the points gather into the first
     // discipline. It leaves the same way backwards if it scrolls away, and arrives
@@ -3549,8 +3623,9 @@ function startSite()
           };
         new ResizeObserver(frame).observe(panel);
         frame();
-        panel.querySelectorAll('.craft-cell').forEach((cell, i) => cell.style.setProperty('--i', i));
+        const cells = [...panel.querySelectorAll('.craft-cell')];
         const points = initCraftField(panel);
+        initCraftPaging(craft, cells, points);
         if(reducedMotion.matches || !('IntersectionObserver' in window))
           {
             points?.enter();
@@ -3558,12 +3633,16 @@ function startSite()
           }
 
         craft.classList.add('craft-motion');
+        let arriving = 0;
 
         const enter = () =>
           {
             if(craft.classList.contains('is-entered')) return;
             craft.classList.remove('is-leaving');
-            craft.classList.add('is-entered');
+            craft.classList.add('is-entered', 'is-arriving');
+            // Paged, a cell's swap is quicker than its entrance; it waits this out.
+            clearTimeout(arriving);
+            arriving = setTimeout(() => craft.classList.remove('is-arriving'), 1500);
             points?.enter();
           };
 
@@ -3583,6 +3662,153 @@ function startSite()
             if(entry.intersectionRatio >= .35) enter();
             else if(!entry.isIntersecting) leave();
           }, { threshold: [0, .35] }).observe(craft);
+      }
+
+    // On a phone Skills shows one discipline at a time. The section pins under
+    // the top bar and the page scrolls through it: every STEP pixels is the next
+    // discipline, each a snap stop of its own, so one flick moves one on. The
+    // rail at the foot fills with the scroll, the way Projects' does, and
+    // tapping a number cuts to that discipline. Anything wider keeps the grid.
+    function initCraftPaging(craft, cells, points)
+      {
+        const skills = craft.closest('.skills-main');
+        const rail = craft.querySelector('.craft-rail');
+        const railLinks = rail ? [...rail.querySelectorAll('[data-craft-jump]')] : [];
+        if(!skills || !points || railLinks.length !== cells.length) return;
+        const phone = window.matchMedia('(max-width: 700px)');
+        const STEP = 400;
+        const count = cells.length;
+        const travel = STEP * (count - 1);
+        // Every stop is a marker placed in the page, as About's are. Markers inside
+        // the runway snapped WebKit 44px short of where they sat, and Skills' own
+        // snap point stands down while it pages.
+        const snaps = cells.map(() =>
+          {
+            const snap = document.createElement('span');
+            snap.className = 'craft-snap';
+            snap.setAttribute('aria-hidden', 'true');
+            document.body.append(snap);
+            return snap;
+          });
+        let paged = false;
+        let current = -1;
+        let railStops = [];
+        let frameId = 0;
+        let placedAt = NaN;
+
+        // Skills' first stop rests its top where the bar ends.
+        const firstStop = () => aboutPageTop(skills) - (parseFloat(skills.style.getPropertyValue('--skills-top')) || 0);
+        // How many disciplines along the scroll is, as a fraction.
+        const along = () => Math.min(count - 1, Math.max(0, (window.scrollY - firstStop()) / STEP));
+
+        // Anything above Skills changing height moves every stop, so the stops
+        // follow Skills on every scroll. Watching About for it instead tripped
+        // the browser's resize loop warning while Experience settled on load.
+        function place()
+          {
+            const first = Math.round(firstStop());
+            if(first === placedAt) return;
+            placedAt = first;
+            snaps.forEach((snap, index) => (snap.style.top = `${first + index * STEP}px`));
+          }
+
+        function measure()
+          {
+            place();
+            // The marks are spread across the rail, so the line stops under each
+            // one, reaching from the first one's left edge to the last one's right.
+            const width = rail.clientWidth || 1;
+            // Measured on the marks, not the links, whose hit areas run wider.
+            railStops = railLinks.map((link, index) =>
+              {
+                const number = link.firstElementChild || link;
+                return Math.min(1, Math.max(0, (number.offsetLeft + number.offsetWidth * index / (count - 1)) / width));
+              });
+          }
+
+        function sync()
+          {
+            frameId = 0;
+            if(!paged) return;
+            place();
+            const at = along();
+            const index = Math.min(count - 2, Math.floor(at));
+            const t = at - index;
+            rail.style.setProperty('--progress', (railStops[index] + (railStops[index + 1] - railStops[index]) * t).toFixed(4));
+            const nearest = Math.round(at);
+            if(nearest === current) return;
+            railLinks[current]?.removeAttribute('aria-current');
+            railLinks[nearest].setAttribute('aria-current', 'step');
+            // The rail's line takes the colour of the discipline on show.
+            rail.style.setProperty('--rail-color', railLinks[nearest].style.getPropertyValue('--mark-color'));
+            current = nearest;
+            points.page(cells[nearest].dataset.shape);
+          }
+
+        function layout()
+          {
+            paged = phone.matches;
+            craft.classList.toggle('craft-paged', paged);
+            skills.classList.toggle('skills-paged', paged);
+            skills.style.setProperty('--craft-travel', `${paged ? travel : 0}px`);
+            snaps.forEach(snap => (snap.hidden = !paged));
+            // Paged, only one cell stands, so each arrives on the first's beat.
+            cells.forEach((cell, i) => cell.style.setProperty('--i', paged ? 0 : i));
+            points.setPaged(paged);
+            if(!paged) return;
+            measure();
+            current = -1;
+            sync();
+          }
+
+        // Each rail link wears its discipline's mark, drawn once as a mask so it
+        // takes the link's colour: dim until it is the one on show, then its own.
+        railLinks.forEach((link, index) =>
+          {
+            const name = cells[index].dataset.shape;
+            const draw = CRAFT_GLYPHS[name];
+            const mark = link.querySelector('.craft-rail-mark');
+            if(!draw || !mark) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = 96;
+            const pen = canvas.getContext('2d');
+            pen.scale(96 / 400, 96 / 400);
+            pen.fillStyle = pen.strokeStyle = '#fff';
+            pen.lineCap = pen.lineJoin = 'round';
+            draw(pen);
+            mark.style.setProperty('--glyph', `url(${canvas.toDataURL()})`);
+            link.style.setProperty('--mark-color', `rgb(${CRAFT_COLORS[name] || [255, 255, 255]})`);
+          });
+        craftTravel = () => (paged ? travel : 0);
+        // A wheel or trackpad in a narrow window steps one discipline per flick,
+        // as Projects turns one card, instead of skating past snap stops. Touch
+        // keeps its native momentum and snaps. The first and last stops leave
+        // the turns to Projects and Let's connect to the track.
+        holdPageTurns((direction) =>
+          {
+            if(!paged) return;
+            const first = firstStop();
+            const at = Math.round((window.scrollY - first) / STEP);
+            if(at < 0 || at > count - 1 || Math.abs(window.scrollY - (first + at * STEP)) > 2) return;
+            const to = at + direction;
+            if(to >= 0 && to < count) return first + to * STEP;
+          }, to => window.scrollTo({ top: to, behavior: 'instant' }), { wheelOnly: true });
+        railLinks.forEach((link, index) =>
+          {
+            link.addEventListener('click', (event) =>
+              {
+                event.preventDefault();
+                window.scrollTo({ top: firstStop() + index * STEP, behavior: 'instant' });
+              });
+          });
+        window.addEventListener('scroll', () =>
+          {
+            if(paged && !frameId) frameId = requestAnimationFrame(sync);
+          }, { passive: true });
+        window.addEventListener('resize', () => paged && measure(), { passive: true });
+        phone.addEventListener('change', layout);
+        document.fonts?.ready.then(() => paged && measure());
+        layout();
       }
 
     let connectStage = { enter() {}, leave() {} };
@@ -6205,16 +6431,7 @@ function startSite()
             return railStops[index] + (railStops[index + 1] - railStops[index]) * t;
           }
 
-        // Inside About the section is pinned for the fold, so its box is not where
-        // it scrolls to. Past the fold About scrolls in flow from the fold distance.
-        function pageTop(element)
-          {
-            const root = document.documentElement;
-            if(!about || !root.classList.contains('section-scroll-ready') || reducedMotion.matches) return element.getBoundingClientRect().top + window.scrollY;
-            let top = parseFloat(root.style.getPropertyValue('--fold-distance')) || 0;
-            for(let node = element; node && node !== about; node = node.offsetParent) top += node.offsetTop;
-            return top;
-          }
+        const pageTop = aboutPageTop;
         const runwayOffset = () => pageTop(runway);
 
         function target()
@@ -6334,6 +6551,9 @@ function startSite()
         const root = document.documentElement;
         let turning = false;
         const skillsStop = () => Math.min(pageTop(skills) - geometry.barEnd, root.scrollHeight - window.innerHeight);
+        // On a phone Skills pages through its disciplines, so it is left for Let's
+        // connect from its last one, and coming back up lands there.
+        const skillsEnd = () => Math.min(skillsStop() + craftTravel(), root.scrollHeight - window.innerHeight);
         const onSkills = () => skills.getBoundingClientRect().top < window.innerHeight / 2;
         const connectStop = () => Math.min(pageTop(connect) - geometry.barEnd, root.scrollHeight - window.innerHeight);
         const onConnect = () => Boolean(connect) && connect.getBoundingClientRect().top < window.innerHeight / 2;
@@ -6421,7 +6641,7 @@ function startSite()
                 turning = false;
               }, leave ? 380 : 0);
           }
-        function turnConnectToSkills()
+        function turnConnectToSkills(first = false)
           {
             if(turning || !connect) return;
             turning = true;
@@ -6434,7 +6654,7 @@ function startSite()
             setTimeout(() =>
               {
                 connectStage.leave();
-                cut(skillsStop(), -1);
+                cut(first ? skillsStop() : skillsEnd(), -1);
                 craftStage.enter();
                 root.classList.remove('nav-line-leave', 'nav-line-back');
                 syncProjectsNav();
@@ -6462,7 +6682,7 @@ function startSite()
                   {
                     if(event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
                     event.preventDefault();
-                    if(onConnect()) turnConnectToSkills();
+                    if(onConnect()) turnConnectToSkills(true);
                     else turnToSkills();
                   });
               });
@@ -6498,13 +6718,13 @@ function startSite()
             holdPageTurns((direction) =>
               {
                 if(direction < 0 || turning || !geometry) return;
-                if(Math.abs(window.scrollY - skillsStop()) <= 2) return 'connect';
+                if(Math.abs(window.scrollY - skillsEnd()) <= 2) return 'connect';
               }, turnToConnect, { fresh: true });
             holdPageTurns((direction) =>
               {
                 if(direction > 0 || turning || !geometry) return;
                 if(Math.abs(window.scrollY - connectStop()) <= 2) return 'skills';
-              }, turnConnectToSkills,
+              }, () => turnConnectToSkills(),
               {
                 fresh: true,
                 // The page runs on under Safari's toolbar past Let's connect, so

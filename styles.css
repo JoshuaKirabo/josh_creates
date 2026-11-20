@@ -6124,6 +6124,185 @@ html.projects-snapping .skills-main
       transition-duration: 0s;
    }
 
+/* On a phone, Skills shows one discipline at a time. Script marks Skills
+   .skills-paged and its section .craft-paged, and sets --craft-travel to the
+   scroll it pages through. The section pins under the bar and runs to the
+   foot of the screen, which carries no footer here; the runway after it is
+   that travel. The rail follows Projects', with marks for numbers and its
+   line in the colour of the discipline on show, and the swap follows the field's own caption: the old text lifts away as the new one rises in, reversed
+   going back up. */
+.craft-rail, .craft-snap[hidden]
+   {
+      display: none;
+   }
+
+.craft-snap
+   {
+      position: absolute;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      pointer-events: none;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+   }
+
+@media (max-width: 700px)
+   {
+      .skills-paged, html.projects-snapping .skills-paged
+         {
+            padding-bottom: calc(var(--footer-bottom) + 16px);
+            scroll-snap-align: none;
+         }
+
+      .skills-paged::after
+         {
+            content: '';
+            order: 1;
+            flex: none;
+            height: var(--craft-travel, 0px);
+         }
+
+      .craft-section.craft-paged
+         {
+            position: sticky;
+            top: var(--skills-top, 0px);
+            flex: none;
+            height: calc(100svh - var(--skills-top, 0px) - var(--footer-bottom) - 16px);
+            padding-block: 16px 0;
+         }
+
+      .craft-paged .about-block-head
+         {
+            margin-bottom: 16px;
+         }
+
+      .craft-paged .craft
+         {
+            flex: 1 1 auto;
+            min-height: 0;
+            grid-template-rows: minmax(0, 1fr) auto;
+         }
+
+      .craft-paged .craft-cell
+         {
+            grid-area: 2 / 1;
+            padding: 20px;
+         }
+
+      /* The field's caption names the discipline, so the cell keeps its name
+         for screen readers only. */
+      .craft-paged .craft-name
+         {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+         }
+
+      /* The rail fills as the page goes, so the cell's own meter stands down. */
+      .craft-paged .craft-meter
+         {
+            display: none;
+         }
+
+      .craft-paged .craft-cell:not(.is-shown)
+         {
+            visibility: hidden;
+            pointer-events: none;
+            transition: visibility 0s linear .4s;
+         }
+
+      /* Every cell draws the same hairline in the same place, so only the one
+         on show keeps it; a swap never doubles it. */
+      .craft-paged .craft-cell:not(.is-shown)::after
+         {
+            display: none;
+         }
+
+      .craft-paged .craft-cell:not(.is-shown) .craft-text
+         {
+            opacity: 0;
+            transform: translateY(14px);
+         }
+
+      .craft-paged .craft-cell.is-past .craft-text
+         {
+            transform: translateY(-14px);
+         }
+
+      .craft-paged.is-entered:not(.is-leaving, .is-arriving) .craft-cell .craft-text, .craft-paged:not(.craft-motion) .craft-cell .craft-text
+         {
+            transition: opacity .4s var(--ease-out), transform .6s var(--ease-out-quart), color .45s var(--ease-out);
+         }
+
+      .craft-paged .craft-rail
+         {
+            display: block;
+            flex: none;
+            margin-top: 16px;
+         }
+
+      /* Wider hit areas than the marks, on the same spacing. */
+      .craft-rail a
+         {
+            margin-inline: -8px;
+            padding: 10px 8px;
+            color: rgba(255, 255, 255, .4);
+         }
+
+      /* Each mark is its discipline's glyph as a mask over the link's colour.
+         The one on show grows by half again and takes its own colour. */
+      .craft-rail-mark
+         {
+            display: block;
+            width: 20px;
+            height: 20px;
+            background-color: currentColor;
+            -webkit-mask: var(--glyph) center / contain no-repeat;
+            mask: var(--glyph) center / contain no-repeat;
+            transition: scale .5s var(--ease-out-quart);
+         }
+
+      .craft-rail a[aria-current]
+         {
+            color: var(--mark-color, var(--white));
+         }
+
+      /* The line fills in the colour of the discipline on show, and turns to
+         the next one's as its mark takes over. */
+      .craft-rail .projects-rail-fill
+         {
+            background: var(--rail-color, var(--white));
+            transition: background-color .5s var(--ease-out);
+         }
+
+      .craft-rail a[aria-current] .craft-rail-mark
+         {
+            scale: 1.4;
+         }
+
+      .craft-motion:not(.is-entered) .craft-rail
+         {
+            opacity: 0;
+            translate: 0 .5rem;
+         }
+
+      .craft-motion.is-entered .craft-rail
+         {
+            transition: opacity .6s var(--ease-out) .36s, translate .6s var(--ease-out) .36s;
+         }
+
+      .craft-motion.is-entered.is-leaving .craft-rail
+         {
+            opacity: 0;
+            transition: opacity .2s var(--ease-out);
+         }
+   }
+
 /* Let's connect follows Skills and rests the same way: against the bar, one
    screen tall, its greeting centred in the room above the footer. The screen
    is the one it has now: as Safari's toolbar grows or shrinks, the section
