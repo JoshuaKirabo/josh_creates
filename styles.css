@@ -6403,11 +6403,21 @@ html.projects-snapping .connect-main
          }
    }
 
+/* The words share one cell, so the longest sets the greeting's width; on a
+   phone it has to fit the column or the page scrolls sideways. */
 @media (max-width: 700px)
    {
       .greeting
          {
-            --greeting-scale: .48;
+            --greeting-scale: .34;
+         }
+   }
+
+@media (max-width: 370px)
+   {
+      .greeting
+         {
+            --greeting-scale: .32;
          }
    }
 
@@ -7017,16 +7027,168 @@ textarea.connect-input
 
 @media (max-width: 700px)
    {
-      .connect-body
+      /* On a phone the greeting keeps the top of the screen and everything to
+         act on gathers at its foot, over the footer, where the thumb rests:
+         the caption, the marks, then the message button. The stage and the
+         greeting's column give up their boxes so their pieces can take rows
+         of one grid, and the room left over opens between the word and the
+         caption, the greeting centred in it. The form is laid over the
+         whole grid and takes no room of its own, so opening it turns the
+         section in place: its fields over the greeting, its Submit over the
+         button, and the marks between them never move. */
+      .connect-section
          {
-            grid-template-columns: minmax(0, 1fr);
-            gap: 24px;
+            justify-content: flex-start;
          }
 
+      .connect-section .about-block-head
+         {
+            flex: 1 0 auto;
+         }
+
+      .connect-body
+         {
+            position: relative;
+            flex: 1 0 auto;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: minmax(24px, 1fr) auto auto minmax(48px, 1fr) auto auto;
+            gap: 0;
+         }
+
+      .connect-stage,
+      .connect-hello
+         {
+            display: contents;
+         }
+
+      /* Placed by hand in the one column: left to auto-placement they would
+         step around the form's span into a column of their own. */
+      .connect-lead,
+      .connect-title,
+      .connect-elsewhere,
+      .connect-compose
+         {
+            grid-column: 1;
+         }
+
+      .connect-lead
+         {
+            grid-row: 2;
+            font-size: 24px;
+            margin-bottom: 0;
+         }
+
+      .connect-title
+         {
+            grid-row: 3;
+         }
+
+      .connect-elsewhere
+         {
+            grid-row: 5;
+         }
+
+      .connect-compose
+         {
+            grid-row: 6;
+            width: 100%;
+            min-height: 52px;
+            margin-top: 8px;
+            font-size: 22px;
+         }
+
+      /* Scaled to the phone: a 48px tile, still past the 48px touch floor,
+         with the label and the focus slide kept to the tile's measure. */
+      .connect-compose::before,
+      .connect-compose .button-arrow
+         {
+            width: 48px;
+         }
+
+      .connect-compose .button-label
+         {
+            padding-left: 50px;
+         }
+
+      .connect-compose .button-arrow svg
+         {
+            width: 18px;
+            height: 18px;
+         }
+
+      .connect-compose:focus-visible .button-label
+         {
+            padding-right: 40px;
+         }
+
+      .connect-compose:focus-visible .button-arrow
+         {
+            left: calc(100% - 50px);
+         }
+
+      .connect-form
+         {
+            position: absolute;
+            inset: 0;
+            grid-row: 1 / -1;
+            grid-column: 1;
+            justify-content: flex-start;
+            gap: 0;
+            pointer-events: none;
+         }
+
+      .connect-form > *
+         {
+            pointer-events: auto;
+         }
+
+      /* The fields fill the room above the caption, the message box taking
+         whatever the screen has left; error lines take room only when they
+         speak. */
+      .connect-fields
+         {
+            display: flex;
+            flex: 1 1 0;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+            overflow-y: auto;
+         }
+
+      .connect-field-message
+         {
+            flex: 1 0 auto;
+         }
+
+      textarea.connect-input
+         {
+            flex: 1 1 76px;
+            min-height: 76px;
+         }
+
+      .connect-error:empty
+         {
+            display: none;
+         }
+
+      /* Cancel and Submit take the button's row, past the caption (27px),
+         the marks (56px) and the button's own 8px, with 16px clear above
+         the caption, so Submit lands where the button stood. */
+      .connect-form-actions
+         {
+            flex: none;
+            min-height: 52px;
+            margin-top: 107px;
+         }
+
+      /* Three equal marks across the button's width, each glyph on its edge
+         or centre; the 56px targets reach 14px past the glyphs. */
       .connect-rail
          {
-            flex-direction: row;
-            margin-left: -14px;
+            display: grid;
+            grid-template-columns: repeat(3, 56px);
+            justify-content: space-between;
+            margin-inline: -14px;
          }
 
       .connect-elsewhere-caption
@@ -7036,20 +7198,9 @@ textarea.connect-input
             text-align: left;
          }
 
-      .connect-lead
-         {
-            font-size: 24px;
-            margin-bottom: -16px;
-         }
-
       .connect-elsewhere-caption br
          {
             display: none;
-         }
-
-      .connect-compose
-         {
-            width: 100%;
          }
 
       .connect-fields
