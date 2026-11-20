@@ -6193,6 +6193,12 @@ html.projects-snapping .skills-main
             padding: 24px 20px;
          }
 
+      /* The line sits under the centered caption and tools, so it centers with them. */
+      .craft-paged .craft-text
+         {
+            text-align: center;
+         }
+
       /* The field's caption names the discipline, so the cell keeps its name
          for screen readers only. */
       .craft-paged .craft-name
