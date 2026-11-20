@@ -6617,6 +6617,68 @@ html.projects-snapping .connect-main
       transition: opacity .2s var(--ease-out);
    }
 
+/* The footer under Let's connect signs the page off once its actions are in:
+   the two roles draw themselves stroke by stroke, the code mark's brackets
+   first and its slash through them, then the spark, the rule between them
+   grows from its middle and the signature settles in last. Away from the
+   section it cuts out, so every arrival draws it fresh. */
+.connect-main:has(> .connect-motion:not(.is-entered)) + .about-footer :is(.footer-role svg, .footer-roles-rule, .signature)
+   {
+      opacity: 0;
+   }
+
+.connect-main:has(> .connect-motion:not(.is-entered)) + .about-footer .footer-role path
+   {
+      stroke-dashoffset: 1;
+   }
+
+.connect-main:has(> .connect-motion:not(.is-entered)) + .about-footer .footer-roles-rule
+   {
+      transform: scaleY(0);
+   }
+
+.connect-main:has(> .connect-motion:not(.is-entered)) + .about-footer .signature
+   {
+      transform: translateY(6px);
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .footer-role svg
+   {
+      transition: opacity .2s var(--ease-out) .55s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .footer-role path
+   {
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset .9s var(--ease-out-quart) .55s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .footer-role:first-child path:last-child
+   {
+      transition-delay: .75s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .footer-role:last-child :is(svg, path)
+   {
+      transition-delay: .85s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .footer-roles-rule
+   {
+      transition: transform .6s var(--ease-out) .8s, opacity .3s var(--ease-out) .8s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered:not(.is-leaving)) + .about-footer .signature
+   {
+      transition: transform .7s var(--ease-out) 1.05s, opacity .5s var(--ease-out) 1.05s;
+   }
+
+.connect-main:has(> .connect-motion.is-entered.is-leaving) + .about-footer
+   {
+      opacity: 0;
+      transition: opacity .2s var(--ease-out);
+   }
+
 /* The greeting and the contact rail share a row: the rail keeps to the right
    edge, centred on the greeting, so the longest word still clears it. */
 .connect-body
