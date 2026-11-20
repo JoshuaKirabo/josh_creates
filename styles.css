@@ -6277,10 +6277,13 @@ html.projects-snapping .skills-main
 
       /* The line fills in the colour of the discipline on show, and turns to
          the next one's as its mark takes over. */
+      /* The line glides to where the scroll has it, so a tap on a mark, which
+         jumps the page, still draws the line across rather than snapping it,
+         and a swipe's uneven frames come out even. */
       .craft-rail .projects-rail-fill
          {
             background: var(--rail-color, var(--white));
-            transition: background-color .5s var(--ease-out);
+            transition: transform .3s var(--ease-out), background-color .5s var(--ease-out);
          }
 
       .craft-rail a[aria-current] .craft-rail-mark
@@ -6303,6 +6306,16 @@ html.projects-snapping .skills-main
          {
             opacity: 0;
             transition: opacity .2s var(--ease-out);
+         }
+   }
+
+/* With reduced motion the rail's line keeps to the scroll exactly, only its
+   colour easing. */
+@media (max-width: 700px) and (prefers-reduced-motion: reduce)
+   {
+      .craft-rail .projects-rail-fill
+         {
+            transition: background-color .5s var(--ease-out);
          }
    }
 
