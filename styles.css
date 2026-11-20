@@ -5338,12 +5338,14 @@ html.about-paging
    footer and centres the panel in it. It is the track's last snap point.
    Nothing follows it, so it carries the room above the footer as its own
    padding; without it the page ends short and Skills can't scroll up to
-   the bar. */
+   the bar. The screen is the one it has now, so as Safari's toolbar grows
+   or shrinks, Skills follows it, as Let's connect does. */
 .skills-main
    {
       display: flex;
       flex-direction: column;
       min-height: calc(100svh - var(--skills-top, 0px));
+      min-height: calc(100dvh - var(--skills-top, 0px));
       padding-bottom: calc(var(--footer-bottom) + 48px);
       scroll-margin-top: var(--skills-top, 0px);
    }
@@ -6169,6 +6171,7 @@ html.projects-snapping .skills-main
             top: var(--skills-top, 0px);
             flex: none;
             height: calc(100svh - var(--skills-top, 0px) - var(--footer-bottom) - 16px);
+            height: calc(100dvh - var(--skills-top, 0px) - var(--footer-bottom) - 16px);
             padding-block: 24px 0;
          }
 
