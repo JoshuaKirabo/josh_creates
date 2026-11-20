@@ -7490,30 +7490,44 @@ textarea.connect-input
             display: none;
          }
 
-      /* Cancel and Submit take the button's row, past the caption (27px),
-         the marks (56px) and the button's own 8px, with 16px clear above
-         the caption, so Submit lands where the button stood. */
+      /* Cancel and Submit take the button's row, past the caption and marks'
+         row (48px) and the button's own 8px, with 16px clear above that row,
+         so Submit lands where the button stood. */
       .connect-form-actions
          {
             flex: none;
             min-height: 52px;
-            margin-top: 107px;
+            margin-top: 72px;
          }
 
-      /* Three equal marks across the button's width, each glyph on its edge
-         or centre; the 56px targets reach 14px past the glyphs. */
+      /* The caption and its marks share one line: the caption on the left
+         edge, the marks on the right, the last glyph on the button's edge.
+         The 48px targets reach 10px past the glyphs. */
+      .connect-elsewhere
+         {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+         }
+
       .connect-rail
          {
-            display: grid;
-            grid-template-columns: repeat(3, 56px);
-            justify-content: space-between;
-            margin-inline: -14px;
+            flex-direction: row;
+            gap: 4px;
+            margin-right: -10px;
+         }
+
+      .connect-rail-link
+         {
+            width: 48px;
+            height: 48px;
          }
 
       .connect-elsewhere-caption
          {
             position: static;
-            margin-bottom: 4px;
+            flex: none;
             text-align: left;
          }
 
