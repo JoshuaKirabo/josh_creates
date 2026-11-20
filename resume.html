@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover">
+<meta name="theme-color" content="#060606">
+<title>Resume · JOSH</title>
+<style>
+  /* Paint the screen before fonts, the stylesheet, or the sky are ready. */
+  html { min-height: 100%; background: #060606; color-scheme: dark; }
+  body { margin: 0; isolation: isolate; }
+  .site-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #060606; }
+  .grain-particles { position: absolute; inset: 0; background: url('assets/grain-fallback.png') 0 0 / 256px 256px repeat; }
+  @media (max-width: 700px) {
+    /* The grain eases in and out of #060606 at both edges so Safari's bars
+       read as part of the page, as on the other pages. */
+    .site-backdrop {
+      background: transparent;
+      -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .12) 40px, rgba(0, 0, 0, .45) 96px, #000 180px, #000 calc(100% - 160px), rgba(0, 0, 0, .35) calc(100% - 60px), transparent);
+      mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .12) 40px, rgba(0, 0, 0, .45) 96px, #000 180px, #000 calc(100% - 160px), rgba(0, 0, 0, .35) calc(100% - 60px), transparent);
+    }
+  }
+</style>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/google-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<!-- The site's own stylesheet and script draw the starry sky, carried over
+     from the page the visitor came from. -->
+<link rel="stylesheet" href="styles.css?v=onepage33">
+<script src="script.js?v=onepage19" defer></script>
+<style>
+:root
+   {
+      --resume-ink: #0d0d0d;
+      --resume-paper: #ffffff;
+      --spring-release: linear(0, .067, .205, .358, .499, .619, .715, .79, .848, .89, .921, .944, .96, .972, .981, .986, .991, .993, .995, .997, .998, .999, 1);
+      --spring-release-time: 440ms;
+      --resume-gutter: 24px;
+   }
+
+.resume-desk, .resume-actions
+   {
+      box-sizing: border-box;
+      font-family: 'Google Sans', Arial, Helvetica, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+   }
+
+/* No top bar: the close is just the X, alone in the top-left corner. Its
+   44px box is only the tap area; nothing is drawn around it. */
+.resume-close
+   {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top));
+      left: max(12px, env(safe-area-inset-left));
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      color: var(--white);
+      font-family: 'Google Sans', Arial, Helvetica, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+   }
+
+.resume-close svg
+   {
+      width: 20px;
+      height: 20px;
+   }
+
+/* The resume, on US Letter sheets lifted off the sky by a deep shadow. The
+   stage is laid out at true size (8.5 × 11 in, half-inch margins, as the
+   PDF) and scaled to fit the screen, as a PDF viewer does, so the page
+   breaks fall where they print. The frame holds the scaled footprint. */
+.resume-desk
+   {
+      display: flex;
+      justify-content: center;
+      padding: calc(68px + env(safe-area-inset-top)) var(--resume-gutter) calc(112px + env(safe-area-inset-bottom));
+   }
+
+.resume-frame
+   {
+      position: relative;
+      width: 100%;
+      max-width: 8.5in;
+   }
+
+.resume-stage
+   {
+      position: relative;
+      isolation: isolate;
+      width: 8.5in;
+      transform: scale(var(--paper-scale, 1));
+      transform-origin: 0 0;
+   }
+
+.resume-pages
+   {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+   }
+
+.resume-page
+   {
+      position: absolute;
+      left: 0;
+      width: 8.5in;
+      height: 11in;
+      background: var(--resume-paper);
+      box-shadow:
+         0 2px 4px rgba(0, 0, 0, .4),
+         0 24px 64px rgba(0, 0, 0, .45),
+         0 64px 160px rgba(0, 0, 0, .5);
+   }
+
+/* The resume itself, in the PDF's own type: CMU Serif at 11pt and 10pt. */
+@font-face
+   {
+      font-family: 'CMU Serif';
+      src: url('assets/fonts/cmunrm.woff') format('woff');
+      font-weight: 400;
+      font-style: normal;
+      font-display: block;
+   }
+
+@font-face
+   {
+      font-family: 'CMU Serif';
+      src: url('assets/fonts/cmunbx.woff') format('woff');
+      font-weight: 700;
+      font-style: normal;
+      font-display: block;
+   }
+
+@font-face
+   {
+      font-family: 'CMU Serif';
+      src: url('assets/fonts/cmunti.woff') format('woff');
+      font-weight: 400;
+      font-style: italic;
+      font-display: block;
+   }
+
+@font-face
+   {
+      font-family: 'CMU Serif';
+      src: url('assets/fonts/cmunbi.woff') format('woff');
+      font-weight: 700;
+      font-style: italic;
+      font-display: block;
+   }
+
+.resume-doc
+   {
+      box-sizing: border-box;
+      width: 8.5in;
+      min-height: 11in;
+      padding: .5in;
+      color: #000;
+      background: var(--resume-paper);
+      font-family: 'CMU Serif', 'Latin Modern Roman', Georgia, serif;
+      font-size: 11pt;
+      line-height: 1.17;
+      text-align: left;
+   }
+
+.resume-doc.is-paged
+   {
+      background: none;
+   }
+
+.resume-doc *
+   {
+      box-sizing: border-box;
+   }
+
+.resume-doc a
+   {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-thickness: .5pt;
+   }
+
+.resume-doc :is(p, ul, section)
+   {
+      margin: 0;
+   }
+
+.resume-doc .resume-header
+   {
+      text-align: center;
+   }
+
+/* The site's own h1 and h2 are display type; the resume resets both. */
+.resume-doc h1
+   {
+      display: block;
+      margin: 0;
+      color: inherit;
+      font-family: inherit;
+      font-size: 25pt;
+      font-weight: 700;
+      font-variant: small-caps;
+      line-height: 1.1;
+      letter-spacing: normal;
+      text-transform: none;
+   }
+
+.resume-doc .contact
+   {
+      margin-top: 1pt;
+      font-size: 10pt;
+   }
+
+.resume-doc .sep
+   {
+      margin: 0 2pt;
+   }
+
+.resume-doc h2
+   {
+      margin: 6pt 0 4pt;
+      padding-bottom: 1pt;
+      border-bottom: .6pt solid #000;
+      font-size: 12pt;
+      font-weight: 400;
+      font-variant: small-caps;
+      line-height: 1.17;
+      letter-spacing: normal;
+   }
+
+.resume-doc .entry
+   {
+      padding-left: .15in;
+      padding-right: .075in;
+      margin-bottom: 4pt;
+   }
+
+.resume-doc .row
+   {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12pt;
+   }
+
+.resume-doc .row.sub
+   {
+      font-size: 10pt;
+   }
+
+.resume-doc .bar
+   {
+      font-style: normal;
+   }
+
+.resume-doc .row.role
+   {
+      margin-top: 4pt;
+   }
+
+.resume-doc .entry ul
+   {
+      padding-left: .3in;
+      margin-top: 1pt;
+      font-size: 10pt;
+   }
+
+.resume-doc .entry li
+   {
+      margin-bottom: .5pt;
+   }
+
+.resume-doc .skills
+   {
+      padding-left: .15in;
+      font-size: 10pt;
+   }
+
+.resume-doc .skills p
+   {
+      margin-bottom: 1pt;
+   }
+
+.resume-doc .sheet-start
+   {
+      margin-top: var(--sheet-push) !important;
+   }
+
+/* Download is the page's one action, so it sits in thumb reach at the foot.
+   On phones it is the white button About's Get In Touch uses. */
+.resume-actions
+   {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      z-index: 10;
+      display: flex;
+      justify-content: center;
+      padding: 16px max(var(--resume-gutter), env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(var(--resume-gutter), env(safe-area-inset-left));
+      background: linear-gradient(to bottom, rgba(6, 6, 6, 0), var(--background) 16px);
+   }
+
+.resume-download
+   {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 auto;
+      gap: 10px;
+      min-width: 0;
+      max-width: 560px;
+      min-height: 48px;
+      padding: 0 20px;
+      color: var(--white);
+      background: #000000;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22);
+      font-size: .9375rem;
+      letter-spacing: .01em;
+      touch-action: manipulation;
+   }
+
+.resume-download-icon
+   {
+      display: grid;
+      place-items: center;
+   }
+
+.resume-download svg
+   {
+      width: 18px;
+      height: 18px;
+   }
+
+/* Press: the control sinks (the download's surface shifts too); release
+   springs back.
+   body > outranks the site sheet's opacity-only rule for body's children. */
+body > .resume-close
+   {
+      transition: transform var(--spring-release-time) var(--spring-release);
+   }
+
+.resume-download
+   {
+      transition:
+         transform var(--spring-release-time) var(--spring-release),
+         background-color 240ms var(--ease-out);
+   }
+
+.resume-close:active
+   {
+      transform: scale(.92);
+      transition-duration: var(--press-in);
+   }
+
+.resume-download:active
+   {
+      transform: scale(.97);
+      background-color: #262626;
+      transition-duration: var(--press-in);
+   }
+
+:is(.resume-close, .resume-download):focus-visible
+   {
+      outline: 2px solid var(--white);
+      outline-offset: 3px;
+   }
+
+/* Desktop: the same spot at the foot, but the site's own 220px button rather
+   than a full-width bar. It rests fully black against the white resume; on
+   hover a white fill sweeps across the face while the icon rides to the far
+   end. */
+@media (min-width: 701px)
+   {
+      .resume-desk
+         {
+            padding-top: 32px;
+            padding-bottom: 112px;
+         }
+
+      .resume-close
+         {
+            top: calc(20px + env(safe-area-inset-top));
+            left: max(20px, env(safe-area-inset-left));
+         }
+
+      .resume-actions
+         {
+            padding-bottom: 32px;
+            background: none;
+         }
+
+      .resume-download,
+      .resume-download:active
+         {
+            background-color: #000000;
+         }
+
+      .resume-download
+         {
+            isolation: isolate;
+            display: block;
+            flex: none;
+            width: 220px;
+            min-height: 48px;
+            padding: 2px;
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22), 0 8px 24px rgba(0, 0, 0, .35);
+         }
+
+      .resume-download::before
+         {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            inset: 2px;
+            background: var(--white);
+            clip-path: inset(0 100% 0 0 round 2px);
+            transition: clip-path 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .resume-download-icon
+         {
+            position: absolute;
+            top: 2px;
+            bottom: 2px;
+            left: 2px;
+            width: 44px;
+            color: var(--white);
+            transition: color 300ms ease, transform 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .resume-download-label
+         {
+            display: block;
+            padding-left: 44px;
+            line-height: 44px;
+            text-align: center;
+            white-space: nowrap;
+            transition: color 300ms ease, transform 450ms cubic-bezier(.22, 1, .36, 1);
+         }
+
+      .resume-download:focus-visible::before
+         {
+            clip-path: inset(0 0 0 0 round 2px);
+         }
+
+      .resume-download:focus-visible .resume-download-icon
+         {
+            color: var(--resume-ink);
+            transform: translateX(172px);
+         }
+
+      .resume-download:focus-visible .resume-download-label
+         {
+            color: var(--resume-ink);
+            transform: translateX(-44px);
+         }
+   }
+
+@media (min-width: 701px) and (hover: hover) and (pointer: fine)
+   {
+      .resume-download:hover::before
+         {
+            clip-path: inset(0 0 0 0 round 2px);
+         }
+
+      .resume-download:hover .resume-download-icon
+         {
+            color: var(--resume-ink);
+            transform: translateX(172px);
+         }
+
+      .resume-download:hover .resume-download-label
+         {
+            color: var(--resume-ink);
+            transform: translateX(-44px);
+         }
+   }
+
+/* The sheet and the button arrive together; the sheet rises a touch. */
+@keyframes resume-rise
+   {
+      from
+         {
+            opacity: 0;
+            transform: translateY(16px);
+         }
+   }
+
+@keyframes resume-fade
+   {
+      from
+         {
+            opacity: 0;
+         }
+   }
+
+.resume-frame
+   {
+      animation: resume-rise 520ms var(--ease-out) both;
+   }
+
+.resume-actions
+   {
+      animation: resume-fade 360ms var(--ease-out) 120ms both;
+   }
+
+@media (prefers-reduced-motion: reduce)
+   {
+      .resume-frame
+         {
+            animation-name: resume-fade;
+         }
+
+      .resume-close:active, .resume-download:active
+         {
+            transform: none;
+         }
+
+      .resume-download::before,
+      .resume-download-icon,
+      .resume-download-label
+         {
+            transition: color 200ms ease, clip-path 0s, transform 0s;
+         }
+   }
+</style>
+</head>
+<body>
+<div class="site-backdrop" aria-hidden="true">
+  <div class="grain-particles"></div>
+</div>
+<a class="resume-close" href="index.html#about" data-resume-close aria-label="Close resume"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg></a>
+<main class="resume-desk">
+  <!-- Content source: the master resume (Personal/Resumes/Resume Project/resume.html). -->
+  <div class="resume-frame">
+    <div class="resume-stage">
+      <div class="resume-pages" aria-hidden="true"></div>
+      <article class="resume-doc" aria-label="Joshua Kirabo's resume">
+
+        <header class="resume-header">
+          <h1>Joshua Kirabo</h1>
+          <p class="contact">
+            <!-- The email is written in two halves and joined by the script
+                 below, so it never sits whole in the page for harvesters. The
+                 phone number stays off the public site. -->
+            <a data-mail-user="joshuak2001" data-mail-domain="gmail.com"></a>
+            <span class="sep">|</span>
+            LinkedIn: <a href="https://www.linkedin.com/in/joshua-kisaku-kirabo/" target="_blank" rel="noopener">Joshua Kirabo Kisaku</a>
+            <span class="sep">|</span>
+            GitHub: <a href="https://github.com/JoshuaKirabo" target="_blank" rel="noopener">JoshuaKirabo</a>
+            <span class="sep">|</span>
+            <a href="https://joshcreates.studio/index.html#home" target="_blank" rel="noopener">joshcreates.studio</a>
+          </p>
+        </header>
+
+        <section>
+          <h2>Education</h2>
+
+          <div class="entry">
+            <div class="row"><strong>Arizona State University</strong><span>Tempe, Arizona</span></div>
+            <div class="row sub"><em>Master of Science in Software Engineering</em><em>August 2025 – Expected May 2028</em></div>
+            <ul>
+              <li>Concentration: Artificial Intelligence &amp; Machine Learning</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>Grand Canyon University</strong><span>Phoenix, Arizona</span></div>
+            <div class="row sub"><em>Bachelor of Science in Software Engineering</em><em>September 2020 – August 2024</em></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Experience</h2>
+
+          <!-- Same roles, order, titles and dates as the Experience section on
+               About (index.html), with the resume's own bullets rather than the
+               site's paragraphs. Lead Tech Hub Consultant starts January 2027;
+               it goes back in then. -->
+
+          <div class="entry">
+            <div class="row"><strong>Kisaka and Company, Certified Public Accountants</strong><span>Kampala, Uganda</span></div>
+            <div class="row sub"><em>IT Operations Associate <span class="bar">|</span> Full-time</em><em>August 2026 – December 2026</em></div>
+            <ul>
+              <li>Built an AI-assisted proposal workflow that logs every RFP requirement with an ID traced to its source section, flags ambiguities, and generates supporting documents with python-docx, taking the managing partner’s time on a proposal from 3 days to under an hour.</li>
+              <li>Automated ICT and cybersecurity audit fieldwork for a client with read-only PowerShell and Python suites covering BitLocker and TPM, local administrator rights, password and lockout policy, patch levels, firewall, and endpoint protection, cutting a week of audit work to about 30 minutes.</li>
+              <li>Mapped audit evidence to ISO/IEC 27001:2022 Annex A and the CIS Windows 11 benchmark, sealed it with SHA-256 manifests, and ran a detection-only network assessment under drafted rules of engagement.</li>
+              <li>Developed and maintained the firm’s internal software, website, integrations, and the scripts that provision and configure new computers.</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>Pearl Accounting Solutions</strong><span>Kampala, Uganda</span></div>
+            <div class="row sub"><em>Software Engineer <span class="bar">|</span> Internship</em><em>May 2026 – August 2026</em></div>
+            <ul>
+              <li>Migrated a LAN-hosted Microsoft Access and VBA ledger system to a cloud web app in Java Spring Boot and Thymeleaf with a 5 person team, taking it live for about 15 SACCOs.</li>
+              <li>Wrote the YAML CI/CD pipeline that tests every change to main, builds a Docker image, and deploys automatically to Railway.</li>
+              <li>Found and fixed 26 security vulnerabilities, 4 of them critical, through code review, automated scanning, and live testing on a copy of the system, and recommended platforms for authentication and audit logging.</li>
+              <li>Implemented Spring Security for access control and password hashing, and repaired the project’s Maven dependencies from the Java version up.</li>
+              <li>Redesigned the dashboard and sidebar with a dedicated phone layout, and trained the team to work with AI coding agents such as Claude Code.</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>Arizona State University Tech Hub</strong><span>Tempe, Arizona</span></div>
+            <div class="row sub"><em>Tech Hub Consultant <span class="bar">|</span> Student Worker</em><em>September 2025 – May 2026</em></div>
+            <ul>
+              <li>Trimmed the system prompt of the Tech Hub’s RAG chatbot on ASU’s CreateAI platform from about 125 to 52 lines so it gives the simplest fix first, and stress-tested its guardrails with prompt injections and privacy probes.</li>
+              <li>Found a bug where the chatbot’s knowledge-base-only mode missed answers held in its own documents, and escalated it to the CreateAI team.</li>
+              <li>Resolved walk-in account and network issues for ASU students, including ASURITE activation errors, sign-in lockouts, Duo, and WiFi, and restored Windows computers using PowerShell and the terminal.</li>
+              <li>Located dead Ethernet ports by jack ID for the network team, catalogued unused Macs, and tested a Zoom setup that lets Tempe staff cover Polytechnic students during staffing gaps.</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>Tellistic Technology Services</strong><span>Sammamish, Washington</span></div>
+            <div class="row sub"><em>Software Engineer <span class="bar">|</span> Internship, Remote</em><em>July 2024 – February 2025</em></div>
+            <ul>
+              <li>Built a Python ETL pipeline on Azure Data Factory, Azure Databricks, and Azure SQL that loads SurveyCTO submissions into relational tables for a client’s analysis and reporting.</li>
+              <li>Fitted complex survey structures to the database schema by flattening nested repeat groups, casting numeric and date fields explicitly, and handling nulls before load.</li>
+              <li>Debugged duplicate-record issues and configured wildcard file paths for Spark’s generated output filenames, keeping loads consistent as new data arrived.</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>Grand Canyon Education, Inc.</strong><span>Phoenix, Arizona</span></div>
+            <div class="row sub"><em>Information Technology Support Analyst <span class="bar">|</span> Part-time</em><em>October 2021 – April 2024</em></div>
+            <ul>
+              <li>Fixed staff and faculty issues remotely while callers were on the line, across Active Directory accounts, Exchange mailboxes, Microsoft Entra ID sign-ins, VPN, printers, phones, and Office.</li>
+              <li>Created, closed, and routed more than 500 tickets in CA Service Desk, often topping the daily board for tickets moved.</li>
+              <li>Repaired hardware, removed viruses, and connected students to the campus network each week at the Nerd Herd, GCU’s walk-in tech support.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section>
+          <h2>Technical Skills</h2>
+
+          <div class="skills">
+            <p><strong>Languages:</strong> Java, Python, JavaScript, C, C++, Swift, SQL, PostgreSQL, MySQL, SQLite, HTML/CSS</p>
+            <p><strong>Frameworks:</strong> Spring Boot, Django, FastAPI, Next.js, React, Node.js, Express.js, Thymeleaf, Tailwind CSS, Bootstrap</p>
+            <p><strong>Libraries:</strong> PyTorch, TensorFlow, scikit-learn, pandas, Spring Security, pgvector</p>
+            <p><strong>Developer Tools:</strong> Git, GitHub, Docker, Maven, Postman, Vite, MongoDB, Google Cloud Run, Google Cloud SQL, Azure Data Factory, Azure Databricks, Azure SQL, Amazon S3, Vercel, Railway, Together AI, GitHub Container Registry, Claude Code</p>
+            <p><strong>IT Tools:</strong> Windows, macOS, Linux, PowerShell, Bash, Active Directory, Microsoft Entra ID, Exchange Admin Center, CA Service Desk, Google Workspace, Microsoft Office, Duo, Zoom</p>
+          </div>
+        </section>
+
+        <section>
+          <h2>Projects</h2>
+
+          <div class="entry">
+            <div class="row"><strong>NextStep</strong></div>
+            <div class="row sub"><em>Web App <span class="bar">|</span> Next.js, Spring Boot, PostgreSQL, Together AI</em></div>
+            <ul>
+              <li>AI planning assistant for ADHD. Talk through what’s on your plate and it breaks vague tasks into steps, remembers your context, and turns it all into a realistic schedule.</li>
+              <li>Brain Dump runs four prompts in turn: an outline, a task breakdown, a game plan and calendar suggestions. Each asks for output that matches a JSON schema, so tasks arrive as data the app can save.</li>
+              <li>Next.js client on Vercel and Spring Boot server on Cloud Run, with Together AI inference, e5-large embeddings and vector recall in PostgreSQL with pgvector, a gpt-oss-120b planner with tools, and CI/CD from Docker to Cloud Run.</li>
+            </ul>
+          </div>
+
+          <div class="entry">
+            <div class="row"><strong>SleekBoard</strong></div>
+            <div class="row sub"><em>Web App <span class="bar">|</span> MongoDB, Express.js, React.js, Node.js, Together AI</em></div>
+            <ul>
+              <li>Job application board. Paste a job link and an AI agent reads the posting, fills in the card, and suggests a recruiter, hiring manager, or teammate to contact, each backed by a quote it checks, with a drafted note. Nothing is sent without your approval.</li>
+              <li>Connect Gmail with read-only access and recruiter replies move their cards, so an interview invite goes to Interviewing and a rejection to Rejected. Phrase lists sort most emails for free. AI reads the unclear ones and only moves a card when it’s sure and the sender is that company, with Undo on every move.</li>
+              <li>React and Tailwind client with an Express and MongoDB server. The agent loop is custom-built on Together AI’s OpenAI-compatible API, with streamed tool calls, Exa web search, a budget per run, a daily spending cap, and a link reader that refuses private addresses.</li>
+            </ul>
+          </div>
+        </section>
+
+      </article>
+    </div>
+  </div>
+</main>
+<div class="resume-actions">
+  <a class="resume-download" href="#" data-placeholder-link><span class="resume-download-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M12 3.25v9.25"/><path d="m7.25 9.25 4.75 4.75 4.75-4.75"/><path d="M4.75 16.75v2.1c0 1.05.85 1.9 1.9 1.9h10.7c1.05 0 1.9-.85 1.9-1.9v-2.1"/></svg></span><span class="resume-download-label">Download Resume</span></a>
+</div>
+<script>
+{
+  // Closing goes back to the exact spot on the site the visitor came from.
+  // Opened directly (no site page behind it), it falls back to About.
+  const close = document.querySelector('[data-resume-close]');
+  // On desktop, Esc closes the viewer the same way the X does.
+  document.addEventListener('keydown', (event) =>
+    {
+      if(event.key === 'Escape' && !event.defaultPrevented) close.click();
+    });
+  close.addEventListener('click', (event) =>
+    {
+      let fromSite = false;
+      try
+        {
+          fromSite = new URL(document.referrer).origin === location.origin;
+        }
+      catch
+        {
+        }
+      if(fromSite && history.length > 1)
+        {
+          event.preventDefault();
+          history.back();
+        }
+    });
+
+  // The email, joined only in the browser.
+  for(const link of document.querySelectorAll('[data-mail-user]'))
+    {
+      const address = `${link.dataset.mailUser}@${link.dataset.mailDomain}`;
+      link.href = `mailto:${address}`;
+      link.textContent = address;
+    }
+
+  // Page the resume onto Letter sheets where the PDF breaks, then scale the
+  // whole true-size stage to the screen. The break rules follow the resume
+  // project's pages.js: lines and bullets never split, and headings and
+  // title rows stay with what follows them.
+  const frame = document.querySelector('.resume-frame');
+  const stage = frame.querySelector('.resume-stage');
+  const doc = stage.querySelector('.resume-doc');
+  const pages = stage.querySelector('.resume-pages');
+  const INCH = 96;
+  const SHEET = 11 * INCH;
+  const MARGIN = .5 * INCH;
+  const BODY = SHEET - 2 * MARGIN;
+  const GAP = .4 * INCH;
+  let scale = 1;
+
+  const sheetTop = (sheet) => sheet * (SHEET + GAP);
+  const top = (el) => (el.getBoundingClientRect().top - doc.getBoundingClientRect().top) / scale;
+  const bottom = (el) => (el.getBoundingClientRect().bottom - doc.getBoundingClientRect().top) / scale;
+
+  function moveTo(piece, y)
+    {
+      piece.classList.add('sheet-start');
+      // Margins can collapse with the parent's, so correct until it lands.
+      for(let tries = 0; tries < 3; tries++)
+        {
+          const off = y - top(piece);
+          if(Math.abs(off) < .5) return;
+          const margin = parseFloat(getComputedStyle(piece).marginTop) || 0;
+          piece.style.setProperty('--sheet-push', `${margin + off}px`);
+        }
+    }
+
+  function fit()
+    {
+      scale = frame.clientWidth / doc.offsetWidth;
+      stage.style.setProperty('--paper-scale', scale);
+      frame.style.height = `${stage.offsetHeight * scale}px`;
+    }
+
+  function paginate()
+    {
+      const pieces = [...doc.querySelectorAll('h1, .contact, h2, .row, .entry li, .skills p')];
+      let sheet = 0;
+      let i = 0;
+      while(i < pieces.length)
+        {
+          if(bottom(pieces[i]) <= sheetTop(sheet) + MARGIN + BODY + .5)
+            {
+              i++;
+              continue;
+            }
+          let start = i;
+          while(start > 0 && pieces[start - 1].matches('h2, .row') && top(pieces[start - 1]) > sheetTop(sheet) + MARGIN + .5) start--;
+          sheet++;
+          moveTo(pieces[start], sheetTop(sheet) + MARGIN);
+          i = start + 1;
+        }
+      const count = sheet + 1;
+      pages.replaceChildren(...Array.from({ length: count }, (_, index) =>
+        {
+          const page = document.createElement('div');
+          page.className = 'resume-page';
+          page.style.top = `${sheetTop(index)}px`;
+          return page;
+        }));
+      doc.style.minHeight = `${sheetTop(count) - GAP}px`;
+      doc.classList.add('is-paged');
+      fit();
+    }
+
+  fit();
+  new ResizeObserver(fit).observe(frame);
+  // Break only once the resume's own type has loaded, or the lines would move.
+  Promise.all(['400 11pt', 'italic 400 10pt', '700 11pt', 'italic 700 10pt'].map(font => document.fonts.load(`${font} "CMU Serif"`)))
+    .catch(() => {})
+    .then(paginate);
+
+  // iOS Safari only shows :active press states once a touch listener exists.
+  // The site script's placeholder guard keeps the download still until the PDF lands.
+  document.addEventListener('touchstart', () => {}, { passive: true });
+}
+</script>
+</body>
+</html>
