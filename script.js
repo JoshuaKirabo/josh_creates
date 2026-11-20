@@ -13,6 +13,8 @@ function startSite()
     const backdrop = document.querySelector('.site-backdrop');
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+    // Phones swap the header's link row for one floating bar with a hamburger.
+    const phoneLayout = window.matchMedia('(max-width: 700px)');
 
     // One flick turns one page, so every wheel event has to be read as part of
     // a flick. A trackpad keeps sending a flick's momentum for a second or more
@@ -216,11 +218,12 @@ function startSite()
 
     // Keep both controls anchored. Only the hidden links move into the native dialog;
     // reparenting the live hamburger used to interrupt its press/morph on mobile.
-    const menuToggle = document.querySelector('.hero .menu-toggle');
+    // Home's header and About's top bar each carry a hamburger for the one menu.
+    const menuToggles = [...document.querySelectorAll('.hero .menu-toggle, .about-topbar .menu-toggle')];
+    const menuToggle = menuToggles[0];
     const menuClose = document.querySelector('.menu-close');
     const navigationPanel = document.querySelector('.navigation-panel');
     const mobileMenu = document.querySelector('.mobile-menu');
-    const mobileNavigation = window.matchMedia('(max-width: 700px)');
     if(menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal === 'function')
       {
         const dialogHeader = mobileMenu.querySelector('.site-header');
@@ -257,16 +260,16 @@ function startSite()
             homePosition.after(navigationPanel);
             mobileMenu.close();
             document.documentElement.classList.remove('menu-open');
-            if(mobileNavigation.matches) returnFocus.focus({ preventScroll: true });
+            if(phoneLayout.matches) returnFocus.focus({ preventScroll: true });
             returnFocus = menuToggle;
           }
 
         async function setMenuOpen(open, instant = false)
           {
-            if(open && !mobileNavigation.matches) return;
+            if(open && !phoneLayout.matches) return;
             const currentRevision = ++revision;
             menuOpen = open;
-            menuToggle.setAttribute('aria-expanded', String(open));
+            menuToggles.forEach(toggle => toggle.setAttribute('aria-expanded', String(open)));
 
             if(open && !mobileMenu.open)
               {
@@ -293,13 +296,14 @@ function startSite()
             if(currentRevision === revision && !menuOpen) restoreNavigation();
           }
 
-        function toggleMenu()
+        function toggleMenu(event)
           {
             // A touch-generated click can have detail=0. Only real keyboard input should
             // disable motion; pointerdown/keydown below track that independently.
+            if(!menuOpen && menuToggles.includes(event?.currentTarget)) returnFocus = event.currentTarget;
             setMenuOpen(!menuOpen);
           }
-        menuToggle.addEventListener('click', toggleMenu);
+        menuToggles.forEach(toggle => toggle.addEventListener('click', toggleMenu));
         menuClose.addEventListener('click', toggleMenu);
         mobileMenu.addEventListener('cancel', (event) =>
           {
@@ -318,9 +322,9 @@ function startSite()
         document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
         document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
         document.addEventListener('touchstart', () => document.documentElement.classList.remove('menu-keyboard'), { capture: true, passive: true });
-        mobileNavigation.addEventListener('change', () =>
+        phoneLayout.addEventListener('change', () =>
           {
-            if(!mobileNavigation.matches) setMenuOpen(false, true);
+            if(!phoneLayout.matches) setMenuOpen(false, true);
           });
         window.addEventListener('resize', positionMenuReveal, { passive: true });
       }
@@ -726,6 +730,9 @@ function startSite()
         const headingRule = heroContent?.querySelector?.('.hero-heading-rule');
         const heroFooter = hero.querySelector('.hero-footer');
         const topbar = about.querySelector('.about-topbar');
+        // On a phone Home's header is a bar in the same spot as About's.
+        const heroBar = hero.querySelector('.header-bar');
+        const heroToggle = hero.querySelector('.menu-toggle');
         const aboutFooter = about.querySelector('.about-footer');
         // About's own content sits under the hero for the whole fold, so it has to
         // stay out of sight until the words have nearly landed.
@@ -997,7 +1004,7 @@ function startSite()
               }
             else pillWindow = [.62, .92];
             const travelling = new Set(navFolds.map(plan => plan.mover));
-            headerRest = [...(hero.querySelectorAll?.('.menu-toggle, .nav-link') || [])]
+            headerRest = [...(hero.querySelectorAll?.('.nav-link') || [])]
               .filter(control => !travelling.has(control));
             root.classList.remove('fold-measuring');
           }
@@ -1006,7 +1013,7 @@ function startSite()
         function releaseTransition()
           {
             clearFolds();
-            [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, about, topbar, aboutFooter, aboutSignature, footerRule, aboutContent, ...dividers, ...headerRest, ...headingRest].forEach((element) =>
+            [portrait, heroContent, headingRule, heroFooter, heroSocials, heroSignature, wordmark, heroBar, heroToggle, about, topbar, aboutFooter, aboutSignature, footerRule, aboutContent, ...dividers, ...headerRest, ...headingRest].forEach((element) =>
                 {
                   if(!element) return;
                   element.style.transform = '';
@@ -1090,9 +1097,20 @@ function startSite()
                 const arriving = smooth(slice(progress, .32, .78));
                 if(topbar)
                   {
-                    topbar.style.transform = `translate3d(0, ${-24 * remaining}px, 0)`;
+                    // A phone's bar is already where About's lands, so that one only fades.
+                    topbar.style.transform = phoneLayout.matches ? '' : `translate3d(0, ${-24 * remaining}px, 0)`;
                     fade(topbar, arriving);
                   }
+                // Home's bar and hamburger stay whole under About's copy of them and go
+                // only once it is whole too, so the bar never dims or moves. Elsewhere
+                // the hamburger leaves with the rest of the header.
+                if(phoneLayout.matches)
+                  {
+                    const holding = arriving < 1 ? 1 : 0;
+                    fade(heroBar, holding);
+                    fade(heroToggle, holding);
+                  }
+                else fade(heroToggle, clearing);
                 // The content rises 12px under the landing words, a beat behind the bar.
                 if(aboutContent)
                   {

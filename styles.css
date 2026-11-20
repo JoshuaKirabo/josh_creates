@@ -1229,6 +1229,18 @@ h2
       opacity: 1;
    }
 
+/* A phone's header bar sits outside the header, so it follows it in. */
+.intro-pending .header-bar
+   {
+      opacity: 0;
+   }
+
+.intro-pending .hero:has(.site-header.is-entering) .header-bar
+   {
+      opacity: 1;
+      transition: opacity .4s var(--ease-out);
+   }
+
 .intro-pending .hero .nav-label > .scramble-text
    {
       transform: translateY(110%);
@@ -1264,6 +1276,7 @@ h2
       .intro-pending .hero-heading-line,
       .intro-pending .hero-heading-rule,
       .intro-pending .site-header,
+      .intro-pending .header-bar,
       .intro-pending .hero-footer .signature
          {
             opacity: 1;
@@ -1372,7 +1385,7 @@ span.nav-link
       display: contents;
    }
 
-.menu-toggle, .mobile-menu
+.menu-toggle, .mobile-menu, .header-bar
    {
       display: none;
    }
@@ -1383,13 +1396,27 @@ html.menu-open, html.menu-open body
       overscroll-behavior: none;
    }
 
-.menu-open .hero .menu-toggle
+.menu-open :is(.hero, .about-topbar) .menu-toggle
    {
       visibility: hidden;
    }
 
+/* A phone's header is one floating bar: the name on the left, the hamburger on
+   the right. Home, About and the open menu each draw it in the same spot at the
+   same size, so moving between them never moves the bar. Home leaves the left
+   empty; that is where its big JOSH lands on the way to About. No backdrop blur,
+   as with the desktop bar: the fold cannot afford one, so the fill is dense. */
 @media (max-width: 700px)
    {
+      :root
+         {
+            --bar-top: max(12px, env(safe-area-inset-top));
+            --bar-height: 56px;
+            --bar-radius: 16px;
+            --bar-fill: rgba(22, 22, 22, .84);
+            --bar-line: inset 0 0 0 1px rgba(255, 255, 255, .1), inset 0 1px 0 rgba(255, 255, 255, .06);
+         }
+
       .site-header
          {
             z-index: 10;
@@ -1397,13 +1424,68 @@ html.menu-open, html.menu-open body
 
       .menu-ready .site-header
          {
-            top: max(8px, env(safe-area-inset-top));
-            justify-content: flex-start;
+            top: var(--bar-top);
+            height: var(--bar-height);
+            padding: 0 4px 0 16px;
+            justify-content: flex-end;
+         }
+
+      /* Below the name, which flies into it on the way to About. */
+      .menu-ready .header-bar
+         {
+            display: block;
+            position: absolute;
+            top: var(--bar-top);
+            left: max(var(--edge), env(safe-area-inset-left));
+            right: max(var(--edge), env(safe-area-inset-right));
+            z-index: 0;
+            height: var(--bar-height);
+            border-radius: var(--bar-radius);
+            background: var(--bar-fill);
+            box-shadow: var(--bar-line);
+            pointer-events: none;
          }
 
       .menu-ready .wordmark
          {
-            top: calc(max(8px, env(safe-area-inset-top)) + 56px);
+            top: calc(var(--bar-top) + var(--bar-height) + 14px);
+         }
+
+      .menu-ready .portrait-stage
+         {
+            top: calc(var(--masthead-size) * 1.06 + 74px);
+         }
+
+      .menu-ready .about-topbar
+         {
+            top: var(--bar-top);
+            height: var(--bar-height);
+            margin: var(--bar-top) calc(var(--edge) - var(--page-gutter)) 0;
+            padding: 0 4px 0 16px;
+            border-radius: var(--bar-radius);
+            background: var(--bar-fill);
+            box-shadow: var(--bar-line);
+         }
+
+      .menu-ready .about-topbar::after,
+      .menu-ready .about-topbar .section-nav
+         {
+            display: none;
+         }
+
+      /* Rings sit inside the hamburger, as on the bar's links, or the bar's
+         edge would cut them off. */
+      :is(.site-header, .about-topbar, .menu-bar) .menu-toggle:focus-visible
+         {
+            outline-width: 2px;
+            outline-offset: -4px;
+            border-radius: 12px;
+         }
+
+      /* The wordmark is the bar's first item when it drops back in. */
+      .about-topbar > .menu-toggle
+         {
+            --nav-i: 1;
          }
 
       .menu-ready .site-header > .navigation-panel
@@ -1529,12 +1611,43 @@ html.menu-open, html.menu-open body
             align-items: stretch;
             flex-wrap: nowrap;
             gap: 0;
+            height: auto;
+            padding: 0;
             opacity: 1;
          }
 
-      .mobile-menu .menu-toggle
+      .menu-bar
          {
-            align-self: flex-start;
+            display: flex;
+            flex: none;
+            align-items: center;
+            justify-content: space-between;
+            height: var(--bar-height);
+            padding: 0 4px 0 16px;
+            border-radius: var(--bar-radius);
+            background: var(--bar-fill);
+            box-shadow: var(--bar-line);
+         }
+
+      /* About's outlined name, at its phone size. */
+      .menu-bar-name
+         {
+            margin-left: -.45rem;
+            padding: .34rem .45rem;
+            color: transparent;
+            -webkit-text-stroke: .055em var(--accent);
+            font-family: 'Unbounded Outline Merged', 'Unbounded Outline', Arial, sans-serif;
+            font-weight: 700;
+            font-size: 1.125rem;
+            letter-spacing: -.035em;
+         }
+
+      .menu-bar-name span
+         {
+            display: block;
+            line-height: .88;
+            transform: scaleY(1.25);
+            transform-origin: center;
          }
 
       .menu-ready .mobile-menu .navigation-panel
@@ -1642,6 +1755,23 @@ html.menu-open, html.menu-open body
       .menu-keyboard .mobile-menu, .menu-keyboard .mobile-menu .nav-link
          {
             transition: none !important;
+         }
+   }
+
+@media (max-width: 700px) and (prefers-reduced-transparency: reduce)
+   {
+      :root
+         {
+            --bar-fill: #161616;
+         }
+   }
+
+@media (max-width: 700px) and (prefers-contrast: more)
+   {
+      :root
+         {
+            --bar-fill: #111;
+            --bar-line: inset 0 0 0 1px #fff;
          }
    }
 
@@ -7310,7 +7440,7 @@ html.project-sheet-open body > :not(.site-backdrop, .project-sheet)
    page's line draws back on. Only the contents move; the bar and its
    gradient fade in with the page. Script adds .nav-return only when motion
    is allowed. */
-html.nav-return .about-topbar :is(.topbar-wordmark, .section-nav > *)
+html.nav-return .about-topbar :is(.topbar-wordmark, .section-nav > *, .menu-toggle)
    {
       animation: nav-return .5s var(--ease-out) calc(.06s + var(--nav-i, 0) * 30ms) both;
    }
@@ -7397,7 +7527,7 @@ html.projects-leaving .projects-main .projects-rail
       transition: opacity .28s var(--ease-in-out) .04s, translate .28s var(--ease-in-out) .04s;
    }
 
-html.nav-leave .about-topbar :is(.topbar-wordmark, .section-nav > *)
+html.nav-leave .about-topbar :is(.topbar-wordmark, .section-nav > *, .menu-toggle)
    {
       animation: nav-leave .24s var(--ease-in-out) calc(var(--nav-i, 0) * 15ms) both;
    }

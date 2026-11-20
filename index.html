@@ -106,6 +106,8 @@
   <a class="skip-link" href="#intro">Skip to content</a>
   <main data-entry-page="home">
     <section class="hero" id="home" aria-label="Joshua Kirabo, creative developer">
+      <!-- A phone's header bar. It sits under the name, so the name lands in it. -->
+      <span class="header-bar" aria-hidden="true"></span>
       <div class="wordmark-stage" aria-hidden="true">
         <div class="wordmark"><span class="intro-letter">J</span><span class="intro-letter">O</span><span class="intro-letter">S</span><span class="intro-letter">H</span></div>
       </div>
@@ -186,6 +188,10 @@
           <a class="section-nav-link" href="blog.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M6.15 2.82h6.92v4.58h4.58V20.2A1.88 1.88 0 0 1 15.77 22.08H6.15A1.88 1.88 0 0 1 4.27 20.2V4.7A1.88 1.88 0 0 1 6.15 2.82ZM7.48 11.42h9.1v1.2h-9.1zm0 3.1h9.1v1.2h-9.1zm0 3.1h6.05v1.2H7.48Z"/><path class="icon-tone" d="M13.07 2.82 17.65 7.4h-4.58V2.82Z"/></svg><span class="nav-label">Insights</span></a>
           <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M4.82 3.92h14.36A2.32 2.32 0 0 1 21.5 6.24v8.28A2.32 2.32 0 0 1 19.18 16.84h-6.82l-4.08 3.48c-.5.43-1.26.07-1.26-.58v-2.9H4.82A2.32 2.32 0 0 1 2.5 14.52V6.24A2.32 2.32 0 0 1 4.82 3.92ZM7.3 8.48h9.4v1.28H7.3zm0 3.12h6.2v1.28H7.3Z"/></svg><span class="nav-label">Ask Josh</span></a>
         </nav>
+        <!-- Phones swap the row for this; it opens the same menu as Home's. -->
+        <button class="menu-toggle" type="button" aria-controls="mobile-menu" aria-haspopup="dialog" aria-expanded="false" aria-label="Open navigation">
+          <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
       </header>
       <!-- Meet Josh is a screen of its own, so it carries its own copy of the
            footer at the bottom of that first screen. The fold lands on this
@@ -734,9 +740,12 @@
   <dialog class="mobile-menu" id="mobile-menu" aria-label="Navigation">
     <div class="mobile-menu-surface" aria-hidden="true"></div>
     <div class="site-header">
-      <button class="menu-toggle menu-close" type="button" aria-label="Close navigation">
-        <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
-      </button>
+      <div class="menu-bar">
+        <span class="menu-bar-name" aria-hidden="true"><span>JOSH</span></span>
+        <button class="menu-toggle menu-close" type="button" aria-label="Close navigation">
+          <span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
     </div>
   </dialog>
 </body>

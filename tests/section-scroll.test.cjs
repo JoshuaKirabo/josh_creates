@@ -108,7 +108,7 @@ function setup(reduce = false, initialHash = '', smoothScroll = false)
           return { selectNodeContents(element) { node = element; }, getBoundingClientRect: () => node.inkRect() };
         } };
     const context = { window, document, hero, Element, mobileMenu: null,
-      finePointer: { matches: smoothScroll },
+      finePointer: { matches: smoothScroll }, phoneLayout: { matches: false },
       reducedMotion: { matches: reduce, addEventListener: (name, fn) => on('window', 'motionchange', fn) }, heroIsVisible: true,
       syncAmbientMotion() {}, getComputedStyle: node => ({ overflowY: node.overflowY || 'visible' }),
       URL, location: { hash: initialHash, href: 'https://example.test/index.html' + initialHash,
