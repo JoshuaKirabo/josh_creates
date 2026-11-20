@@ -3140,9 +3140,11 @@ html.projects-snapping
 
       /* Both lines arrive as a hairline outline and fill in white on the same
          100deg edge as Meet Josh's title and the card names. The padding
-         keeps the last glyph's ink inside the painted box. */
-      .projects-title-line
+         keeps the last glyph's ink inside the painted box. The IDs outrank
+         the later rule that keeps the heading in Bounded. */
+      #projects #projects-title .projects-title-line
          {
+            font-family: 'Creations Outline', 'Bounded', Arial, sans-serif;
             padding-right: .12em;
             color: transparent;
             -webkit-text-stroke: 1px rgba(255, 255, 255, .32);
@@ -3436,6 +3438,28 @@ html.projects-snapping
             transition-delay: .48s, .48s, 0s;
          }
 
+   }
+
+/* Bounded at the phone heading's two weights with its overlapping contours
+   merged, so the outline is one clean line per letter instead of showing
+   the strokes where parts of a glyph cross. Bounded's licence reserves its
+   name, so the modified copy is called Creations Outline. */
+@font-face
+   {
+      font-family: 'Creations Outline';
+      src: url('assets/fonts/creations-outline-200.woff2') format('woff2');
+      font-style: normal;
+      font-weight: 200;
+      font-display: swap;
+   }
+
+@font-face
+   {
+      font-family: 'Creations Outline';
+      src: url('assets/fonts/creations-outline-800.woff2') format('woff2');
+      font-style: normal;
+      font-weight: 800;
+      font-display: swap;
    }
 
 /* How far the phone heading's white has swept across its outline. Left

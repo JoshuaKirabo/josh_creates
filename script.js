@@ -6445,10 +6445,12 @@ function startSite()
             // The labels are spread out by their own widths, so the line has to stop
             // under each one instead of moving in even steps. It reaches further into
             // each label, from the first one's left edge to the last one's right edge.
+            // A phone shows only the numbers, so there the line runs to the end of
+            // each one: the first card reads as 01 done, not as nothing yet.
             const railWidth = rail.clientWidth || 1;
             railStops = railLinks.map((link, index) =>
               {
-                const along = railLinks.length > 1 ? index / (railLinks.length - 1) : 1;
+                const along = phone.matches || railLinks.length < 2 ? 1 : index / (railLinks.length - 1);
                 return (link.offsetLeft + link.offsetWidth * along) / railWidth;
               });
           }
