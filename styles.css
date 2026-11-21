@@ -6284,6 +6284,128 @@ html.about-paging
          }
    }
 
+/* A phone tall enough for it reads the story a screen at a time. Script adds
+   .meet-steps and names the part on show with data-step; a flick swaps the
+   words for the next part while the photo, title and actions hold still.
+   Meet Josh is one fixed screen here: the three parts share one box as tall
+   as the longest, and the photo gives up height so the rest fits. A phone
+   under 520px tall, and reduced motion, keep the story in flow as above. */
+@media (max-width: 700px) and (min-height: 520px)
+   {
+      .about-hero.meet-steps
+         {
+            --meet-flow: 0;
+            --meet-steps: 1;
+            height: calc(100dvh - 116px);
+            min-height: 0;
+            padding-bottom: 0;
+         }
+
+      /* The photo takes the free height first; once it reaches its own shape
+         the story's box takes the rest. */
+      .meet-steps .about-photo
+         {
+            flex: 1000 1 0;
+            min-height: 0;
+            max-height: calc(100vw * 2 / 3);
+         }
+
+      .meet-steps .about-photo img
+         {
+            height: 100%;
+            object-fit: cover;
+            object-position: 50% 25%;
+         }
+
+      /* Each part sits centred in the room between the title and the actions.
+         The box is 24px under the title and its foot keeps 8px, which with
+         the actions' own 16px leaves the same gap on both sides. */
+      #meet-josh.meet-steps .about-lead
+         {
+            display: grid;
+            flex: 1 1 auto;
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-rows: 1fr auto auto 1fr;
+            margin-top: 24px;
+            padding-bottom: 8px;
+         }
+
+      /* The opening line and the first paragraph are one part, centred by the
+         two free rows around them; the other two paragraphs each span the
+         whole box and centre themselves in it. */
+      #meet-josh.meet-steps .about-lead p
+         {
+            grid-column: 1;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: opacity .22s var(--ease-out), transform .22s var(--ease-out);
+         }
+
+      #meet-josh.meet-steps .about-lead p:nth-child(1)
+         {
+            grid-row: 2;
+         }
+
+      #meet-josh.meet-steps .about-lead p:nth-child(2)
+         {
+            grid-row: 3;
+         }
+
+      #meet-josh.meet-steps .about-lead p:nth-child(n + 3)
+         {
+            grid-row: 1 / -1;
+            align-self: center;
+            margin-top: 0;
+         }
+
+      /* Parts already read wait above the box and the ones to come wait
+         below, so the words leave and arrive the way the flick went. */
+      #meet-josh.meet-steps[data-step] .about-lead p:nth-child(-n + 2), #meet-josh.meet-steps[data-step="2"] .about-lead p:nth-child(3)
+         {
+            transform: translateY(-12px);
+         }
+
+      #meet-josh.meet-steps:not([data-step], .is-away) .about-lead p:nth-child(-n + 2), #meet-josh.meet-steps[data-step="1"]:not(.is-away) .about-lead p:nth-child(3), #meet-josh.meet-steps[data-step="2"]:not(.is-away) .about-lead p:nth-child(4)
+         {
+            opacity: 1;
+            transform: none;
+            transition: opacity .5s var(--ease-out) .16s, transform .5s var(--ease-out) .16s;
+         }
+
+      #meet-josh.meet-steps:not([data-step], .is-away) .about-lead p:nth-child(2)
+         {
+            transition-delay: .22s;
+         }
+
+      /* Back up from Experience, the last part settles in behind the title. */
+      .about-motion.is-arrived #meet-josh.meet-steps.is-phone-return:not(.is-away) .about-lead p
+         {
+            transition: opacity .6s var(--ease-out) .4s, transform .6s var(--ease-out) .4s;
+         }
+
+      /* The actions rest on the foot of the screen. */
+      #meet-josh.meet-steps .about-resume
+         {
+            margin-top: auto;
+         }
+   }
+
+/* A shorter phone lets the title ride further up the photo and closes the
+   gaps, so the photo keeps what height it can. */
+@media (max-width: 700px) and (min-height: 520px) and (max-height: 600px)
+   {
+      .about-hero.meet-steps .about-title
+         {
+            margin-top: -56px;
+         }
+
+      #meet-josh.meet-steps .about-lead
+         {
+            margin-top: 20px;
+            padding-bottom: 4px;
+         }
+   }
+
 /* The big boxes that arrive after a page cut (Experience's card, How it
    works' sheet) come in through a soft edge that sweeps up from their foot
    as they rise into place, so no hard line crosses a bright box and nothing

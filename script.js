@@ -4547,6 +4547,33 @@ function startSite()
         if(meet && !reducedMotion.matches && 'IntersectionObserver' in window)
           {
             const meetFlows = () => getComputedStyle(meet).getPropertyValue('--meet-flow').trim() === '1';
+            // A phone tall enough for it reads the story a screen at a time: the
+            // photo, title and actions hold still while a flick swaps the words for
+            // the next part. The stylesheet says when (--meet-steps) and shows the
+            // part named by data-step; without the class the story reads in flow.
+            meet.classList.add('meet-steps');
+            const LAST_STEP = 2;
+            const meetSteps = () => getComputedStyle(meet).getPropertyValue('--meet-steps').trim() === '1';
+            const stepAt = () => Number(meet.dataset.step) || 0;
+            const showStep = (step) =>
+              {
+                if(step) meet.dataset.step = step;
+                else delete meet.dataset.step;
+              };
+            // A flick that lands while the words are still changing is spent.
+            let stepping = -Infinity;
+            let stepDirection = 0;
+            // The story starts over each time the page comes in from Home, or is
+            // asked for by name. The fold drops .is-arrived while About is still
+            // transparent, so the reset is never seen.
+            new MutationObserver(() =>
+              {
+                if(!about.classList.contains('is-arrived')) showStep(0);
+              }).observe(about, { attributes: true, attributeFilter: ['class'] });
+            document.addEventListener('click', (event) =>
+              {
+                if(event.target.closest?.('a[href="#about"], a[href="#home"]')) showStep(0);
+              });
             let settled = 0;
             let lastShown = 0;
             // A held turn owns the exit until Meet Josh is away or handed back. The
@@ -4556,12 +4583,12 @@ function startSite()
             new IntersectionObserver((entries) =>
               {
                 const entry = entries[entries.length - 1];
-                // The phone story reads in ordinary page flow. Keep it visible
+                // Experience's cut back up to a phone owns it while it plays in.
+                if(meet.classList.contains('is-phone-return')) return;
+                // A short phone's story reads in ordinary page flow. Keep it visible
                 // while reading instead of playing an exit partway through.
                 if(meetFlows())
                   {
-                    // Experience's cut back up owns it while it plays in.
-                    if(meet.classList.contains('is-phone-return')) return;
                     meet.classList.remove('is-away', 'is-leaving', 'is-returning');
                     return;
                   }
@@ -4577,6 +4604,8 @@ function startSite()
                     turning = false;
                     meet.classList.remove('is-leaving');
                     meet.classList.add('is-away', 'is-returning');
+                    // From below, the page turns back up to the end of the story.
+                    showStep(LAST_STEP);
                   }
                 else if(away && entry.intersectionRatio >= .35)
                   {
@@ -4602,10 +4631,25 @@ function startSite()
                 const y = window.scrollY;
                 // Only from Meet Josh's own resting place: while the fold is landing the
                 // document still reads Home's 0, which is a page stop too.
-                if(meetFlows() || direction < 0 || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 || !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
+                if(meetFlows() || root.classList.contains('section-folding') || Math.abs(y - aboutStop) > 2 || !about.classList.contains('is-arrived') || meet.classList.contains('is-away') || meet.classList.contains('is-leaving')) return;
+                // While the story has a part left that way, the flick turns the words
+                // and the page stays where it is.
+                if(meetSteps() && stepAt() + direction >= 0 && stepAt() + direction <= LAST_STEP)
+                  {
+                    stepDirection = direction;
+                    return y;
+                  }
+                if(direction < 0) return;
                 return pageStops().find(top => top > y + 2);
               }, (to, edge) =>
               {
+                if(to === edge)
+                  {
+                    if(performance.now() - stepping < 420) return;
+                    stepping = performance.now();
+                    showStep(stepAt() + stepDirection);
+                    return;
+                  }
                 turning = true;
                 meet.classList.add('is-leaving');
                 clearTimeout(exitTimer);
@@ -4624,7 +4668,8 @@ function startSite()
                   }, 360);
                 // Down from Meet Josh only ever cuts: a flick that cannot turn it yet
                 // (the fold's momentum, one mid-exit) is spent here rather than scrolled.
-              }, { fresh: true, still: direction => !meetFlows() && direction > 0 && Math.abs(window.scrollY - aboutStop) <= 2 });
+                // Up from a later part of the story never folds to Home either.
+              }, { fresh: true, still: direction => !meetFlows() && (direction > 0 || (meetSteps() && stepAt() > 0)) && Math.abs(window.scrollY - aboutStop) <= 2 });
           }
 
         // Education arrives each time the page turns to it and resets once it has
@@ -5089,10 +5134,10 @@ function startSite()
               }, { threshold: Array.from({ length: 21 }, (_, i) => i / 20) });
             arrival.observe(section.querySelector('.core-stage') || section);
 
-            // On phones Meet Josh reads in page flow and has no turn of its own, so
-            // the cut back up to it brings it back itself (see .is-phone-return).
+            // On phones the cut back up to Meet Josh brings it back itself (see
+            // .is-phone-return), whether its story reads in flow or a part at a time.
             const meet = document.querySelector('#about .about-hero');
-            const meetFlows = () => getComputedStyle(meet).getPropertyValue('--meet-flow').trim() === '1';
+            const meetFlows = () => ['--meet-flow', '--meet-steps'].some(name => getComputedStyle(meet).getPropertyValue(name).trim() === '1');
             let phoneReturnTimer = 0;
             // Scrolling on past the first job, or the last, holds the page for the
             // exit, then turns it.
