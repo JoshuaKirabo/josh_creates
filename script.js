@@ -4788,6 +4788,61 @@ function startSite()
             marker.style.setProperty('--marker-h', Math.max(0, tab.offsetHeight - 24));
           }
 
+        // On a phone the brighter line down the chain of marks is one piece,
+        // cut out around each mark, that glides to the job being read. Between
+        // jobs it follows the scroll, as What I do's rail does.
+        const chain = document.createElement('span');
+        chain.className = 'core-chain';
+        chain.setAttribute('aria-hidden', 'true');
+        chain.innerHTML = '<span class="core-chain-fill"></span>';
+        const chainFill = chain.firstChild;
+        list.prepend(chain);
+        let chainStops = [];
+        function drawChain()
+          {
+            if(!chainStops.length) return;
+            let at = Math.max(0, shown);
+            if(coreJobStops.length > 1)
+              {
+                const y = window.scrollY;
+                const next = coreJobStops.findIndex(top => top > y);
+                at = next < 0 ? coreJobStops.length - 1 : next === 0 ? 0 : next - 1 + (y - coreJobStops[next - 1]) / (coreJobStops[next] - coreJobStops[next - 1]);
+              }
+            const index = Math.max(0, Math.min(panels.length - 2, Math.floor(at)));
+            const from = chainStops[owner[index]] ?? 0;
+            const to = chainStops[owner[index + 1]] ?? from;
+            chainFill.style.transform = `scaleY(${(from + (to - from) * (at - index)).toFixed(4)})`;
+          }
+        function placeChain()
+          {
+            chainStops = [];
+            if(!chained()) return;
+            const logos = tabs.map(tab => tab.querySelector('.core-subject-logo'));
+            if(logos.some(logo => !logo)) return;
+            const marks = logos.map(logo => logo.getBoundingClientRect());
+            const box = list.getBoundingClientRect();
+            // The line starts where the first mark's lead-in does and ends 6px
+            // short of the last mark, as the chain's own segments do.
+            const lead = parseFloat(getComputedStyle(logos[0], '::before').height) || 0;
+            const top = marks[0].top - 6 - lead;
+            const length = marks[marks.length - 1].top - 6 - top;
+            if(length <= 0) return;
+            const cuts = marks.slice(0, -1).map((mark) =>
+              {
+                const a = (mark.top - 6 - top).toFixed(2);
+                const b = (mark.bottom + 6 - top).toFixed(2);
+                return `#000 ${a}px, transparent ${a}px, transparent ${b}px, #000 ${b}px`;
+              });
+            const mask = `linear-gradient(to bottom, transparent 0, #000 ${lead.toFixed(2)}px, ${cuts.join(', ')}${cuts.length ? ', ' : ''}#000 100%)`;
+            chain.style.top = `${top - box.top - list.clientTop}px`;
+            chain.style.left = `${marks[0].left + marks[0].width / 2 - box.left - list.clientLeft - .5}px`;
+            chain.style.height = `${length}px`;
+            chain.style.webkitMaskImage = mask;
+            chain.style.maskImage = mask;
+            chainStops = marks.map(mark => Math.min(1, Math.max(0, (mark.top - 6 - top) / length)));
+            drawChain();
+          }
+
         // Titles sweep in on the site's 100° edge. The details along the bottom
         // keep their icons planted while the words decode in place; the decode
         // plays on an aria-hidden copy laid over the real words, so assistive
@@ -5020,6 +5075,7 @@ function startSite()
                 panel.inert = i !== index;
               });
             placeMarker();
+            drawChain();
             // A phone's card scrolls its copy; a job opens at the top of its own.
             if(previous !== index) panels[index].querySelector('.core-copy')?.scrollTo(0, 0);
             core.style.setProperty('--core-progress', panels.length > 1 ? index / (panels.length - 1) : 0);
@@ -5048,6 +5104,7 @@ function startSite()
           }
         function follow()
           {
+            drawChain();
             if(!coreJobStops.length) return;
             let nearest = 0;
 
@@ -5078,8 +5135,16 @@ function startSite()
         list.hidden = false;
         core.classList.add('core-ready');
         select(Math.max(0, owner.indexOf(tabs.findIndex(tab => tab.getAttribute('aria-selected') === 'true'))));
-        new ResizeObserver(placeMarker).observe(list);
-        requestAnimationFrame(() => requestAnimationFrame(() => rail.classList.add('is-placed')));
+        new ResizeObserver(() =>
+          {
+            placeMarker();
+            placeChain();
+          }).observe(list);
+        requestAnimationFrame(() => requestAnimationFrame(() =>
+          {
+            rail.classList.add('is-placed');
+            chain.classList.add('is-placed');
+          }));
 
         // Experience arrives every time the page turns to it. Its card wipes up,
         // then the open job's contents step in behind it. As soon as the page

@@ -4683,6 +4683,41 @@ html.about-paging
       transition: transform 380ms var(--ease-out-quart);
    }
 
+/* A phone's chain of marks carries its own line (see the chain below);
+   script places it, cuts it out around the marks and sets how far it reaches. */
+.core-chain
+   {
+      position: absolute;
+      display: none;
+      width: 1px;
+      pointer-events: none;
+   }
+
+.core-chain-fill
+   {
+      display: block;
+      height: 100%;
+      background: rgba(255, 255, 255, .45);
+      transform: scaleY(0);
+      transform-origin: top;
+   }
+
+/* The line glides to where the scroll has it, so a job chosen by a tap or a
+   flick, which jumps the page, still draws the line along rather than
+   snapping it. */
+.core-chain.is-placed .core-chain-fill
+   {
+      transition: transform .3s var(--ease-out);
+   }
+
+@media (prefers-reduced-motion: reduce)
+   {
+      .core-chain.is-placed .core-chain-fill
+         {
+            transition: none;
+         }
+   }
+
 /* Where scroll-driven animation exists, the fill follows the scroll itself
    rather than stepping from job to job. */
 @keyframes core-progress
@@ -5363,8 +5398,8 @@ html.about-paging
    }
 
 /* On a phone the jobs become a chain of workplace marks down the left edge,
-   threaded on one line that breaks 6px short of each mark. The line down to
-   the job being read is brighter. As on desktop, every job shares one card
+   threaded on one line that breaks 6px short of each mark. A brighter line
+   (.core-chain) lies over it and glides down to the job being read. As on desktop, every job shares one card
    of one size that fits the screen with the heading and footer. The title,
    workplace and details hold still and the paragraphs scroll inside the card
    at reading size, so script, reading --core-chain, leaves the type alone. */
@@ -5405,6 +5440,11 @@ html.about-paging
       .core-ready .core-rail
          {
             display: none;
+         }
+
+      .core-ready .core-chain
+         {
+            display: block;
          }
 
       .core-ready .core-subject, .core-ready .core-subject:has(.core-subject-org)
@@ -5475,9 +5515,8 @@ html.about-paging
             left: 50%;
             width: 1px;
             height: calc((48px - var(--logo-h)) / 2);
-            background-color: rgba(255, 255, 255, .55);
+            background-color: rgba(255, 255, 255, .18);
             translate: -50% 0;
-            transition: background-color 200ms var(--ease-out);
          }
 
       .core-ready .core-subject-logo::before
@@ -5488,11 +5527,6 @@ html.about-paging
       .core-ready .core-subject-logo::after
          {
             top: calc(100% + 6px);
-         }
-
-      .core-ready .core-subject[aria-selected="true"] .core-subject-logo::after, .core-ready .core-subject[aria-selected="true"] ~ .core-subject .core-subject-logo::before, .core-ready .core-subject[aria-selected="true"] ~ .core-subject .core-subject-logo::after
-         {
-            background-color: rgba(255, 255, 255, .18);
          }
 
       /* Short screens close the chain up (gap 8px, ends 4px), so it fits the
@@ -6446,7 +6480,7 @@ html.about-paging
       opacity: 0;
    }
 
-.core-motion:not(.is-entered) .core-rail
+.core-motion:not(.is-entered) .core-rail, .core-motion:not(.is-entered) .core-chain
    {
       opacity: 0;
    }
@@ -6482,7 +6516,7 @@ html.about-paging
       transition-duration: var(--press-in);
    }
 
-.core-motion.is-entered .core-rail
+.core-motion.is-entered .core-rail, .core-motion.is-entered .core-chain
    {
       transition: opacity .6s var(--ease-out) .35s;
    }
@@ -6514,7 +6548,7 @@ html.about-paging
       transition: color var(--press-out) var(--ease-out), opacity .2s var(--ease-out) calc(.05s + (var(--n, 1) - 1 - var(--i, 0)) * 20ms);
    }
 
-.core-motion.is-entered.is-leaving .core-rail
+.core-motion.is-entered.is-leaving .core-rail, .core-motion.is-entered.is-leaving .core-chain
    {
       opacity: 0;
       transition: opacity .2s var(--ease-out) .08s;
