@@ -115,9 +115,37 @@ function startSite()
         turnMomentum = flick.id;
         flick.turnAt = performance.now();
       }
+    // A stop is a number only until the window resizes. Safari's toolbar
+    // folding away mid-turn makes the pages above taller and moves every stop
+    // below them, so a turn under way keeps its stop as the marker that rests
+    // there (by name where About hands its markers round) and reads it again.
+    function stopHandle(top)
+      {
+        const marker = [...document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap')].find(each => !each.hidden && Math.abs(parseFloat(each.style.top) - top) <= 2);
+        if(!marker) return () => top;
+        const name = marker.dataset.stop;
+        return () =>
+          {
+            const now = name ? document.querySelector(`.page-snap[data-stop="${name}"]`) : marker;
+            const at = now && !now.hidden ? parseFloat(now.style.top) : NaN;
+            return Number.isFinite(at) ? at : top;
+          };
+      }
     function glideTo(top)
       {
-        if(Math.abs(window.scrollY - top) > 1) glide = { to: top, until: performance.now() + 1500 };
+        if(Math.abs(window.scrollY - top) > 1) glide = { to: top, stop: stopHandle(top), until: performance.now() + 1500 };
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    // A glide in flight when the window resizes was aimed at where its stop
+    // used to be, and landed the next page that far off its place. It is aimed
+    // again at where the stop is now. Called once the stops are measured again.
+    function reaimGlide()
+      {
+        if(!glide || performance.now() > glide.until) return;
+        const top = glide.stop();
+        if(Math.abs(top - glide.to) <= 1) return;
+        glide.to = top;
+        glide.until = performance.now() + 1500;
         window.scrollTo({ top, behavior: 'smooth' });
       }
 
@@ -3913,14 +3941,70 @@ function startSite()
         let frames = 0;
         const sized = () => `${window.innerWidth} ${window.innerHeight}`;
         let size = sized();
+        // A job's or a leg's stop goes when Experience stops pinning; its top stands in.
+        const find = stop => document.querySelector(`.page-snap[data-stop="${stop}"]`) || (/^(job|leg)-/.test(stop) ? document.querySelector('.page-snap[data-stop="core"]') : null);
+        // Where every stop was at the last scroll and which way the page was
+        // going, so a resize can tell which stop a scroll in flight was making for.
+        let stops = [];
+        let lastY = window.scrollY;
+        let heading = 0;
+        let movedAt = 0;
+        let fingers = 0;
+        let flight = null;
+        let resizedAt = -Infinity;
+        // A swipe coasting to the next page as Safari's toolbar folds away was
+        // making for where that page's stop used to be. It rested the page that
+        // far off its place, and the browser snapped it over a beat later. The
+        // scroll is sent on to where the stop is now instead. A finger still on
+        // the glass keeps the page; the browser snaps to the new stops on release.
+        const aim = () =>
+          {
+            const now = performance.now();
+            if(glide || fingers > 0) return;
+            if(!flight)
+              {
+                // Only the first resize after a quiet spell can catch a scroll in
+                // flight: a window being dragged scrolls the page itself as it goes.
+                if(!heading || now - movedAt > 200 || now - resizedAt < 600) return;
+                const y = window.scrollY;
+                const ahead = stops.filter(stop => (stop.top - y) * heading >= -2 && Math.abs(stop.top - y) < window.innerHeight * 1.5).sort((a, b) => (a.top - b.top) * heading)[0];
+                if(!ahead) return;
+                flight = { stop: ahead.stop, to: ahead.top, until: now + 1500 };
+              }
+            if(now > flight.until)
+              {
+                flight = null;
+                return;
+              }
+            const marker = typeof flight.stop === 'string' ? find(flight.stop) : flight.stop;
+            const top = marker && !marker.hidden ? parseFloat(marker.style.top) : NaN;
+            if(!Number.isFinite(top) || Math.abs(top - flight.to) <= 1) return;
+            flight.to = top;
+            window.scrollTo({ top, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+          };
+        const touched = (event) =>
+          {
+            fingers = event.touches.length;
+            if(event.type === 'touchstart') flight = null;
+          };
+        ['touchstart', 'touchend', 'touchcancel'].forEach(type => window.addEventListener(type, touched, { passive: true, capture: true }));
         const note = () =>
           {
             // WebKit can clamp the scroll to a new layout before it sends the
             // resize; that scroll is the resize's, not the reader's.
             if(sized() !== size) return resized();
-            if(performance.now() < quietUntil) return;
             const y = window.scrollY;
-            const at = markers().filter(marker => Math.abs(parseFloat(marker.style.top) - y) <= 2);
+            if(y !== lastY)
+              {
+                heading = Math.sign(y - lastY);
+                lastY = y;
+                movedAt = performance.now();
+              }
+            if(flight && Math.abs(y - flight.to) <= 1) flight = null;
+            if(performance.now() < quietUntil) return;
+            const all = markers();
+            snapshot();
+            const at = all.filter(marker => Math.abs(parseFloat(marker.style.top) - y) <= 2);
             const section = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
             // About's markers change places, so those are kept by name.
             held = at.length ? { at: at.map(marker => marker.dataset.stop || marker), section, top: section?.getBoundingClientRect().top } : null;
@@ -3928,8 +4012,6 @@ function startSite()
         const restore = () =>
           {
             if(!held) return;
-            // A job's or a leg's stop goes when Experience stops pinning; its top stands in.
-            const find = stop => document.querySelector(`.page-snap[data-stop="${stop}"]`) || (/^(job|leg)-/.test(stop) ? document.querySelector('.page-snap[data-stop="core"]') : null);
             const tops = held.at.map(each => (typeof each === 'string' ? find(each) : each)).filter(marker => marker && !marker.hidden).map(marker => parseFloat(marker.style.top)).filter(Number.isFinite);
             if(!tops.length) return;
             // Two sections can rest on one stop at the page's end and part ways
@@ -3938,17 +4020,58 @@ function startSite()
             const top = held.section ? tops.reduce((best, each) => (Math.abs(page - each - held.top) < Math.abs(page - best - held.top) ? each : best)) : tops[0];
             if(Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: 'instant' });
           };
+        // A turn that cuts the page to another stop just as the window resizes
+        // (swiping away from Meet Josh folds Safari's toolbar away) has not been
+        // noted yet, and the page was put back on the stop it had just left. A
+        // page the script has only now put where another stop last was has
+        // turned to it; that stop is the place to keep. The browser's own
+        // scrolls mid-resize never count, so every cut is seen here as it is made.
+        const snapshot = () => (stops = markers().map(marker => ({ stop: marker.dataset.stop || marker, top: parseFloat(marker.style.top) })));
+        let turned = null;
+        const scrollPage = window.scrollTo.bind(window);
+        window.scrollTo = (...to) =>
+          {
+            if(Number.isFinite(to[0]?.top)) turned = { top: to[0].top, at: performance.now() };
+            return scrollPage(...to);
+          };
+        const adopt = () =>
+          {
+            const y = window.scrollY;
+            if(!turned || performance.now() - turned.at > 250 || Math.abs(turned.top - y) > 2) return;
+            const on = stops.filter(stop => Math.abs(stop.top - y) <= 2);
+            if(!on.length || (held && held.at.some(each => on.some(stop => stop.stop === each)))) return;
+            held = { at: on.map(stop => stop.stop), section: null };
+          };
         const settle = () =>
           {
             restore();
+            reaimGlide();
+            if(flight) aim();
             if(--frames > 0) requestAnimationFrame(settle);
           };
         function resized()
           {
             size = sized();
-            if(!held) return;
+            // A page in flight has no place to keep; it is aimed again.
+            reaimGlide();
+            adopt();
+            if(!held) aim();
+            resizedAt = performance.now();
+            if(!held)
+              {
+                if((glide || flight) && frames <= 0)
+                  {
+                    requestAnimationFrame(settle);
+                    frames = 4;
+                  }
+                snapshot();
+                return;
+              }
             quietUntil = performance.now() + 400;
             restore();
+            // Scrolls are not noted while a resize settles, so the stops' new
+            // places are taken here for the next one to be read against.
+            snapshot();
             // Experience refits its card after this event, which moves what follows.
             if(frames <= 0) requestAnimationFrame(settle);
             frames = 4;
@@ -4736,19 +4859,23 @@ function startSite()
               }, (to, edge) =>
               {
                 turning = true;
-                exitToward(to > edge ? 1 : -1);
+                const down = to > edge;
+                // Both stops move if Safari's toolbar folds away during the exit.
+                const there = stopHandle(to);
+                const here = stopHandle(edge);
+                exitToward(down ? 1 : -1);
                 education.classList.add('is-leaving');
                 clearTimeout(exitTimer);
                 exitTimer = setTimeout(() =>
                   {
-                    glideTo(to);
+                    glideTo(there());
                     exitTimer = setTimeout(() =>
                       {
                         // Landed on the next page: a strip of Education can still show
                         // there, so it resets now rather than waiting to leave the screen.
-                        if(Math.abs(window.scrollY - to) <= 2) reset(to > edge);
+                        if(Math.abs(window.scrollY - there()) <= 2) reset(down);
                         // A turn that never got away hands Education back.
-                        else if(Math.abs(window.scrollY - edge) <= 2)
+                        else if(Math.abs(window.scrollY - here()) <= 2)
                           {
                             turning = false;
                             education.classList.replace('is-leaving', 'is-resuming');
@@ -5225,6 +5352,9 @@ function startSite()
                 // Back up to Meet Josh cuts once the exit has cleared, the way Meet Josh
                 // cuts down to it; on to Education still scrolls.
                 const cut = Math.abs(to - aboutStop) <= 2;
+                // Both stops move if Safari's toolbar resizes during the exit.
+                const there = stopHandle(to);
+                const here = stopHandle(edge);
                 exitTimer = setTimeout(() =>
                   {
                     // A phone's Meet Josh is emptied while it is still out of sight, so
@@ -5235,8 +5365,8 @@ function startSite()
                         clearTimeout(phoneReturnTimer);
                         meet.classList.add('is-away', 'is-returning', 'is-phone-return');
                       }
-                    if(cut) window.scrollTo({ top: to, behavior: 'instant' });
-                    else glideTo(to);
+                    if(cut) window.scrollTo({ top: there(), behavior: 'instant' });
+                    else glideTo(there());
                     if(phoneReturn) requestAnimationFrame(() => requestAnimationFrame(() =>
                       {
                         meet.classList.remove('is-away');
@@ -5246,7 +5376,7 @@ function startSite()
                     // A turn that never got away hands the section back.
                     exitTimer = setTimeout(() =>
                       {
-                        if(Math.abs(window.scrollY - edge) <= 2) section.classList.remove('is-leaving');
+                        if(Math.abs(window.scrollY - here()) <= 2) section.classList.remove('is-leaving');
                       }, 1200);
                   }, cut ? 360 : 320);
                 // Only a flick that began on the first or last job leaves: one that
