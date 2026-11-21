@@ -6217,19 +6217,12 @@ html.about-paging
             line-height: 1.4;
          }
 
-      /* Keep both actions within reach while the story scrolls past them. */
+      /* The actions follow the story and scroll away with it. */
       #meet-josh .about-resume
          {
-            position: sticky;
-            bottom: 0;
-            z-index: 1;
             flex: none;
-            flex-wrap: wrap;
             align-self: stretch;
-            gap: 12px;
-            margin: 16px calc(-1 * var(--page-gutter)) 0;
-            padding: 16px max(var(--page-gutter), env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(var(--page-gutter), env(safe-area-inset-left));
-            background: linear-gradient(to bottom, transparent, var(--background) 16px);
+            margin: 24px 0 0;
          }
 
       #meet-josh .about-resume .button
@@ -6332,7 +6325,7 @@ html.about-paging
             --meet-steps: 1;
             height: calc(100dvh - 116px);
             min-height: 0;
-            padding-bottom: 0;
+            padding-bottom: max(24px, env(safe-area-inset-bottom));
          }
 
       /* The photo takes the free height first; once it reaches its own shape
@@ -6351,17 +6344,14 @@ html.about-paging
             object-position: 50% 25%;
          }
 
-      /* Each part sits centred in the room between the title and the actions.
-         The box is 24px under the title and its foot keeps 8px, which with
-         the actions' own 16px leaves the same gap on both sides. */
+      /* Size the story to its longest part so the actions follow the copy. */
       #meet-josh.meet-steps .about-lead
          {
             display: grid;
-            flex: 1 1 auto;
+            flex: none;
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows: 1fr auto auto 1fr;
             margin-top: 24px;
-            padding-bottom: 8px;
          }
 
       /* The opening line and the first paragraph are one part, centred by the
@@ -6438,14 +6428,6 @@ html.about-paging
       .about-motion.is-arrived #meet-josh.meet-steps.is-phone-return:not(.is-away) .about-lead p
          {
             transition: opacity .6s var(--ease-out) .4s, transform .6s var(--ease-out) .4s;
-         }
-
-      /* The actions rest on the foot of the screen. Nothing scrolls under
-         them here, so they drop the strip that shades the story behind them. */
-      #meet-josh.meet-steps .about-resume
-         {
-            margin-top: auto;
-            background: none;
          }
 
       /* The actions are the story's last word. They keep their place but stay
