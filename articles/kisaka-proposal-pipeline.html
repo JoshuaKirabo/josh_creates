@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" class="inter_5901b7c6-module__ec5Qua__variable">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+<meta name="theme-color" content="#060606">
+<title>An AI-Assisted Proposal Pipeline · JOSH</title>
+<meta name="description" content="How I built an AI-assisted bid workflow at Kisaka and Company, CPA.">
+<style>
+  /* The site's ground: #060606 and its grain, painted before anything else
+     loads. The site's own script then draws the drifting sky over it. */
+  html { min-height: 100%; background: #060606; color-scheme: dark; }
+  body { margin: 0; isolation: isolate; }
+  .site-backdrop { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: #060606; }
+  .grain-particles { position: absolute; inset: 0; background: url('../assets/grain-fallback.png') 0 0 / 256px 256px repeat; }
+  @media (max-width: 700px) {
+    /* The grain eases in and out of #060606 at both edges so Safari's bars
+       read as part of the page, as on the other pages. */
+    .site-backdrop {
+      background: transparent;
+      -webkit-mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .12) 40px, rgba(0, 0, 0, .45) 96px, #000 180px, #000 calc(100% - 160px), rgba(0, 0, 0, .35) calc(100% - 60px), transparent);
+      mask-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, .12) 40px, rgba(0, 0, 0, .45) 96px, #000 180px, #000 calc(100% - 160px), rgba(0, 0, 0, .35) calc(100% - 60px), transparent);
+    }
+  }
+</style>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../assets/fonts/google-sans-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<script>document.documentElement.classList.add("blog-js")</script>
+<!-- The site's own stylesheet and script draw the sky, as on the résumé. -->
+<link rel="stylesheet" href="../styles.css?v=onepage33">
+<script src="../script.js?v=onepage19" defer></script>
+<link rel="stylesheet" href="../blog/daq.css">
+<link rel="stylesheet" href="../blog/topbar.css?v=4">
+<link rel="stylesheet" href="../blog/heading.css?v=13">
+<link rel="stylesheet" href="../blog/article.css?v=2">
+<link rel="stylesheet" href="../blog/case.css?v=2">
+<script src="../blog/case.js?v=2" defer></script>
+<script src="../blog/blog.js?v=3" defer></script>
+</head>
+<body class="inter_5901b7c6-module__ec5Qua__className text-white selection:bg-white/25 overflow-x-clip">
+<div class="site-backdrop" aria-hidden="true">
+  <div class="grain-particles"></div>
+</div>
+<header class="about-topbar blog-topbar glass-panel">
+        <a class="topbar-wordmark" href="../index.html#home" aria-label="Josh, back to Home"><span>JOSH</span></a>
+        <nav class="section-nav" aria-label="Site navigation">
+          <a class="section-nav-link" href="../index.html#home"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M11.54 3.14c.29-.2.63-.2.92 0l8.28 5.9c.46.33.27 1.06-.3 1.06h-1.08v8.28A2.42 2.42 0 0 1 16.94 20.8H7.06A2.42 2.42 0 0 1 4.64 18.38V10.1H3.56c-.57 0-.76-.73-.3-1.06l8.28-5.9ZM10.88 20.8v-5.05c0-.5.4-.9.9-.9h1.44c.5 0 .9.4.9.9v5.05h-3.24Zm-2.98-8.72h2.2c.38 0 .68.3.68.68v2.2c0 .38-.3.68-.68.68h-2.2c-.38 0-.68-.3-.68-.68v-2.2c0-.38.3-.68.68-.68Z"/></svg><span class="nav-label">Home</span></a>
+          <a class="section-nav-link" href="../index.html#about"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6.85" r="3.2"/><path d="M6.05 20.88c-1.42 0-2.28-.98-2.28-2.58 0-3.32 3.1-5.52 8.23-5.52s8.23 2.2 8.23 5.52c0 1.6-.86 2.58-2.28 2.58H6.05Z"/></svg><span class="nav-label">About me</span></a>
+          <a class="section-nav-link" href="../index.html#projects"><svg viewBox="0 0 24 24" aria-hidden="true"><rect class="icon-tone" x="7.28" y="3.15" width="13.05" height="13.05" rx="2.2"/><rect x="3.67" y="7.8" width="13.05" height="13.05" rx="2.2"/></svg><span class="nav-label">Projects</span></a>
+          <a class="section-nav-link" href="../index.html#skills"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="icon-tone" d="M9 3.5h6a1.5 1.5 0 0 1 1.5 1.5v2.8h-1.6V5.1H9.1v2.7H7.5V5A1.5 1.5 0 0 1 9 3.5Z"/><path d="M5.2 7.8h13.6A2.2 2.2 0 0 1 21 10v3.1h-7.4v-.9h-3.2v.9H3V10a2.2 2.2 0 0 1 2.2-2.2ZM3 14.5h7.4v1h3.2v-1H21V18a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 18v-3.5Z"/></svg><span class="nav-label">Skills</span></a>
+          <a class="section-nav-link" href="../index.html#connect"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.62 4.22h12.76A2.18 2.18 0 0 1 20.56 6.4v11.18a2.18 2.18 0 0 1-2.18 2.18H5.62a2.18 2.18 0 0 1-2.18-2.18V6.4A2.18 2.18 0 0 1 5.62 4.22ZM5.28 6.12 12 10.72l6.72-4.6-1.08-.78L12 9.18 6.36 5.34l-1.08.78Z"/></svg><span class="nav-label">Let’s connect</span></a>
+          <span class="section-nav-divider" aria-hidden="true"></span>
+          <a class="section-nav-link" href="../blog.html" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M6.15 2.82h6.92v4.58h4.58V20.2A1.88 1.88 0 0 1 15.77 22.08H6.15A1.88 1.88 0 0 1 4.27 20.2V4.7A1.88 1.88 0 0 1 6.15 2.82ZM7.48 11.42h9.1v1.2h-9.1zm0 3.1h9.1v1.2h-9.1zm0 3.1h6.05v1.2H7.48Z"/><path class="icon-tone" d="M13.07 2.82 17.65 7.4h-4.58V2.82Z"/></svg><span class="nav-label">Insights</span></a>
+          <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M4.82 3.92h14.36A2.32 2.32 0 0 1 21.5 6.24v8.28A2.32 2.32 0 0 1 19.18 16.84h-6.82l-4.08 3.48c-.5.43-1.26.07-1.26-.58v-2.9H4.82A2.32 2.32 0 0 1 2.5 14.52V6.24A2.32 2.32 0 0 1 4.82 3.92ZM7.3 8.48h9.4v1.28H7.3zm0 3.12h6.2v1.28H7.3Z"/></svg><span class="nav-label">Ask Josh</span></a>
+        </nav>
+      </header>
+<div aria-live="polite" aria-atomic="true" class="sr-only"></div>
+<main id="content" class="article case" tabindex="-1">
+<header class="article-hero blog-head">
+<p class="about-eyebrow"><span>Insights · Case study · AI engineering</span><span class="about-rule" aria-hidden="true"></span></p>
+<h1 class="case-title"><span class="about-title-line"><span class="about-title-outline">An AI-assisted</span><span class="about-title-fill" aria-hidden="true">An AI-assisted</span></span><span class="about-title-line about-title-strong"><span class="about-title-outline">proposal pipeline.</span><span class="about-title-fill" aria-hidden="true">proposal pipeline.</span></span></h1>
+<p class="article-lead article-rise">At Kisaka and Company, CPA I built an AI-assisted bid workflow: every requirement traced to its section of the RFP, open questions logged before drafting, and the supporting documents generated by a Python script. [TO FILL: confirm or rewrite.]</p>
+<p class="article-tags article-rise"><span>Kisaka and Company, CPA</span><span>IT Operations Associate · 2026</span><span>AI engineering</span></p>
+</header>
+
+<div class="case-layout">
+<div class="case-main">
+
+<!-- ===== 01 BEFORE AND AFTER ===== -->
+<section id="before-after" class="case-section case-reveal" aria-labelledby="before-after-title">
+<p class="case-eyebrow">01 / The situation</p>
+<h2 id="before-after-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">Before and after</span><span class="about-title-fill" aria-hidden="true">Before and after</span></span></h2>
+<div class="case-states">
+<article class="case-state">
+<p class="case-state-label">Before</p>
+<h3>[TO FILL: the state before, in a few words]</h3>
+<p>[TO FILL: how a proposal came together before the workflow. The managing partner’s own account: about three days per proposal.]</p>
+</article>
+<article class="case-state" data-target>
+<p class="case-state-label">After</p>
+<h3>[TO FILL: the state after, in a few words]</h3>
+<p>[TO FILL: what the workflow does end to end, in one paragraph: RFP in, requirements and ambiguity registers, drafting, generated documents, partner review.]</p>
+</article>
+</div>
+</section>
+
+<!-- ===== 02 ARCHITECTURE ===== -->
+<section id="architecture" class="case-section case-reveal" aria-labelledby="architecture-title">
+<p class="case-eyebrow">02 / Architecture</p>
+<h2 id="architecture-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">The workflow</span><span class="about-title-fill" aria-hidden="true">The workflow</span></span></h2>
+<figure id="kisaka-arch" class="case-arch" data-source="kisaka-arch-data">
+<figcaption class="case-arch-caption">
+<h3>Trace every requirement.<br>Draft only what’s answered.</h3>
+<p>[TO FILL: one sentence on the shape of the flow, e.g. where the AI step sits between the registers and the review.]</p>
+</figcaption>
+<div class="case-arch-sheet">
+<div class="case-arch-legend"><span><i data-kind="data"></i>Data flow</span><span><i data-kind="control"></i>Control</span><span><i data-kind="feedback"></i>Return path</span><span class="case-arch-hint">Select a stage to inspect</span></div>
+<div class="case-arch-viewport"><svg class="case-arch-drawing" role="group" aria-label="Workflow architecture: an RFP through requirement and ambiguity registers, drafting and document generation, to partner review"></svg></div>
+<div class="case-arch-inspector">
+<div class="case-arch-inspector-head">
+<div aria-live="polite"><p class="case-arch-type">Stage</p><h4>Stage</h4></div>
+<div class="case-arch-step"><button type="button" data-prev aria-label="Previous stage"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><span><b data-step>01</b> / <span data-total>01</span></span><button type="button" data-next aria-label="Next stage"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div>
+</div>
+<div class="case-arch-body"><p></p><ul class="case-arch-tags"></ul></div>
+<dl class="case-arch-flow"><dt>Data in</dt><dd data-in></dd><dt>Data out</dt><dd data-out></dd></dl>
+</div>
+</div>
+</figure>
+<p class="case-arch-note">[TO FILL: the one non-obvious constraint a reader should leave with, e.g. why open questions are logged before any drafting starts.]</p>
+<!-- The drawing. Stages are 152×76 at x/y; links route themselves. Draft
+     order from Josh’s notes on the bid workflow; Josh to confirm the real flow. -->
+<script type="application/json" id="kisaka-arch-data">
+{
+  "viewBox": "0 0 1112 400",
+  "regions": [
+    {
+      "label": "Tender",
+      "x": 24,
+      "y": 48,
+      "w": 184,
+      "h": 136
+    },
+    {
+      "label": "Workflow",
+      "x": 232,
+      "y": 48,
+      "w": 808,
+      "h": 136
+    },
+    {
+      "label": "Submission",
+      "x": 440,
+      "y": 232,
+      "w": 184,
+      "h": 136
+    },
+    {
+      "label": "Review",
+      "x": 856,
+      "y": 232,
+      "w": 184,
+      "h": 136
+    }
+  ],
+  "nodes": [
+    {
+      "id": "rfp",
+      "title": "RFP\ndocument",
+      "sub": "The tender",
+      "type": "source",
+      "x": 40,
+      "y": 88,
+      "detail": "[TO FILL: what arrives, and in what form.]",
+      "tags": []
+    },
+    {
+      "id": "requirements",
+      "title": "Requirements\nregister",
+      "sub": "IDs → RFP sections",
+      "x": 248,
+      "y": 88,
+      "start": true,
+      "detail": "[TO FILL: how each requirement gets an ID traced back to its section of the RFP.]",
+      "tags": [
+        "Requirements traceability"
+      ]
+    },
+    {
+      "id": "ambiguity",
+      "title": "Ambiguity\nregister",
+      "sub": "Questions first",
+      "type": "gate",
+      "x": 456,
+      "y": 88,
+      "detail": "[TO FILL: what gets logged as ambiguous, and what happens to it before drafting.]",
+      "tags": []
+    },
+    {
+      "id": "drafting",
+      "title": "AI-assisted\ndrafting",
+      "sub": "[tool: to fill]",
+      "x": 664,
+      "y": 88,
+      "detail": "[TO FILL: which AI tool, and what it drafts against the registers.]",
+      "tags": []
+    },
+    {
+      "id": "docx",
+      "title": "python-docx\ngenerator",
+      "sub": "Supporting docs",
+      "x": 872,
+      "y": 88,
+      "detail": "[TO FILL: which supporting documents the script generates.]",
+      "tags": [
+        "Python",
+        "python-docx"
+      ]
+    },
+    {
+      "id": "review",
+      "title": "Partner\nreview",
+      "sub": "Sign-off",
+      "type": "gate",
+      "x": 872,
+      "y": 272,
+      "detail": "[TO FILL: what the managing partner checks before it goes out.]",
+      "tags": []
+    },
+    {
+      "id": "submitted",
+      "title": "Submitted\nproposal",
+      "sub": "Bid",
+      "type": "output",
+      "x": 456,
+      "y": 272,
+      "detail": "[TO FILL]",
+      "tags": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "rfp",
+      "to": "requirements",
+      "kind": "data"
+    },
+    {
+      "from": "requirements",
+      "to": "ambiguity",
+      "kind": "data"
+    },
+    {
+      "from": "ambiguity",
+      "to": "drafting",
+      "kind": "control",
+      "label": "Answered"
+    },
+    {
+      "from": "drafting",
+      "to": "docx",
+      "kind": "data"
+    },
+    {
+      "from": "docx",
+      "to": "review",
+      "kind": "data"
+    },
+    {
+      "from": "review",
+      "to": "submitted",
+      "kind": "data"
+    }
+  ]
+}
+</script>
+</section>
+
+<!-- ===== 03 THE DELIVERY ===== -->
+<section id="delivery" class="case-section case-reveal" aria-labelledby="delivery-title">
+<p class="case-eyebrow">03 / The delivery</p>
+<h2 id="delivery-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">Inside the build</span><span class="about-title-fill" aria-hidden="true">Inside the build</span></span></h2>
+<div class="case-chapters">
+<details class="case-chapter">
+<summary><span class="case-chapter-seq">01</span><h3>Building the requirements register</h3><span class="case-chapter-preview">Traceability</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Requirement IDs</li><li>RFP sections</li></ul></div>
+</details>
+<details class="case-chapter">
+<summary><span class="case-chapter-seq">02</span><h3>Logging ambiguities before drafting</h3><span class="case-chapter-preview">Ambiguity register</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>[TO FILL]</p></div>
+</details>
+<details class="case-chapter">
+<summary><span class="case-chapter-seq">03</span><h3>Drafting with AI</h3><span class="case-chapter-preview">[tool: to fill]</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>[TO FILL]</p></div>
+</details>
+<details class="case-chapter">
+<summary><span class="case-chapter-seq">04</span><h3>Generating the supporting documents</h3><span class="case-chapter-preview">python-docx</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Python</li><li>python-docx</li></ul></div>
+</details>
+<details class="case-chapter">
+<summary><span class="case-chapter-seq">05</span><h3>Partner review and submission</h3><span class="case-chapter-preview">Sign-off</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>[TO FILL]</p></div>
+</details>
+</div>
+</section>
+
+<!-- ===== 04 WHAT CHANGED ===== -->
+<section id="outcome" class="case-section case-reveal" aria-labelledby="outcome-title">
+<p class="case-eyebrow">04 / The outcome</p>
+<h2 id="outcome-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">What changed</span><span class="about-title-fill" aria-hidden="true">What changed</span></span></h2>
+<div class="case-rows">
+<div class="case-row"><h3>A proposal in about an hour, not three days.</h3><p>The managing partner’s own account. [TO FILL]</p></div>
+<div class="case-row"><h3>[TO FILL: outcome]</h3><p>[TO FILL]</p></div>
+<div class="case-row"><h3>[TO FILL: outcome]</h3><p>[TO FILL]</p></div>
+</div>
+<div class="case-tech"><span class="case-tech-label">Technology</span><ul class="case-chip-row"><li>Python</li><li>python-docx</li><li>[AI tool: to fill]</li></ul></div>
+</section>
+
+<footer class="case-end">
+<a class="article-back OutcomesGallery-module__0WS_ta__featureAction blog-read" href="../blog.html"><span class="blog-roll"><span class="blog-roll-a">Back to Insights</span><span class="blog-roll-b" aria-hidden="true">Back to Insights</span></span><span class="blog-read-line" aria-hidden="true"></span><span class="blog-arrow-window" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-out" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-in" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span></a>
+<a class="case-next" href="tellistic-survey-pipeline.html"><span class="case-next-label">Next case study</span><span class="case-next-title">The survey pipeline<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a>
+</footer>
+</div>
+
+<aside class="case-toc" aria-label="On this page">
+<span class="case-toc-label">On this page</span>
+<ol>
+<li><a href="#before-after">01 Before and after</a></li>
+<li><a href="#architecture">02 The workflow</a></li>
+<li><a href="#delivery">03 The delivery</a></li>
+<li><a href="#outcome">04 What changed</a></li>
+</ol>
+</aside>
+</div>
+</main>
+</body>
+</html>

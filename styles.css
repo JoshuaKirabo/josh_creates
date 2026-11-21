@@ -194,18 +194,20 @@ button:focus-visible, a:focus-visible
 .skip-link
    {
       position: fixed;
-      top: 12px;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
       left: 12px;
       z-index: 20;
       padding: 14px;
-      background: var(--accent);
-      color: var(--ink);
-      transform: translateY(-160%);
+      clip-path: inset(50%);
+      pointer-events: none;
    }
 
-.skip-link:focus
+.skip-link:focus-visible
    {
-      transform: translateY(0);
+      clip-path: none;
+      pointer-events: auto;
+      background: var(--accent);
+      color: var(--ink);
    }
 
 /* Browser toolbars may move while scrolling; the composition must not resize. */
@@ -6057,6 +6059,164 @@ html.about-paging
       .edu-desc
          {
             font-size: 20px;
+         }
+   }
+
+/* TEMPORARY: three directions for Education, previewed with ?edu=logo,
+   ?edu=years or ?edu=poster. Each changes only the side-by-side layout;
+   phones keep the stacked sheets as they are. Remove the two not picked. */
+.edu-years
+   {
+      display: none;
+   }
+
+.edu-years-draft
+   {
+      display: block;
+      color: transparent;
+      -webkit-text-stroke: 1px rgba(255, 255, 255, .55);
+   }
+
+.edu-years-ink
+   {
+      position: absolute;
+      inset: 0;
+      display: block;
+      color: var(--white);
+      clip-path: inset(0);
+   }
+
+.edu-motion:not(.is-entered) .edu-years-ink
+   {
+      clip-path: inset(0 100% 0 0);
+   }
+
+.edu-motion.is-entered .edu-years-ink
+   {
+      transition: clip-path 1.4s var(--ease-out-quart) .8s;
+   }
+
+@container core (min-width: 760px)
+   {
+      /* Logo hero: the marks leave the background and become the picture,
+         cropped by the sheet's right edge; the words keep the left. */
+      [data-edu="logo"] .edu-sheets, [data-edu="poster"] .edu-sheets
+         {
+            grid-template-rows: auto 1fr auto;
+         }
+
+      [data-edu="logo"] .edu-sheets
+         {
+            min-height: 420px;
+         }
+
+      [data-edu="logo"] .edu-label, [data-edu="logo"] .edu-name, [data-edu="logo"] .edu-desc
+         {
+            max-width: 56%;
+         }
+
+      [data-edu="logo"] .edu-label
+         {
+            flex-wrap: wrap;
+         }
+
+      [data-edu="logo"] .edu-title
+         {
+            font-size: 36px;
+         }
+
+      [data-edu="logo"] .edu-desc
+         {
+            align-self: end;
+         }
+
+      [data-edu="logo"] .edu-logo-outline, [data-edu="logo"] .edu-logo-fill
+         {
+            top: 50%;
+            bottom: auto;
+            height: min(76cqh, 52cqw / var(--logo-ratio, 1));
+            translate: 16% -50%;
+         }
+
+      [data-edu="logo"] .edu-logo-outline
+         {
+            stroke: rgba(255, 255, 255, .45);
+         }
+
+      [data-edu="logo"] .edu-sheet-draft .edu-logo-outline
+         {
+            stroke: rgba(255, 255, 255, .55);
+            stroke-dasharray: 4 3;
+         }
+
+      [data-edu="logo"] .edu-logo-fill
+         {
+            color: rgba(255, 255, 255, .92);
+         }
+
+      /* Big years: the span of each degree is the display line, inked for
+         the finished one and outlined for the one under way; the school
+         steps down to a caption under it. */
+      [data-edu="years"] .edu-years
+         {
+            position: relative;
+            display: block;
+            margin-bottom: 20px;
+            font-family: 'Google Sans', Arial, sans-serif;
+            font-size: 84px;
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+            line-height: .9;
+            letter-spacing: -.045em;
+            white-space: nowrap;
+         }
+
+      [data-edu="years"] .edu-title
+         {
+            font-size: 30px;
+         }
+
+      /* Poster: the sheets stand tall and the school's name fills them a
+         word to a line, the degree waiting at the foot. */
+      [data-edu="poster"] .edu-sheets
+         {
+            min-height: 432px;
+         }
+
+      [data-edu="poster"] .edu-title
+         {
+            width: min-content;
+            font-size: 64px;
+            line-height: .95;
+            letter-spacing: -.03em;
+         }
+
+      [data-edu="poster"] .edu-desc
+         {
+            align-self: end;
+         }
+   }
+
+@container core (min-width: 1100px)
+   {
+      [data-edu="logo"] .edu-title
+         {
+            font-size: 44px;
+         }
+
+      [data-edu="years"] .edu-years
+         {
+            font-size: 120px;
+         }
+
+      [data-edu="years"] .edu-title
+         {
+            font-size: 34px;
+         }
+
+      [data-edu="poster"] .edu-title
+         {
+            font-size: 76px;
          }
    }
 

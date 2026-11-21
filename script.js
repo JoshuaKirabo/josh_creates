@@ -1914,7 +1914,8 @@ function startSite()
               {
                 if(yields(event, Math.sign(event.deltaY)))
                   {
-                    gesture.yielded = flick.id;
+                    // Experience hands the rest of a flick to the page at the copy's edge.
+                    if(!event.target.closest?.('#experience .core-copy')) gesture.yielded = flick.id;
                     return;
                   }
                 if(gesture.yielded === flick.id)
@@ -4861,6 +4862,9 @@ function startSite()
         // left the screen entirely, or once a held turn has landed, ready to settle from the side it will come
         // back from. Leaving plays its exit the way Experience's does.
         const education = content.querySelector('.edu-section');
+        // TEMPORARY: ?edu=logo | years | poster previews an Education direction. Remove once one is picked.
+        const eduVariant = new URLSearchParams(location.search).get('edu');
+        if(education && eduVariant) education.dataset.edu = eduVariant;
         if(education && !reducedMotion.matches && 'IntersectionObserver' in window)
           {
             education.classList.add('edu-motion');
@@ -5444,19 +5448,50 @@ function startSite()
                 // Only a flick that began on the first or last job leaves: one that
                 // stepped onto it has spent itself on the step.
               }, { fresh: true, still });
-            // Between jobs the wheel steps one job a flick, as Projects steps its
-            // cards: the stage is pinned, so the page cuts to the job's stop and
-            // only the card changes. Left to the browser's snap, a flick shorter
-            // than half a screen slid the page a little and sprang back.
-            holdPageTurns((direction) =>
-              {
-                if(!coreJobStops.length || section.classList.contains('is-leaving')) return;
-                const y = window.scrollY;
-                const at = coreJobStops.findIndex(top => Math.abs(top - y) <= 2);
-                if(at < 0) return;
-                return coreJobStops[at + direction];
-              }, to => window.scrollTo({ top: to, behavior: 'instant' }), { wheelOnly: true });
           }
+
+        // Small wheel movements and swipes at a boundary should reach the adjacent
+        // job even when they cover less than half the distance between page stops.
+        const adjacentJob = direction =>
+          {
+            if(!section || section.classList.contains('is-leaving')) return;
+            const at = coreJobStops.findIndex(top => Math.abs(top - window.scrollY) <= 2);
+            if(at >= 0) return coreJobStops[at + direction];
+          };
+        holdPageTurns(adjacentJob, to =>
+          {
+            spendTurnMomentum();
+            window.scrollTo({ top: to, behavior: 'instant' });
+          }, { wheelOnly: true });
+
+        // Keep native touch scrolling inside the copy. Once the finger travels
+        // beyond its remaining text, finish the swipe on the adjacent job.
+        let swipe = null;
+        core.addEventListener('touchstart', event =>
+          {
+            swipe = null;
+            if(event.touches.length !== 1 || !coreJobStops.length) return;
+            const copy = event.target.closest('.core-copy');
+            if(!copy || getComputedStyle(copy).overflowY !== 'auto') return;
+            const point = event.touches[0];
+            swipe = { x: point.clientX, y: point.clientY, page: window.scrollY, copy,
+              above: Math.max(0, copy.scrollTop), below: Math.max(0, copy.scrollHeight - copy.clientHeight - copy.scrollTop) };
+          }, { passive: true });
+        core.addEventListener('touchcancel', () => { swipe = null; }, { passive: true });
+        core.addEventListener('touchend', event =>
+          {
+            const start = swipe;
+            swipe = null;
+            if(!start || event.touches.length || Math.abs(window.scrollY - start.page) > 2) return;
+            const point = event.changedTouches[0];
+            const dy = start.y - point.clientY;
+            const remaining = dy > 0 ? start.below : start.above;
+            if(Math.abs(dy) < remaining + 12 || Math.abs(dy) <= Math.abs(point.clientX - start.x)) return;
+            const copy = start.copy;
+            if(dy > 0 ? copy.scrollTop + copy.clientHeight < copy.scrollHeight - 1 : copy.scrollTop > 1) return;
+            const to = adjacentJob(Math.sign(dy));
+            if(to !== undefined) window.scrollTo({ top: to, behavior: 'instant' });
+          }, { passive: true });
 
         // A title keeps to one line: one that runs past the panel scales its type
         // down until it fits, and grows back when the panel widens again.
