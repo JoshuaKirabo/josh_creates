@@ -6371,8 +6371,6 @@ html.about-paging
          {
             grid-column: 1;
             opacity: 0;
-            transform: translateY(12px);
-            transition: opacity .22s var(--ease-out), transform .22s var(--ease-out);
          }
 
       #meet-josh.meet-steps .about-lead p:nth-child(1)
@@ -6392,23 +6390,48 @@ html.about-paging
             margin-top: 0;
          }
 
-      /* Parts already read wait above the box and the ones to come wait
-         below, so the words leave and arrive the way the flick went. */
-      #meet-josh.meet-steps[data-step] .about-lead p:nth-child(-n + 2), #meet-josh.meet-steps[data-step="2"] .about-lead p:nth-child(3)
-         {
-            transform: translateY(-12px);
-         }
-
+      /* Until script has split the story into lines, a part simply shows. */
       #meet-josh.meet-steps:not([data-step], .is-away) .about-lead p:nth-child(-n + 2), #meet-josh.meet-steps[data-step="1"]:not(.is-away) .about-lead p:nth-child(3), #meet-josh.meet-steps[data-step="2"]:not(.is-away) .about-lead p:nth-child(4)
          {
             opacity: 1;
-            transform: none;
-            transition: opacity .5s var(--ease-out) .16s, transform .5s var(--ease-out) .16s;
          }
 
-      #meet-josh.meet-steps:not([data-step], .is-away) .about-lead p:nth-child(2)
+      /* Split into lines (.is-lined), a part changes the way a project page's
+         story leaves. The paragraphs stay up and their lines carry it: each
+         line of the part being left softens, fades and drifts 10px the way
+         the flick went, top line first, 14ms apart. A beat later the next
+         part's lines re-form from 10px the other side, 24ms apart. Parts
+         already read wait above and the ones to come wait below, so going
+         back up runs it the other way. --i is a line's place in its part. */
+      #meet-josh.meet-steps.is-lined:not(.is-away) .about-lead p
          {
-            transition-delay: .22s;
+            opacity: 1;
+         }
+
+      #meet-josh.meet-steps.is-lined .about-lead .handover-line
+         {
+            clip-path: none;
+         }
+
+      #meet-josh.meet-steps.is-lined .about-lead .handover-out
+         {
+            opacity: 0;
+            translate: 0 10px;
+            filter: blur(6px);
+            transition: opacity .24s var(--ease-out) calc(var(--i, 0) * 14ms), translate .24s var(--ease-out) calc(var(--i, 0) * 14ms), filter .24s var(--ease-out) calc(var(--i, 0) * 14ms);
+         }
+
+      #meet-josh.meet-steps.is-lined[data-step] .about-lead p:nth-child(-n + 2) .handover-out, #meet-josh.meet-steps.is-lined[data-step="2"] .about-lead p:nth-child(3) .handover-out
+         {
+            translate: 0 -10px;
+         }
+
+      #meet-josh.meet-steps.is-lined:not([data-step]) .about-lead p:nth-child(-n + 2) .handover-out, #meet-josh.meet-steps.is-lined[data-step="1"] .about-lead p:nth-child(3) .handover-out, #meet-josh.meet-steps.is-lined[data-step="2"] .about-lead p:nth-child(4) .handover-out
+         {
+            opacity: 1;
+            translate: none;
+            filter: none;
+            transition: opacity .5s var(--ease-out) calc(.2s + var(--i, 0) * 24ms), translate .5s var(--ease-out) calc(.2s + var(--i, 0) * 24ms), filter .5s var(--ease-out) calc(.2s + var(--i, 0) * 24ms);
          }
 
       /* Back up from Experience, the last part settles in behind the title. */
@@ -6417,10 +6440,71 @@ html.about-paging
             transition: opacity .6s var(--ease-out) .4s, transform .6s var(--ease-out) .4s;
          }
 
-      /* The actions rest on the foot of the screen. */
+      /* The actions rest on the foot of the screen. Nothing scrolls under
+         them here, so they drop the strip that shades the story behind them. */
       #meet-josh.meet-steps .about-resume
          {
             margin-top: auto;
+            background: none;
+         }
+
+      /* The actions are the story's last word. They keep their place but stay
+         out of sight and out of reach until the last part, then rise in one
+         after the other as its last line comes clear (--resume-delay, set by
+         script), and a light passes across them as they land. Going back up a
+         part, they drop away at once. */
+      #meet-josh.meet-steps:not([data-step="2"]) .about-resume .button
+         {
+            visibility: hidden;
+            opacity: 0;
+            translate: 0 16px;
+            scale: .96;
+            transition: opacity .2s var(--ease-out), translate .2s var(--ease-out), scale .2s var(--ease-out), visibility 0s linear .2s;
+         }
+
+      #meet-josh.meet-steps[data-step="2"] .about-resume .button:not(.is-touch-pressed)
+         {
+            --enter: calc(var(--resume-delay, 0ms) + var(--b, 0) * 90ms);
+            transition:
+               opacity .45s var(--ease-out) var(--enter),
+               translate .6s var(--ease-out) var(--enter),
+               scale .6s var(--ease-out) var(--enter),
+               visibility 0s linear var(--enter),
+               transform var(--spring-release-time) var(--spring-release),
+               background-color 240ms var(--ease-out),
+               box-shadow 240ms var(--ease-out);
+         }
+
+      #meet-josh.meet-steps .about-resume .button-inverse
+         {
+            --b: 1;
+         }
+
+      #meet-josh.meet-steps .about-resume .button::after
+         {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: linear-gradient(100deg, transparent 30%, var(--sheen) 50%, transparent 70%);
+            translate: -100% 0;
+            pointer-events: none;
+         }
+
+      #meet-josh.meet-steps .about-resume .button-primary
+         {
+            --sheen: rgba(255, 255, 255, .22);
+         }
+
+      #meet-josh.meet-steps .about-resume .button-inverse
+         {
+            --sheen: rgba(0, 0, 0, .1);
+         }
+
+      #meet-josh.meet-steps[data-step="2"] .about-resume .button::after
+         {
+            translate: 100% 0;
+            transition: translate .9s var(--ease-in-out) calc(var(--resume-delay, 0ms) + var(--b, 0) * 90ms + .3s);
          }
    }
 

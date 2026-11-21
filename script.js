@@ -4692,8 +4692,58 @@ function startSite()
             const stepAt = () => Number(meet.dataset.step) || 0;
             const showStep = (step) =>
               {
+                // Only a flick plays the actions in late (see turnStep).
+                meet.style.setProperty('--resume-delay', '0ms');
                 if(step) meet.dataset.step = step;
                 else delete meet.dataset.step;
+              };
+            // A part changes the way a project page's story leaves: each line of
+            // the part being left softens and drifts off the way the flick went,
+            // top line first, and the next part's lines re-form from the other side.
+            // The stylesheet runs it on the lines split here (.is-lined); the opening
+            // line and the first paragraph are one part.
+            const paragraphs = [...meet.querySelectorAll('.about-lead p')];
+            const parts = [[0, 1], [2], [3]];
+            let linedWidth = 0;
+            const lineStory = () =>
+              {
+                if(!meetSteps())
+                  {
+                    if(!meet.classList.contains('is-lined')) return;
+                    meet.classList.remove('is-lined');
+                    paragraphs.forEach(paragraph => (paragraph.textContent = paragraph.dataset.text));
+                    linedWidth = 0;
+                    return;
+                  }
+                const width = meet.querySelector('.about-lead').clientWidth;
+                if(width === linedWidth) return;
+                linedWidth = width;
+                paragraphs.forEach(paragraph => splitProjectLines(paragraph));
+                // Each line's place in its part sets its turn.
+                parts.forEach(part => part
+                  .flatMap(index => [...paragraphs[index].querySelectorAll('.handover-out')])
+                  .forEach((line, i) => line.style.setProperty('--i', i)));
+                meet.classList.add('is-lined');
+              };
+            document.fonts.ready.then(() =>
+              {
+                lineStory();
+                // Splitting changes the layout it watches, so it waits a frame.
+                let frame = 0;
+                new ResizeObserver(() =>
+                  {
+                    cancelAnimationFrame(frame);
+                    frame = requestAnimationFrame(lineStory);
+                  }).observe(meet);
+              });
+            const turnStep = (step) =>
+              {
+                showStep(step);
+                // The actions are the story's last line: they rise in as its last
+                // line comes clear (the lines re-form 200ms in, 24ms apart, over 500ms).
+                if(step !== LAST_STEP) return;
+                const lines = meet.querySelectorAll(`.about-lead p:nth-child(${parts[step][0] + 1}) .handover-out`).length || 1;
+                meet.style.setProperty('--resume-delay', `${200 + (lines - 1) * 24 + 400}ms`);
               };
             // A flick that lands while the words are still changing is spent.
             let stepping = -Infinity;
@@ -4782,7 +4832,7 @@ function startSite()
                   {
                     if(performance.now() - stepping < 420) return;
                     stepping = performance.now();
-                    showStep(stepAt() + stepDirection);
+                    turnStep(stepAt() + stepDirection);
                     return;
                   }
                 turning = true;
