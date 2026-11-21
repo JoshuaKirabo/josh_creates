@@ -3288,6 +3288,9 @@ function startSite()
         let width = 0;
         let height = 0;
         let ratio = 1;
+        // Where the solid is drawn and how big, and when it was last drawn.
+        let view = null;
+        let clock = 0;
         let shape = CRAFT_ORDER[0];
         // A point keeps its old colour until the scan line sets it off.
         let previous = shape;
@@ -3318,7 +3321,11 @@ function startSite()
             height = box.height;
             canvas.width = Math.round(width * ratio);
             canvas.height = Math.round(height * ratio);
+            // Sizing a canvas wipes it, and the next frame is a paint away, so a
+            // window being dragged showed an empty field. It is drawn again here.
             if(still) draw(0, 0);
+            else if(running) draw(clock, .0001);
+            else view = null;
           }
 
         function draw(time, step)
@@ -3330,7 +3337,18 @@ function startSite()
             const before = form(previous);
             // A phone's field is narrow and tall, so there the solid takes more of
             // the width; at the laptop's share it would float in empty height.
-            const size = Math.min(width * (width < 500 ? .42 : .34), height * .36);
+            const fit = Math.min(width * (width < 500 ? .42 : .34), height * .36);
+            // The solid follows its field to a new middle and size, not jumps there.
+            if(!view || !step) view = { x: width / 2, y: height / 2, size: fit };
+            else
+              {
+                const near = 1 - Math.exp(-step * 7);
+                view.x += (width / 2 - view.x) * near;
+                view.y += (height / 2 - view.y) * near;
+                view.size += (fit - view.size) * near;
+              }
+            const size = view.size;
+            clock = time;
             const camera = 3.2;
             // The solid is seen from a little above. It turns slowly from one
             // three-quarter view to the other and leans toward the pointer.
@@ -3385,8 +3403,8 @@ function startSite()
                 const y = now[k + 1] * cosPitch - flatZ * sinPitch;
                 const z = flatZ * cosPitch + now[k + 1] * sinPitch;
                 const scale = camera / (camera - z);
-                const sx = width / 2 + x * size * scale;
-                const sy = height / 2 - y * size * scale;
+                const sx = view.x + x * size * scale;
+                const sy = view.y - y * size * scale;
                 screenY[i] = sy;
                 // Skin facing the viewer is lit and skin facing away falls dark, which
                 // is what makes the points read as a solid. Nearer points are a
@@ -3683,6 +3701,263 @@ function startSite()
         return top;
       }
 
+    // A window changes size in jumps as well as drags: a tile, a sidebar, a
+    // breakpoint. glideLayout remembers where each item sat, and when a resize
+    // moves one further than a dragged edge does in a frame, every item travels
+    // from where it stood to where it now sits. A plain drag never trips it, so
+    // the page stays on the window's edge. Items are measured against `root`;
+    // `loose` ones against `outer`, which holds root, so a scroll that follows
+    // the resize is not taken for a move. `center` follows an item's middle (for
+    // centered things), otherwise its top-left corner. `morph` also grows or
+    // shrinks the item to its new size, for pictures and one-line display type
+    // that scale with the window; copy that re-wraps only travels. `pseudo`
+    // moves those pseudo-elements in the item's place. `onJump(duration)` runs
+    // with each glide.
+    const glideSamplers = [];
+    let glideQuietUntil = 0;
+    function glideLayout(root, outer, items, onJump, when)
+      {
+        items = items.filter(item => item.el).map(item => (item.morph ? { ...item, center: true } : item));
+        if(!items.length || reducedMotion.matches || !('ResizeObserver' in window) || !root.animate) return;
+        const JUMP = 28;
+        const DURATION = 560;
+        let placed = null;
+        let flights = [];
+        let until = 0;
+        let size = '';
+
+        const read = () =>
+          {
+            const base = root.getBoundingClientRect();
+            const around = outer.getBoundingClientRect();
+            // Off the screen there is nothing to carry, only places to remember.
+            if(!base.width || !base.height || base.bottom < 0 || base.top > window.innerHeight || (when && !when())) return null;
+            return items.map(({ el, loose, center }) =>
+              {
+                const box = el.getBoundingClientRect();
+                const x = box.left + (center ? box.width / 2 : 0) - (loose ? around : base).left;
+                const y = box.top + (center ? box.height / 2 : 0) - (loose ? around : base).top;
+                return { x, y, w: box.width, h: box.height };
+              });
+          };
+
+        const sized = () => `${window.innerWidth} ${window.innerHeight} ${root.offsetWidth} ${root.offsetHeight}`;
+        function pass()
+          {
+            // The window's resize and the root's own both land here; one layout
+            // is handled once, so a glide is not restarted by its echo.
+            const key = sized();
+            if(key === size) return;
+            size = key;
+            glideQuietUntil = performance.now() + 400;
+            const flying = performance.now() < until;
+            // Mid-glide, each item is still some way off its place; it keeps that.
+            const seen = flying ? read() : null;
+            flights.forEach(flight => flight.cancel());
+            flights = [];
+            const next = read();
+            const before = placed;
+            // A section re-measuring itself can be off the screen for one
+            // layout of a resize; its last places are kept for the next one.
+            if(next || !before) placed = next;
+            if(!next || !before)
+              {
+                until = 0;
+                return;
+              }
+            const moves = next.map((to, i) =>
+              ({
+                x: before[i].x - to.x + (seen ? seen[i].x - to.x : 0),
+                y: before[i].y - to.y + (seen ? seen[i].y - to.y : 0),
+                w: to.w ? before[i].w / to.w * (seen ? seen[i].w / to.w : 1) : 1,
+                h: to.h ? before[i].h / to.h * (seen ? seen[i].h / to.h : 1) : 1
+              }));
+            // A centered item's own size follows what it holds, not the window.
+            const jumped = next.some((to, i) => Math.abs(before[i].x - to.x) > JUMP || Math.abs(before[i].y - to.y) > JUMP || ((!items[i].center || items[i].morph) && (Math.abs(before[i].w - to.w) > JUMP || Math.abs(before[i].h - to.h) > JUMP)));
+            // A glide under way takes every new layout in its stride.
+            if(!jumped && !flying) return;
+            // Further than a screen is a scroll or a cut, not a resize.
+            const far = Math.max(window.innerWidth, window.innerHeight) * 1.5;
+            if(moves.some(move => Math.abs(move.x) > far || Math.abs(move.y) > far))
+              {
+                until = 0;
+                return;
+              }
+            const timing = { duration: DURATION, easing: 'cubic-bezier(.25, 1, .5, 1)' };
+            items.forEach(({ el, pseudo, morph }, i) =>
+              {
+                let { x, y, w, h } = moves[i];
+                const grown = morph && (Math.abs(w - 1) > .005 || Math.abs(h - 1) > .005) && w > .2 && w < 5 && h > .2 && h < 5;
+                if(grown)
+                  {
+                    // It scales about its own origin, which is not always its
+                    // middle; the travel makes up the difference, so the middle
+                    // still runs straight from the old place to the new.
+                    const [ox, oy] = getComputedStyle(el).transformOrigin.split(' ').map(parseFloat);
+                    x += (1 - w) * (el.offsetWidth / 2 - ox);
+                    y += (1 - h) * (el.offsetHeight / 2 - oy);
+                  }
+                if(Math.abs(x) >= .5 || Math.abs(y) >= .5)
+                  {
+                    // Added to the item's own translate, where it has one.
+                    const frames = { translate: [`${x}px ${y}px`, '0px 0px'] };
+                    (pseudo || [undefined]).forEach(pseudoElement => flights.push(el.animate(frames, pseudoElement ? { ...timing, composite: 'add', pseudoElement } : { ...timing, composite: 'add' })));
+                  }
+                if(grown) flights.push(el.animate({ scale: [`${w} ${h}`, '1 1'] }, timing));
+              });
+            // A resize stalls the page for a beat, and a glide begun inside that
+            // beat has spent most of its run before a frame is drawn. Each one
+            // holds its first frame until the page is drawing again.
+            const batch = flights;
+            batch.forEach(flight => flight.pause());
+            requestAnimationFrame(() => requestAnimationFrame(() => batch.forEach(flight => flight.playState === 'paused' && flight.play())));
+            until = performance.now() + DURATION + 50;
+            if(jumped) onJump?.(DURATION);
+          }
+
+        // Scrolls, tabs and entrances move things too. Their places are noted
+        // as they settle, so the next resize starts from what is on screen.
+        // WebKit can lay the page out at a new size a frame before it says so.
+        // A sample taken then would take the new places for the old ones, so a
+        // size it has not seen is handled as the resize it is.
+        glideSamplers.push(() =>
+          {
+            if(sized() !== size) return pass();
+            if(performance.now() < until || performance.now() < glideQuietUntil) return;
+            placed = read();
+          });
+        new ResizeObserver(pass).observe(root);
+        window.addEventListener('resize', pass, { passive: true });
+        size = sized();
+        placed = read();
+      }
+
+    // One sampler serves every glide. It runs a frame after anything that can
+    // move the page without resizing it, and stands down around a resize.
+    function initGlideSampler()
+      {
+        if(reducedMotion.matches) return;
+        let frameId = 0;
+        const sample = () =>
+          {
+            frameId = 0;
+            glideSamplers.forEach(run => run());
+          };
+        const ask = () => (frameId ||= requestAnimationFrame(sample));
+        ['scroll', 'pointerup', 'keyup', 'transitionend', 'animationend', 'load'].forEach(type => window.addEventListener(type, ask, { passive: true, capture: true }));
+        document.fonts?.ready.then(ask);
+        setInterval(ask, 1000);
+      }
+
+    // Which pieces of each screen travel when the window jumps. Each root is a
+    // screen or a bar; its pieces never hold one another, so no move is doubled.
+    // A piece marked `morph` scales with the window and is resized on the way.
+    const GLIDES =
+      [
+        // Home stays pinned behind the page, so it only counts at the very top.
+        ['#home', ['.wordmark:morph', '.site-header', '.hero-content:morph', '.hero-footer .signature', '.hero-footer .social-links'], () => window.scrollY < 2],
+        ['#meet-josh', ['.about-scene:morph', '.about-title:morph', '.about-lead', '.about-resume']],
+        ['.about-topbar', ['.section-nav']],
+        // The stage and its section trade their padding when Experience pins,
+        // so its pieces are measured from inside the stage's padding.
+        ['.core-stage:inner', ['.about-block-head', '.core-subjects', '.core-reading']],
+        ['#education', ['.about-block-head', '.edu-sheet']],
+        ['.projects-frame', ['.projects-header', '.projects-viewport', '.projects-rail']],
+        ['.connect-section', ['.about-eyebrow', '.connect-stage', '.connect-elsewhere']],
+        ['.about-footer', ['.footer-roles']],
+        ['.project-sheet-hero', ['.project-sheet-copy', '.project-story', '.project-scroll-cue']],
+        ['.resume-desk', ['.resume-frame']],
+        ['body', ['.resume-actions .resume-download']]
+      ];
+    const glideRoots = new WeakSet();
+    function initGlides()
+      {
+        GLIDES.forEach(([at, pieces, when]) =>
+          {
+            const [where, inner] = at.split(':');
+            document.querySelectorAll(where).forEach((root) =>
+              {
+                if(glideRoots.has(root)) return;
+                const items = pieces.flatMap((piece) =>
+                  {
+                    const [selector, flag] = piece.split(':');
+                    return [...root.querySelectorAll(selector)].map(el => ({ el, morph: flag === 'morph', loose: !!inner }));
+                  });
+                if(!items.length) return;
+                glideRoots.add(root);
+                // Where the root's contents begin, in place of its own corner.
+                const within =
+                  {
+                    getBoundingClientRect()
+                      {
+                        const box = root.getBoundingClientRect();
+                        const style = getComputedStyle(root);
+                        return { left: box.left + parseFloat(style.paddingLeft), top: box.top + parseFloat(style.paddingTop) };
+                      }
+                  };
+                glideLayout(root, inner ? within : root, items, null, when);
+              });
+          });
+      }
+
+    // A resize reflows everything above the reader, and the browser keeps the
+    // scroll's number, not the reader's place: a taller window slid Education,
+    // Skills and Let's connect off the screen. Every place the page rests has a
+    // snap marker, so the marker under the reader is noted at each scroll, and
+    // the page is put back on it as the new layout settles.
+    function keepPlaceOnResize()
+      {
+        const markers = () => [...document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap')].filter(marker => !marker.hidden && marker.style.top);
+        let held = null;
+        let quietUntil = 0;
+        let frames = 0;
+        const sized = () => `${window.innerWidth} ${window.innerHeight}`;
+        let size = sized();
+        const note = () =>
+          {
+            // WebKit can clamp the scroll to a new layout before it sends the
+            // resize; that scroll is the resize's, not the reader's.
+            if(sized() !== size) return resized();
+            if(performance.now() < quietUntil) return;
+            const y = window.scrollY;
+            const at = markers().filter(marker => Math.abs(parseFloat(marker.style.top) - y) <= 2);
+            const section = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+            // About's markers change places, so those are kept by name.
+            held = at.length ? { at: at.map(marker => marker.dataset.stop || marker), section, top: section?.getBoundingClientRect().top } : null;
+          };
+        const restore = () =>
+          {
+            if(!held) return;
+            // A job's or a leg's stop goes when Experience stops pinning; its top stands in.
+            const find = stop => document.querySelector(`.page-snap[data-stop="${stop}"]`) || (/^(job|leg)-/.test(stop) ? document.querySelector('.page-snap[data-stop="core"]') : null);
+            const tops = held.at.map(each => (typeof each === 'string' ? find(each) : each)).filter(marker => marker && !marker.hidden).map(marker => parseFloat(marker.style.top)).filter(Number.isFinite);
+            if(!tops.length) return;
+            // Two sections can rest on one stop at the page's end and part ways
+            // in a taller window. The one the reader was on keeps its place.
+            const page = held.section ? held.section.getBoundingClientRect().top + window.scrollY : 0;
+            const top = held.section ? tops.reduce((best, each) => (Math.abs(page - each - held.top) < Math.abs(page - best - held.top) ? each : best)) : tops[0];
+            if(Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: 'instant' });
+          };
+        const settle = () =>
+          {
+            restore();
+            if(--frames > 0) requestAnimationFrame(settle);
+          };
+        function resized()
+          {
+            size = sized();
+            if(!held) return;
+            quietUntil = performance.now() + 400;
+            restore();
+            // Experience refits its card after this event, which moves what follows.
+            if(frames <= 0) requestAnimationFrame(settle);
+            frames = 4;
+          }
+        window.addEventListener('scroll', note, { passive: true });
+        window.addEventListener('resize', resized, { passive: true });
+        introSettled.then(() => requestAnimationFrame(note));
+      }
+
     let craftStage = { enter() {}, leave() {} };
     // How far Skills scrolls past its first discipline on a phone, where it
     // pages; nothing anywhere wider. The turns to and from it read this.
@@ -3700,11 +3975,17 @@ function startSite()
         panel.dataset.ready = '';
         // The frame is one plain rectangle, drawn as a path so it can trace itself in.
         const outline = panel.querySelector('.craft-frame path');
+        // The frame as drawn, and the glide carrying it to a new size, if any.
+        let drawn = null;
+        let stretch = 0;
+        const trace = (w, h) =>
+          {
+            drawn = [w, h];
+            outline.setAttribute('d', `M.5 .5H${w - .5}V${h - .5}H.5Z`);
+          };
         const frame = () =>
           {
-            const w = panel.offsetWidth;
-            const h = panel.offsetHeight;
-            outline.setAttribute('d', `M.5 .5H${w - .5}V${h - .5}H.5Z`);
+            if(!stretch) trace(panel.offsetWidth, panel.offsetHeight);
             panel.classList.add('has-frame');
           };
         new ResizeObserver(frame).observe(panel);
@@ -3712,6 +3993,35 @@ function startSite()
         const cells = [...panel.querySelectorAll('.craft-cell')];
         const points = initCraftField(panel);
         initCraftPaging(craft, cells, points);
+        // When the window jumps to a new size, the heading, the sheet and
+        // everything on it travel to their new places, and the frame stretches
+        // to the sheet's new size over the same beat.
+        const field = panel.querySelector('.craft-field');
+        glideLayout(panel, craft,
+          [
+            { el: craft.querySelector('.about-block-head'), loose: true },
+            { el: panel, loose: true },
+            { el: field, center: true, pseudo: ['::before', '::after'] },
+            { el: field?.querySelector('.craft-now'), center: true },
+            { el: field?.querySelector('.craft-tools'), center: true },
+            ...cells.map(el => ({ el }))
+          ], (duration) =>
+          {
+            const from = drawn;
+            // It starts two frames on, with the pieces, once the page is drawing again.
+            let began = 0;
+            let waited = 0;
+            cancelAnimationFrame(stretch);
+            const step = (stamp) =>
+              {
+                if(waited++ === 1) began = stamp;
+                const t = began ? Math.min(1, Math.max(0, (stamp - began) / duration)) : 0;
+                const eased = 1 - (1 - t) ** 4;
+                trace(from[0] + (panel.offsetWidth - from[0]) * eased, from[1] + (panel.offsetHeight - from[1]) * eased);
+                stretch = t < 1 ? requestAnimationFrame(step) : 0;
+              };
+            stretch = requestAnimationFrame(step);
+          });
         if(reducedMotion.matches || !('IntersectionObserver' in window))
           {
             points?.enter();
@@ -5010,6 +5320,15 @@ function startSite()
             coreJobStops = pinned ? Array.from({ length: jobs }, (_, i) => Math.round(coreTop + i * step)) : [];
             sectionLandings['#experience'] = () => window.scrollTo({ top: Math.round(coreTop), behavior: 'instant' });
             const stops = [0, aboutTop, coreTop, ...coreJobStops];
+            // Each stop is named for what rests there. The markers are handed out
+            // in order, so a resize that adds or drops stops moves a marker to
+            // another place; the name is how that place is found again.
+            const names = new Map();
+            const name = (top, label) => names.has(Math.round(top)) || names.set(Math.round(top), label);
+            name(0, 'home');
+            name(aboutTop, 'about');
+            name(coreTop, 'core');
+            coreJobStops.forEach((top, index) => name(top, `job-${index}`));
             // A Core taller than the screen also stops with its bottom edge in view.
             // A Core taller than the screen also stops with its bottom edge in view,
             // and on the way there if a single turn would skip past some of it.
@@ -5017,7 +5336,11 @@ function startSite()
               {
                 const bottom = coreTop + core.offsetHeight - window.innerHeight;
                 const legs = Math.ceil((bottom - coreTop) / (window.innerHeight - 160));
-                for(let leg = 1; leg <= legs; leg++) stops.push(coreTop + (bottom - coreTop) * leg / legs);
+                for(let leg = 1; leg <= legs; leg++)
+                  {
+                    stops.push(coreTop + (bottom - coreTop) * leg / legs);
+                    name(coreTop + (bottom - coreTop) * leg / legs, `leg-${leg}`);
+                  }
               }
 
             if(education)
@@ -5025,6 +5348,7 @@ function startSite()
                 let educationTop = aboutTop;
                 for(let node = education; node && node !== about; node = node.offsetParent) educationTop += node.offsetTop;
                 stops.push(educationTop);
+                name(educationTop, 'education');
                 sectionLandings['#education'] = () => window.scrollTo({ top: Math.round(educationTop), behavior: 'instant' });
               }
             // The page end is a stop only while About ends the page. Let's connect
@@ -5044,7 +5368,11 @@ function startSite()
               }
 
             markers.splice(offsets.length).forEach(marker => marker.remove());
-            markers.forEach((marker, index) => { marker.style.top = `${offsets[index]}px`; });
+            markers.forEach((marker, index) =>
+              {
+                marker.style.top = `${offsets[index]}px`;
+                marker.dataset.stop = names.get(offsets[index]) || 'end';
+              });
             coreIndex?.dispatchEvent(new Event('core-stops'));
           }
 
@@ -6991,6 +7319,10 @@ function startSite()
     initCraft();
     initEmailLinks();
     initConnect();
+    initGlides();
+    initGlideSampler();
+    // Registered last, so every stop has been measured again before it is read.
+    keepPlaceOnResize();
     // A section's own address lands on it now. Until the page has loaded, the
     // browser can still jump to the section's element, whose top is not where the
     // section rests, and webfonts can still move the layout. Any scroll the reader
