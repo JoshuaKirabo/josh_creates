@@ -3152,8 +3152,9 @@ html.projects-snapping
 
       /* The heading is a poster: CREATIONS. runs the column edge to edge on
          any phone (the word is 7.17em wide, so 13.9cqw fits it), and JOSH'S
-         sits small and thin, centred over it. The phone h1 centres its
-         lines with justify-items, which WebKit now applies to blocks. */
+         sits small and thin over it, both on the left edge. The phone h1
+         places its lines with justify-items, which WebKit now applies to
+         blocks. */
       .projects-header
          {
             container-type: inline-size;
@@ -3168,9 +3169,9 @@ html.projects-snapping
 
       .projects-title-line:not(.projects-title-strong)
          {
-            justify-self: center;
+            justify-self: start;
             margin-bottom: 6px;
-            text-align: center;
+            text-align: left;
             font-size: 20px;
             letter-spacing: .04em;
             -webkit-text-stroke-width: .5px;
