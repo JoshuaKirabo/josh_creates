@@ -1705,6 +1705,15 @@ function startSite()
             schedulePaint();
           });
 
+        // A resize glides Home's pieces and the top bar's links to their new places
+        // and holds them at the old ones meanwhile. Measured then, the words fly to
+        // where the links used to be, so both ends are measured again once they land.
+        document.addEventListener('layoutglideend', () =>
+          {
+            foldStale = true;
+            schedulePaint();
+          });
+
         // Both ends of the fold are text, so their boxes are only final once the
         // webfonts have replaced the fallbacks.
         document.fonts?.ready.then(() =>
@@ -3837,6 +3846,9 @@ function startSite()
             // beat has spent most of its run before a frame is drawn. Each one
             // holds its first frame until the page is drawing again.
             const batch = flights;
+            // Anything that measured the page mid-glide read the old places; this
+            // tells it the pieces have landed (or were stopped).
+            if(batch.length) Promise.all(batch.map(flight => flight.finished.catch(() => {}))).then(() => document.dispatchEvent(new Event('layoutglideend')));
             batch.forEach(flight => flight.pause());
             requestAnimationFrame(() => requestAnimationFrame(() => batch.forEach(flight => flight.playState === 'paused' && flight.play())));
             until = performance.now() + DURATION + 50;
