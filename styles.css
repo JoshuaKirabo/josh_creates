@@ -5588,6 +5588,9 @@ html.about-paging
             margin-top: 16px;
             padding-bottom: 24px;
             overflow-y: auto;
+            /* A swipe past the copy's end must not carry on into the page,
+               which would fold the phone's toolbar away. */
+            overscroll-behavior-y: contain;
             scrollbar-width: none;
             -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
             mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
@@ -9365,6 +9368,7 @@ textarea.connect-input
             gap: 12px;
             min-height: 0;
             overflow-y: auto;
+            overscroll-behavior-y: contain;
          }
 
       .connect-field-message

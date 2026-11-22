@@ -7646,6 +7646,250 @@ function startSite()
             requestAnimationFrame(() => requestAnimationFrame(() => main.classList.add('projects-entered')));
           }
       }
+
+    // On a phone, Safari and Chrome fold their toolbars away as soon as the
+    // reader's finger scrolls the page, and the screen grows under every section.
+    // They never fold for a scroll the page makes itself, so the finger's own
+    // scroll is cancelled and the page is moved here instead: it follows the
+    // finger, runs on with the flick's speed when it lifts, and comes to rest
+    // where the stylesheet's snap points would have put it, one stop at a time
+    // where a stop asks for that. The toolbar stays out the whole visit, and the
+    // screen is always the small one. A box that scrolls on its own, an open
+    // dialog, a zoomed page and an open keyboard keep the browser's own scroll.
+    function holdBrowserToolbar()
+      {
+        const phone = window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 700px), (hover: none) and (pointer: coarse) and (max-height: 500px)');
+        const root = document.documentElement;
+        // How long a flick runs on: its speed times this is how far it would go.
+        const COAST_MS = 360;
+        let gesture = null;
+        let glideId = 0;
+        let snapHeld = false;
+        let snapType = 'none';
+
+        const maxY = () => Math.max(0, root.scrollHeight - window.innerHeight);
+        const clampY = y => Math.min(maxY(), Math.max(0, y));
+        // The stylesheet's snapping is set aside while the page is moved here, so
+        // it cannot pull the page to a stop under the finger.
+        function holdSnap()
+          {
+            if(snapHeld) return;
+            snapType = getComputedStyle(root).scrollSnapType;
+            root.style.scrollSnapType = 'none';
+            snapHeld = true;
+          }
+        function releaseSnap()
+          {
+            if(!snapHeld) return;
+            root.style.scrollSnapType = '';
+            snapHeld = false;
+          }
+        function stopGlide()
+          {
+            cancelAnimationFrame(glideId);
+            glideId = 0;
+          }
+        // The nearest box that scrolls on its own owns a gesture that starts in it.
+        function ownScroller(node)
+          {
+            for(; node instanceof Element && node !== document.body && node !== root; node = node.parentElement)
+              {
+                const style = getComputedStyle(node);
+                if(/auto|scroll/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1) return node;
+                if(/auto|scroll/.test(style.overflowX) && node.scrollWidth > node.clientWidth + 1) return node;
+              }
+            return null;
+          }
+        const zoomed = () => (window.visualViewport?.scale || 1) > 1.01;
+        // An open keyboard shrinks the visual viewport well below the window.
+        const typing = () => window.visualViewport && window.visualViewport.height < window.innerHeight * .8;
+        // Where the page may rest, read fresh when a gesture ends: the snap points
+        // of everything the window itself snaps. A snap area taller than the screen
+        // lets the page rest anywhere inside it.
+        function restingPlaces()
+          {
+            const places = [];
+            const view = window.innerHeight;
+            const y = window.scrollY;
+            for(const node of document.body.querySelectorAll('*'))
+              {
+                const style = getComputedStyle(node);
+                const align = style.scrollSnapAlign.split(' ')[0];
+                if(!align || align === 'none' || !node.getClientRects().length) continue;
+                // Snap points inside a box that scrolls on its own are that box's.
+                let inner = false;
+                for(let parent = node.parentElement; parent && parent !== document.body; parent = parent.parentElement)
+                  {
+                    if(!/visible|clip/.test(getComputedStyle(parent).overflowY)) { inner = true; break; }
+                  }
+                if(inner) continue;
+                const box = node.getBoundingClientRect();
+                const top = box.top + y - (parseFloat(style.scrollMarginTop) || 0);
+                const bottom = box.bottom + y + (parseFloat(style.scrollMarginBottom) || 0);
+                const stop = style.scrollSnapStop === 'always';
+                if(bottom - top > view + 1) places.push({ from: clampY(top), to: clampY(bottom - view), stop: false });
+                else
+                  {
+                    const at = clampY(align === 'center' ? (top + bottom - view) / 2 : align === 'end' ? bottom - view : top);
+                    places.push({ from: at, to: at, stop });
+                  }
+              }
+            return places;
+          }
+        // Where a flick lifted at `y`, moving at `speed` pixels a millisecond, comes
+        // to rest.
+        function restFor(y, speed)
+          {
+            const thrown = clampY(y + speed * COAST_MS);
+            if(snapType === 'none' || !snapType) return thrown;
+            const places = restingPlaces();
+            if(!places.length) return thrown;
+            const near = place => Math.min(place.to, Math.max(place.from, thrown));
+            // A flick rests somewhere ahead of it, as the browser's own snapping
+            // does; a finger that stopped before lifting rests wherever is nearest.
+            const flung = Math.abs(speed) > .1 ? Math.sign(speed) : 0;
+            const ahead = flung ? places.filter(place => (near(place) - y) * flung > 1) : [];
+            const choices = ahead.length ? ahead : places;
+            let rest = choices.reduce((best, place) => Math.abs(near(place) - thrown) < Math.abs(best - thrown) ? near(place) : best, near(choices[0]));
+            // A stop that must not be passed holds a flick at the first one it meets.
+            const heading = Math.sign(rest - y);
+            if(heading)
+              {
+                for(const place of places)
+                  {
+                    if(!place.stop) continue;
+                    const ahead = (place.from - y) * heading;
+                    if(ahead > 2 && ahead < (rest - y) * heading) rest = place.from;
+                  }
+              }
+            // Proximity snapping only reaches for a point near where the flick ends.
+            if(/proximity/.test(snapType) && Math.abs(rest - thrown) > window.innerHeight * .3) return thrown;
+            return rest;
+          }
+        // Runs the page on to where it rests, as a flick that slows to a stop. It
+        // stands down if anything else moves the page while it runs.
+        function settle(speed)
+          {
+            stopGlide();
+            const from = window.scrollY;
+            const to = restFor(from, speed);
+            const distance = to - from;
+            if(Math.abs(distance) < .5)
+              {
+                window.scrollTo({ top: to, behavior: 'instant' });
+                releaseSnap();
+                return;
+              }
+            // A cubic ease-out sets off at three times its average speed, so a flick
+            // already heading there keeps the speed it lifted with.
+            const towards = Math.sign(speed) === Math.sign(distance) ? Math.abs(speed) : 0;
+            const duration = towards ? Math.min(700, Math.max(220, 3 * Math.abs(distance) / towards)) : 340;
+            const start = performance.now();
+            let placed = from;
+            const step = (now) =>
+              {
+                if(Math.abs(window.scrollY - placed) > 1)
+                  {
+                    glideId = 0;
+                    releaseSnap();
+                    return;
+                  }
+                const t = Math.min(1, (now - start) / duration);
+                placed = t === 1 ? to : Math.round(from + distance * (1 - Math.pow(1 - t, 3)));
+                window.scrollTo({ top: placed, behavior: 'instant' });
+                if(placed === to)
+                  {
+                    glideId = 0;
+                    releaseSnap();
+                    return;
+                  }
+                glideId = requestAnimationFrame(step);
+              };
+            glideId = requestAnimationFrame(step);
+          }
+
+        window.addEventListener('touchstart', (event) =>
+          {
+            // A finger on the page catches a flick still running.
+            stopGlide();
+            gesture = null;
+            const eligible = phone.matches && event.touches.length === 1 && !zoomed() && !typing() &&
+              !event.target.closest?.('dialog[open], [aria-modal="true"]') && !ownScroller(event.target);
+            if(!eligible)
+              {
+                if(snapHeld) settle(0);
+                return;
+              }
+            const point = event.touches[0];
+            gesture = { id: point.identifier, x: point.clientX, y: point.clientY, fingerY: 0, from: 0, axis: '', moved: false, yielded: false, samples: [] };
+          }, { passive: true });
+
+        // Registered after every other page listener, so a gesture that a section
+        // has already claimed for a turn is seen as claimed.
+        window.addEventListener('touchmove', (event) =>
+          {
+            if(!gesture) return;
+            const point = [...event.touches].find(touch => touch.identifier === gesture.id);
+            if(!point || event.touches.length !== 1)
+              {
+                gesture = null;
+                if(snapHeld) settle(0);
+                return;
+              }
+            if(event.defaultPrevented)
+              {
+                gesture.yielded = true;
+                return;
+              }
+            if(!event.cancelable) return;
+            event.preventDefault();
+            if(gesture.yielded) return;
+            if(!gesture.axis)
+              {
+                const dx = Math.abs(point.clientX - gesture.x);
+                const dy = Math.abs(point.clientY - gesture.y);
+                if(Math.max(dx, dy) < 6) return;
+                gesture.axis = dy >= dx ? 'y' : 'x';
+                gesture.fingerY = point.clientY;
+                gesture.from = window.scrollY;
+              }
+            // The window has nothing to move sideways.
+            if(gesture.axis !== 'y') return;
+            if(!gesture.moved)
+              {
+                gesture.moved = true;
+                holdSnap();
+              }
+            const y = clampY(gesture.from + gesture.fingerY - point.clientY);
+            window.scrollTo({ top: y, behavior: 'instant' });
+            const now = performance.now();
+            gesture.samples.push({ time: now, y });
+            while(gesture.samples.length > 2 && now - gesture.samples[0].time > 100) gesture.samples.shift();
+          }, { passive: false });
+
+        const lifted = (event) =>
+          {
+            if(!gesture || event.touches.length) return;
+            const ended = gesture;
+            gesture = null;
+            if(ended.yielded || !ended.moved)
+              {
+                // A tap that caught a flick lands it where it stopped.
+                if(snapHeld) ended.yielded ? releaseSnap() : settle(0);
+                return;
+              }
+            // The flick's speed over its last tenth of a second; a finger that
+            // stopped before lifting throws nothing.
+            const now = performance.now();
+            const first = ended.samples[0];
+            const last = ended.samples[ended.samples.length - 1];
+            const speed = first && last && now - last.time < 60 && last.time > first.time ? (last.y - first.y) / (last.time - first.time) : 0;
+            settle(event.type === 'touchcancel' ? 0 : speed);
+          };
+        window.addEventListener('touchend', lifted, { passive: true });
+        window.addEventListener('touchcancel', lifted, { passive: true });
+      }
+
     // Every section is in the page from the start. They start in reading order,
     // once everything above is defined.
     enableSectionScroll();
@@ -7660,6 +7904,8 @@ function startSite()
     initGlideSampler();
     // Registered last, so every stop has been measured again before it is read.
     keepPlaceOnResize();
+    // Registered last, after every touch listener a section adds.
+    holdBrowserToolbar();
     // A section's own address lands on it now. Until the page has loaded, the
     // browser can still jump to the section's element, whose top is not where the
     // section rests, and webfonts can still move the layout. Any scroll the reader
