@@ -7660,10 +7660,15 @@ function startSite()
       {
         const phone = window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 700px), (hover: none) and (pointer: coarse) and (max-height: 500px)');
         const root = document.documentElement;
-        // How long a flick runs on: its speed times this is how far it would go.
-        const COAST_MS = 360;
+        // How long a flick runs on: its speed times this is how far it goes. It is
+        // Safari's own: momentum that loses 0.2% of its speed every millisecond.
+        const COAST_MS = 500;
+        // The fastest a flick, or flicks laid on one another, can throw the page.
+        const MAX_SPEED = 8;
         let gesture = null;
         let glideId = 0;
+        // The speed a running glide has right now, in pixels a millisecond.
+        let glideSpeed = 0;
         let snapHeld = false;
         let snapType = 'none';
 
@@ -7688,6 +7693,7 @@ function startSite()
           {
             cancelAnimationFrame(glideId);
             glideId = 0;
+            glideSpeed = 0;
           }
         // The nearest box that scrolls on its own owns a gesture that starts in it.
         function ownScroller(node)
@@ -7780,10 +7786,14 @@ function startSite()
                 releaseSnap();
                 return;
               }
-            // A cubic ease-out sets off at three times its average speed, so a flick
-            // already heading there keeps the speed it lifted with.
+            // The glide slows as Safari's momentum does: a share of what is left
+            // every moment, so it sets off at the speed the flick lifted with and
+            // fades out over a long tail instead of stopping short. `pace` is the
+            // time it takes to cover about two-thirds of the way. A flick heading
+            // there sets it from its own speed; a page with no flick behind it
+            // eases to its stop quickly.
             const towards = Math.sign(speed) === Math.sign(distance) ? Math.abs(speed) : 0;
-            const duration = towards ? Math.min(700, Math.max(220, 3 * Math.abs(distance) / towards)) : 340;
+            const pace = towards ? Math.min(COAST_MS, Math.max(90, Math.abs(distance) / towards)) : 120;
             const start = performance.now();
             let placed = from;
             const step = (now) =>
@@ -7791,15 +7801,18 @@ function startSite()
                 if(Math.abs(window.scrollY - placed) > 1)
                   {
                     glideId = 0;
+                    glideSpeed = 0;
                     releaseSnap();
                     return;
                   }
-                const t = Math.min(1, (now - start) / duration);
-                placed = t === 1 ? to : Math.round(from + distance * (1 - Math.pow(1 - t, 3)));
+                const left = distance * Math.exp(-(now - start) / pace);
+                placed = Math.abs(left) < .5 ? to : Math.round(to - left);
+                glideSpeed = left / pace;
                 window.scrollTo({ top: placed, behavior: 'instant' });
                 if(placed === to)
                   {
                     glideId = 0;
+                    glideSpeed = 0;
                     releaseSnap();
                     return;
                   }
@@ -7810,7 +7823,9 @@ function startSite()
 
         window.addEventListener('touchstart', (event) =>
           {
-            // A finger on the page catches a flick still running.
+            // A finger on the page catches a flick still running. Its speed is
+            // kept, so a flick laid on it carries on from there, as in Safari.
+            const carried = glideSpeed;
             stopGlide();
             gesture = null;
             const eligible = phone.matches && event.touches.length === 1 && !zoomed() && !typing() &&
@@ -7821,7 +7836,7 @@ function startSite()
                 return;
               }
             const point = event.touches[0];
-            gesture = { id: point.identifier, x: point.clientX, y: point.clientY, fingerY: 0, from: 0, axis: '', moved: false, yielded: false, samples: [] };
+            gesture = { id: point.identifier, x: point.clientX, y: point.clientY, fingerY: 0, from: 0, axis: '', moved: false, yielded: false, samples: [], carried, began: performance.now() };
           }, { passive: true });
 
         // Registered after every other page listener, so a gesture that a section
@@ -7878,12 +7893,16 @@ function startSite()
                 if(snapHeld) ended.yielded ? releaseSnap() : settle(0);
                 return;
               }
-            // The flick's speed over its last tenth of a second; a finger that
+            // The flick's speed as it lifts, read over its last 50ms, so the slow
+            // start of a gentle flick does not water it down. A finger that
             // stopped before lifting throws nothing.
             const now = performance.now();
-            const first = ended.samples[0];
             const last = ended.samples[ended.samples.length - 1];
-            const speed = first && last && now - last.time < 60 && last.time > first.time ? (last.y - first.y) / (last.time - first.time) : 0;
+            const first = last && (ended.samples.find(sample => last.time - sample.time <= 50 && sample !== last) || ended.samples[ended.samples.length - 2]);
+            let speed = first && now - last.time < 80 && last.time > first.time ? (last.y - first.y) / (last.time - first.time) : 0;
+            // A quick flick on a glide still running, the same way, adds to it.
+            if(Math.sign(speed) === Math.sign(ended.carried) && Math.abs(speed) > .2 && now - ended.began < 300) speed += ended.carried;
+            speed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, speed));
             settle(event.type === 'touchcancel' ? 0 : speed);
           };
         window.addEventListener('touchend', lifted, { passive: true });

@@ -2,10 +2,10 @@
 <html lang="en" class="inter_5901b7c6-module__ec5Qua__variable">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#060606">
-<title>From Survey Forms to SQL Tables · JOSH</title>
-<meta name="description" content="How I built a SurveyCTO to Azure SQL ETL pipeline on Data Factory and Databricks at Tellistic.">
+<title>Python based ETL Pipeline · JOSH</title>
+<meta name="description" content="SurveyCTO structured field submissions into a CSV export. AzCopy uploaded the file to Azure Data Lake Storage for processing in Databricks and loading into Azure SQL.">
 <style>
   /* The site's ground: #060606 and its grain, painted before anything else
      loads. The site's own script then draws the drifting sky over it. */
@@ -33,9 +33,9 @@
 <link rel="stylesheet" href="../blog/topbar.css?v=4">
 <link rel="stylesheet" href="../blog/heading.css?v=13">
 <link rel="stylesheet" href="../blog/article.css?v=2">
-<link rel="stylesheet" href="../blog/case.css?v=2">
-<script src="../blog/case.js?v=2" defer></script>
-<script src="../blog/blog.js?v=3" defer></script>
+<link rel="stylesheet" href="../blog/case.css?v=20">
+<script src="../blog/case.js?v=4" defer></script>
+<script src="../blog/blog.js?v=4" defer></script>
 </head>
 <body class="inter_5901b7c6-module__ec5Qua__className text-white selection:bg-white/25 overflow-x-clip">
 <div class="site-backdrop" aria-hidden="true">
@@ -50,20 +50,18 @@
           <a class="section-nav-link" href="../index.html#skills"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="icon-tone" d="M9 3.5h6a1.5 1.5 0 0 1 1.5 1.5v2.8h-1.6V5.1H9.1v2.7H7.5V5A1.5 1.5 0 0 1 9 3.5Z"/><path d="M5.2 7.8h13.6A2.2 2.2 0 0 1 21 10v3.1h-7.4v-.9h-3.2v.9H3V10a2.2 2.2 0 0 1 2.2-2.2ZM3 14.5h7.4v1h3.2v-1H21V18a2.2 2.2 0 0 1-2.2 2.2H5.2A2.2 2.2 0 0 1 3 18v-3.5Z"/></svg><span class="nav-label">Skills</span></a>
           <a class="section-nav-link" href="../index.html#connect"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M5.62 4.22h12.76A2.18 2.18 0 0 1 20.56 6.4v11.18a2.18 2.18 0 0 1-2.18 2.18H5.62a2.18 2.18 0 0 1-2.18-2.18V6.4A2.18 2.18 0 0 1 5.62 4.22ZM5.28 6.12 12 10.72l6.72-4.6-1.08-.78L12 9.18 6.36 5.34l-1.08.78Z"/></svg><span class="nav-label">Let’s connect</span></a>
           <span class="section-nav-divider" aria-hidden="true"></span>
-          <a class="section-nav-link" href="../blog.html" aria-current="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M6.15 2.82h6.92v4.58h4.58V20.2A1.88 1.88 0 0 1 15.77 22.08H6.15A1.88 1.88 0 0 1 4.27 20.2V4.7A1.88 1.88 0 0 1 6.15 2.82ZM7.48 11.42h9.1v1.2h-9.1zm0 3.1h9.1v1.2h-9.1zm0 3.1h6.05v1.2H7.48Z"/><path class="icon-tone" d="M13.07 2.82 17.65 7.4h-4.58V2.82Z"/></svg><span class="nav-label">Insights</span></a>
+          <a class="section-nav-link" href="../blog.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M6.15 2.82h6.92v4.58h4.58V20.2A1.88 1.88 0 0 1 15.77 22.08H6.15A1.88 1.88 0 0 1 4.27 20.2V4.7A1.88 1.88 0 0 1 6.15 2.82ZM7.48 11.42h9.1v1.2h-9.1zm0 3.1h9.1v1.2h-9.1zm0 3.1h6.05v1.2H7.48Z"/><path class="icon-tone" d="M13.07 2.82 17.65 7.4h-4.58V2.82Z"/></svg><span class="nav-label">Insights</span></a>
           <a class="section-nav-link" href="#" data-placeholder-link><svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M4.82 3.92h14.36A2.32 2.32 0 0 1 21.5 6.24v8.28A2.32 2.32 0 0 1 19.18 16.84h-6.82l-4.08 3.48c-.5.43-1.26.07-1.26-.58v-2.9H4.82A2.32 2.32 0 0 1 2.5 14.52V6.24A2.32 2.32 0 0 1 4.82 3.92ZM7.3 8.48h9.4v1.28H7.3zm0 3.12h6.2v1.28H7.3Z"/></svg><span class="nav-label">Ask Josh</span></a>
         </nav>
       </header>
 <div aria-live="polite" aria-atomic="true" class="sr-only"></div>
 <main id="content" class="article case" tabindex="-1">
 <header class="article-hero blog-head">
-<p class="about-eyebrow"><span>Insights · Case study · Data engineering</span><span class="about-rule" aria-hidden="true"></span></p>
-<h1 class="case-title"><span class="about-title-line"><span class="about-title-outline">From survey forms</span><span class="about-title-fill" aria-hidden="true">From survey forms</span></span><span class="about-title-line about-title-strong"><span class="about-title-outline">to SQL tables.</span><span class="about-title-fill" aria-hidden="true">to SQL tables.</span></span></h1>
-<p class="article-lead article-rise">At Tellistic Technology Services I built a Python ETL pipeline on Azure Data Factory, Azure Databricks and Azure SQL that loads SurveyCTO submissions into relational tables for a client’s analysis and reporting.</p>
-<p class="article-tags article-rise"><span>Tellistic Technology Services</span><span>Internship · Jul 2024 – Feb 2025</span><span>Data engineering</span></p>
+<h1 class="case-title"><span class="about-title-line"><span class="about-title-outline">Python based</span><span class="about-title-fill" aria-hidden="true">Python based</span></span><span class="about-title-line about-title-strong"><span class="about-title-outline">ETL Pipeline</span><span class="about-title-fill" aria-hidden="true">ETL Pipeline</span></span></h1>
+<p class="article-lead article-rise">At Tellistic Technology Services, SurveyCTO collected field submissions and organized the answers into a CSV with consistent columns. I used AzCopy to upload that file to Azure Data Lake Storage Gen2. Azure Data Factory coordinated the Python transformations in Databricks and loaded the results into Azure SQL for the client’s reports.</p>
 </header>
 
-<div class="case-layout">
+<div class="case-layout case-layout-tellistic">
 <div class="case-main">
 
 <!-- ===== 01 BEFORE AND AFTER ===== -->
@@ -73,70 +71,34 @@
 <div class="case-states">
 <article class="case-state">
 <p class="case-state-label">Before</p>
-<h3>[TO FILL: the state before, in a few words]</h3>
-<p>[TO FILL: how the client’s SurveyCTO data reached their analysts before the pipeline, and what that cost them.]</p>
+<h3>One source record could have several related entries</h3>
+<p>SurveyCTO forms captured text, numbers, and repeated answers. One submission could include several entries in a household roster, so counting rows in the processed data could overstate the number of source records. Analysts needed a way to distinguish each record from its related entries.</p>
 </article>
 <article class="case-state" data-target>
 <p class="case-state-label">After</p>
-<h3>Every submission lands as a relational row</h3>
-<p>[TO FILL: what the pipeline does end to end, in one paragraph: SurveyCTO in, flattened and typed in Databricks, loaded into Azure SQL by Data Factory.]</p>
+<h3>Survey responses become queryable tables</h3>
+<p>I used Python in Azure Databricks to flatten the repeated answers, cast dates and numbers, and handle missing values. Azure Data Factory coordinated the work and loaded the results into Azure SQL, giving the client a consistent starting point for analysis.</p>
 </article>
 </div>
 </section>
 
 <!-- ===== 02 ARCHITECTURE ===== -->
 <section id="architecture" class="case-section case-reveal" aria-labelledby="architecture-title">
+<figure id="tellistic-arch" class="case-arch" aria-labelledby="architecture-title">
+<div class="tellistic-overview">
+<header>
 <p class="case-eyebrow">02 / Architecture</p>
-<h2 id="architecture-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">The pipeline</span><span class="about-title-fill" aria-hidden="true">The pipeline</span></span></h2>
-<figure id="tellistic-arch" class="case-arch" data-source="tellistic-arch-data">
-<figcaption class="case-arch-caption">
-<h3>Flatten the survey.<br>Load it as tables.</h3>
-<p>[TO FILL: one sentence on the shape of the flow, e.g. where orchestration and transformation meet.]</p>
-</figcaption>
-<div class="case-arch-sheet">
-<div class="case-arch-legend"><span><i data-kind="data"></i>Data flow</span><span><i data-kind="control"></i>Control</span><span><i data-kind="feedback"></i>Return path</span><span class="case-arch-hint">Select a stage to inspect</span></div>
-<div class="case-arch-viewport"><svg class="case-arch-drawing" role="group" aria-label="Pipeline architecture: SurveyCTO through Data Factory and Databricks into Azure SQL"></svg></div>
-<div class="case-arch-inspector">
-<div class="case-arch-inspector-head">
-<div aria-live="polite"><p class="case-arch-type">Stage</p><h4>Stage</h4></div>
-<div class="case-arch-step"><button type="button" data-prev aria-label="Previous stage"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button><span><b data-step>01</b> / <span data-total>01</span></span><button type="button" data-next aria-label="Next stage"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></button></div>
-</div>
-<div class="case-arch-body"><p></p><ul class="case-arch-tags"></ul></div>
-<dl class="case-arch-flow"><dt>Data in</dt><dd data-in></dd><dt>Data out</dt><dd data-out></dd></dl>
+<h2 id="architecture-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">How it works</span><span class="about-title-fill" aria-hidden="true">How it works</span></span></h2>
+</header>
+<div class="case-arch-viewport">
+<picture>
+<source media="(prefers-reduced-motion: reduce) and (max-width: 767px) and (orientation: portrait)" srcset="../assets/tellistic-survey-pipeline-portrait-still.png?v=84">
+<source media="(prefers-reduced-motion: reduce)" srcset="../assets/tellistic-survey-pipeline-wide-still.png?v=84">
+<img class="tellistic-art" src="../assets/tellistic-survey-pipeline.svg?v=84" width="1504" height="540" alt="SurveyCTO structures field submissions into a CSV. The clipboard beside SurveyCTO represents its Monitor tab for submission quality checks and review. AzCopy uploads the CSV to /container9/folder9/data.csv in Azure Data Lake Storage Gen2. The Blob Created event starts the ADF pipeline. Inside Azure Data Factory, the separate Run monitor tracks the triggered pipeline and its activities. Data Factory uses its Databricks linked service to connect to the workspace and a personal access token (PAT) to authenticate the notebook run request. The Databricks notebook retrieves its storage credential through a Key Vault-backed secret scope, reads the raw CSV, and writes one cleaned CSV part file to updated_data3/. On notebook success, Copy Data reads updated_data3/p* through Azure Integration Runtime, clears dbo.data3, and inserts the rows into that Azure SQL Database table." decoding="async">
+</picture>
 </div>
 </div>
 </figure>
-<p class="case-arch-note">[TO FILL: the one non-obvious constraint a reader should leave with, e.g. why Spark’s generated file names needed wildcard paths.]</p>
-<!-- The drawing. Stages are 152×76 at x/y; links route themselves. Draft
-     order taken from the résumé; Josh to confirm the real flow. -->
-<script type="application/json" id="tellistic-arch-data">
-{
-  "viewBox": "0 0 1112 400",
-  "regions": [
-    { "label": "Source", "x": 24, "y": 48, "w": 184, "h": 136 },
-    { "label": "Azure", "x": 232, "y": 48, "w": 808, "h": 136 },
-    { "label": "Client", "x": 440, "y": 232, "w": 184, "h": 136 },
-    { "label": "Database", "x": 856, "y": 232, "w": 184, "h": 136 }
-  ],
-  "nodes": [
-    { "id": "surveycto", "title": "SurveyCTO", "sub": "Form submissions", "type": "source", "x": 40, "y": 88, "detail": "[TO FILL: what the survey data looks like as it leaves SurveyCTO.]", "tags": ["SurveyCTO"] },
-    { "id": "adf", "title": "Data Factory\npipeline", "sub": "Orchestration", "x": 248, "y": 88, "detail": "[TO FILL: what the pipeline runs, and when.]", "tags": ["Azure Data Factory"] },
-    { "id": "databricks", "title": "Databricks\nnotebook", "sub": "Python · Spark", "x": 456, "y": 88, "start": true, "detail": "[TO FILL: flattening nested repeat groups, explicit numeric and date casts, nulls handled before load.]", "tags": ["Azure Databricks", "Python", "Spark"] },
-    { "id": "output", "title": "Spark output\nfiles", "sub": "Wildcard paths", "type": "store", "x": 664, "y": 88, "detail": "[TO FILL: Spark’s generated file names, and the wildcard paths that keep loads consistent.]", "tags": ["Spark"] },
-    { "id": "copy", "title": "Copy into\nAzure SQL", "sub": "Data Factory", "x": 872, "y": 88, "detail": "[TO FILL: how the load runs, and where duplicate records came from.]", "tags": ["Azure Data Factory"] },
-    { "id": "sql", "title": "Azure SQL\ntables", "sub": "Relational", "type": "store", "x": 872, "y": 272, "detail": "[TO FILL: the table shape the survey was fitted to.]", "tags": ["Azure SQL"] },
-    { "id": "reporting", "title": "Analysis and\nreporting", "sub": "Client", "type": "output", "x": 456, "y": 272, "detail": "[TO FILL: what the client does with the tables.]", "tags": [] }
-  ],
-  "edges": [
-    { "from": "surveycto", "to": "adf", "kind": "data" },
-    { "from": "adf", "to": "databricks", "kind": "control", "label": "Runs" },
-    { "from": "databricks", "to": "output", "kind": "data" },
-    { "from": "output", "to": "copy", "kind": "data" },
-    { "from": "copy", "to": "sql", "kind": "data" },
-    { "from": "sql", "to": "reporting", "kind": "data" }
-  ]
-}
-</script>
 </section>
 
 <!-- ===== 03 THE DELIVERY ===== -->
@@ -145,28 +107,28 @@
 <h2 id="delivery-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">Inside the build</span><span class="about-title-fill" aria-hidden="true">Inside the build</span></span></h2>
 <div class="case-chapters">
 <details class="case-chapter">
-<summary><span class="case-chapter-seq">01</span><h3>Ingesting from SurveyCTO</h3><span class="case-chapter-preview">Data Factory</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>SurveyCTO</li><li>Azure Data Factory</li></ul></div>
+<summary><span class="case-chapter-seq">01</span><h3>From field submissions to a CSV for Azure</h3><span class="case-chapter-preview">AzCopy CLI</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
+<div class="case-chapter-body"><p>SurveyCTO used the form definition to give each answer a named field and each submission a key. That kept repeated answers linked to their original submission when the data was exported to CSV. I uploaded the local export with <code>azcopy copy</code> to the raw landing folder in Azure Data Lake Storage Gen2. Creating or overwriting <code>/container9/folder9/data.csv</code> raised a Blob Created event. The storage event trigger started the Azure Data Factory pipeline. The notebook activity used a linked service, a saved connection that tells Data Factory which Databricks workspace and compute to use. Data Factory authenticated its request with a Databricks personal access token (PAT), then started the cleaning notebook.</p><p>Inside Databricks, <code>dbutils.secrets.get(scope, key)</code> retrieved the service principal’s client secret directly from Azure Key Vault through a Key Vault-backed secret scope. The notebook used that credential to authenticate the storage mount over <code>abfss://</code>, read the raw CSV and write the cleaned file to the same container.</p><ul class="case-chip-row"><li>SurveyCTO</li><li>AzCopy CLI</li><li>ADLS Gen2</li></ul></div>
 </details>
 <details class="case-chapter">
 <summary><span class="case-chapter-seq">02</span><h3>Flattening nested repeat groups</h3><span class="case-chapter-preview">Databricks · Python</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Azure Databricks</li><li>Python</li></ul></div>
+<div class="case-chapter-body"><p>A repeat group contains multiple entries linked to one source record. For example, a household record with three members contributes one household row and three related member rows. I flattened the nested groups in Python. Keeping the submission key with each entry lets an analyst join the records and still count households or members at the correct level.</p><ul class="case-chip-row"><li>Azure Databricks</li><li>Python</li></ul></div>
 </details>
 <details class="case-chapter">
 <summary><span class="case-chapter-seq">03</span><h3>Types and nulls before load</h3><span class="case-chapter-preview">Explicit casts</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Numeric casts</li><li>Date casts</li><li>Nulls</li></ul></div>
+<div class="case-chapter-body"><p>I cast numeric and date fields explicitly before loading them into SQL and handled null values in the notebook. A blank count and a reported count of zero carry different information. Keeping missing values distinct from zero preserves that difference in SQL.</p><ul class="case-chip-row"><li>Numeric casts</li><li>Date casts</li><li>Nulls</li></ul></div>
 </details>
 <details class="case-chapter">
 <summary><span class="case-chapter-seq">04</span><h3>Chasing duplicate records</h3><span class="case-chapter-preview">Debugging</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p></div>
+<div class="case-chapter-body"><p>I investigated duplicate records during development. Repeated submission keys can be legitimate in a table of repeated answers. A useful check is to count distinct submissions in the parent data, then check repeat entries separately using their parent key and entry identifier. Replaying the same batch should leave both totals unchanged.</p></div>
 </details>
 <details class="case-chapter">
 <summary><span class="case-chapter-seq">05</span><h3>Wildcard paths for Spark’s output</h3><span class="case-chapter-preview">Data Factory</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Spark</li><li>Azure Data Factory</li></ul></div>
+<div class="case-chapter-body"><p>Spark generates part filenames when it writes a dataset. A copy activity tied to one generated filename can miss the next run’s output. The notebook read the incoming CSV and used <code>coalesce(1)</code> to write one part file in the processed output folder. Both folders belonged to the same container in one ADLS Gen2 account. I configured a wildcard path in Data Factory to pick up the resulting part file. Scoping the match to the current batch also keeps earlier files out of a replay.</p><ul class="case-chip-row"><li>Spark</li><li>Azure Data Factory</li></ul></div>
 </details>
 <details class="case-chapter">
 <summary><span class="case-chapter-seq">06</span><h3>Loading Azure SQL</h3><span class="case-chapter-preview">Azure SQL</span><svg class="case-chapter-toggle" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></summary>
-<div class="case-chapter-body"><p>[TO FILL]</p><ul class="case-chip-row"><li>Azure SQL</li></ul></div>
+<div class="case-chapter-body"><p>When the notebook succeeded, Data Factory started the Copy Data activity. Azure Integration Runtime read the part file from the processed output folder. The Azure SQL sink cleared the target table with a pre-copy script immediately before inserting the new rows. In ADF Studio, <strong>Monitor → Pipeline runs</strong> shows the run’s status, start time, and duration. Opening the run shows whether <code>notebook11</code> and Copy Data succeeded and any activity error details. The refreshed SQL table gave the client a relational source for queries and reports. For example, a report could group distinct submission keys by date, while a separate query could count entries within a repeat group.</p><ul class="case-chip-row"><li>Azure SQL</li></ul></div>
 </details>
 </div>
 </section>
@@ -176,19 +138,19 @@
 <p class="case-eyebrow">04 / The outcome</p>
 <h2 id="outcome-title" class="case-heading"><span class="about-title-line"><span class="about-title-outline">What changed</span><span class="about-title-fill" aria-hidden="true">What changed</span></span></h2>
 <div class="case-rows">
-<div class="case-row"><h3>Loads stay consistent as new data arrives.</h3><p>[TO FILL]</p></div>
-<div class="case-row"><h3>[TO FILL: outcome]</h3><p>[TO FILL]</p></div>
-<div class="case-row"><h3>[TO FILL: outcome]</h3><p>[TO FILL]</p></div>
+<div class="case-row"><h3>New batches follow the same processing steps</h3><p>The notebook applies the same field rules to each batch, and the wildcard copy path accommodates new Spark filenames. Analysts can start with the SQL tables each time another batch is loaded.</p></div>
+<div class="case-row"><h3>Refresh timing follows the reporting need</h3><p>When a new CSV arrives in raw storage, Data Factory starts the transformation and SQL load. The operating design calls for a failed step to identify the affected batch and stop publication until it can be rerun.</p></div>
+<div class="case-row"><h3>Measuring the time saved</h3><p>Compare a manual batch and an automated batch of similar size. Record hands-on preparation minutes and elapsed time from CSV intake to queryable tables. Check the distinct submission count and repeat-row count alongside those timings so any speed gain is measured against a complete load.</p></div>
 </div>
-<div class="case-tech"><span class="case-tech-label">Technology</span><ul class="case-chip-row"><li>SurveyCTO</li><li>Azure Data Factory</li><li>Azure Databricks</li><li>Spark</li><li>Python</li><li>Azure SQL</li></ul></div>
+<div class="case-tech"><span class="case-tech-label">Technology</span><ul class="case-chip-row"><li>SurveyCTO</li><li>AzCopy CLI</li><li>ADLS Gen2</li><li>Azure Data Factory</li><li>Azure Databricks</li><li>Spark</li><li>Python</li><li>Azure SQL</li></ul></div>
 </section>
 
 <footer class="case-end">
-<a class="article-back OutcomesGallery-module__0WS_ta__featureAction blog-read" href="../blog.html"><span class="blog-roll"><span class="blog-roll-a">Back to Insights</span><span class="blog-roll-b" aria-hidden="true">Back to Insights</span></span><span class="blog-read-line" aria-hidden="true"></span><span class="blog-arrow-window" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-out" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-in" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span></a>
-<a class="case-next" href="kisaka-proposal-pipeline.html"><span class="case-next-label">Next case study</span><span class="case-next-title">The proposal pipeline<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg></span></a>
+<a class="article-back OutcomesGallery-module__0WS_ta__featureAction blog-read" href="../index.html#experience"><span class="blog-roll"><span class="blog-roll-a">Back to Experience</span><span class="blog-roll-b" aria-hidden="true">Back to Experience</span></span><span class="blog-read-line" aria-hidden="true"></span><span class="blog-arrow-window" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-out" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right OutcomesGallery-module__0WS_ta__arrow blog-arrow-in" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span></a>
 </footer>
 </div>
 
+<div class="tellistic-contents">
 <aside class="case-toc" aria-label="On this page">
 <span class="case-toc-label">On this page</span>
 <ol>
@@ -198,6 +160,7 @@
 <li><a href="#outcome">04 What changed</a></li>
 </ol>
 </aside>
+</div>
 </div>
 </main>
 </body>

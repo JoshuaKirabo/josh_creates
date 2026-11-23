@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="378" viewBox="0 0 600 378" role="img" aria-labelledby="title desc">
+  <title id="title">Flattening a survey response</title><desc id="desc">Field lines from a SurveyCTO form split into a submission row and repeat rows. Matching square marks show the parent key carried into both outputs. This is an illustration of record structure.</desc>
+  <style>
+    .thread,.rule,.fine,.boundary { fill:none; stroke-linejoin:round; }
+    .thread { stroke:#a4a4a0; stroke-width:.95; }
+    .fine { stroke:#474745; stroke-width:.8; }
+    .boundary { stroke:#ededeb; stroke-width:1.1; }
+    .rule { stroke:#474745; }
+    .ink { fill:#ededeb; } .muted { fill:#a4a4a0; }
+    .key { fill:#ededeb; } .cell { fill:#0b0b0b; stroke:#a4a4a0; stroke-width:.9; }
+    .label,.caption,.note { font-family:Arial,Helvetica,sans-serif; font-weight:400; fill:#ededeb; }
+    .label { font-size:17px; letter-spacing:-.55px; }
+    .caption { font-size:20px; letter-spacing:-.65px; }
+    .note { font:11.5px Menlo,Consolas,monospace; fill:#a4a4a0; }
+  </style>
+  <rect width="600" height="378" fill="#0b0b0b"/>
+<text x="27" y="43" class="label">SurveyCTO form</text>
+<text x="398" y="43" class="label">Submission row</text>
+<text x="398" y="193" class="label">Repeat rows</text>
+<path d="M26 74H99C153 74 159 149.00 218 149.00H247C305 149.00 311 91.00 366 91.00H379" class="boundary"/>
+<path d="M26 80H99C153 80 159 150.15 218 150.15H247C305 150.15 311 92.40 366 92.40H379" class="thread"/>
+<path d="M26 86H99C153 86 159 151.30 218 151.30H247C305 151.30 311 93.80 366 93.80H379" class="thread"/>
+<path d="M26 92H99C153 92 159 152.45 218 152.45H247C305 152.45 311 95.20 366 95.20H379" class="thread"/>
+<path d="M26 98H99C153 98 159 153.60 218 153.60H247C305 153.60 311 96.60 366 96.60H379" class="thread"/>
+<path d="M26 104H99C153 104 159 154.75 218 154.75H247C305 154.75 311 98.00 366 98.00H379" class="thread"/>
+<path d="M26 110H99C153 110 159 155.90 218 155.90H247C305 155.90 311 99.40 366 99.40H379" class="thread"/>
+<path d="M26 116H99C153 116 159 157.05 218 157.05H247C305 157.05 311 100.80 366 100.80H379" class="thread"/>
+<path d="M26 122H99C153 122 159 158.20 218 158.20H247C305 158.20 311 102.20 366 102.20H379" class="thread"/>
+<path d="M26 128H99C153 128 159 159.35 218 159.35H247C305 159.35 311 103.60 366 103.60H379" class="boundary"/>
+<path d="M26 134H99C153 134 159 160.50 218 160.50H247C305 160.50 311 211.00 366 211.00H379" class="boundary"/>
+<path d="M26 140H99C153 140 159 161.65 218 161.65H247C305 161.65 311 213.20 366 213.20H379" class="thread"/>
+<path d="M26 146H99C153 146 159 162.80 218 162.80H247C305 162.80 311 215.40 366 215.40H379" class="thread"/>
+<path d="M26 152H99C153 152 159 163.95 218 163.95H247C305 163.95 311 217.60 366 217.60H379" class="thread"/>
+<path d="M26 158H99C153 158 159 165.10 218 165.10H247C305 165.10 311 219.80 366 219.80H379" class="thread"/>
+<path d="M26 164H99C153 164 159 166.25 218 166.25H247C305 166.25 311 222.00 366 222.00H379" class="thread"/>
+<path d="M26 170H99C153 170 159 167.40 218 167.40H247C305 167.40 311 224.20 366 224.20H379" class="thread"/>
+<path d="M26 176H99C153 176 159 168.55 218 168.55H247C305 168.55 311 226.40 366 226.40H379" class="thread"/>
+<path d="M26 182H99C153 182 159 169.70 218 169.70H247C305 169.70 311 228.60 366 228.60H379" class="thread"/>
+<path d="M26 188H99C153 188 159 170.85 218 170.85H247C305 170.85 311 230.80 366 230.80H379" class="thread"/>
+<path d="M26 194H99C153 194 159 172.00 218 172.00H247C305 172.00 311 233.00 366 233.00H379" class="thread"/>
+<path d="M26 200H99C153 200 159 173.15 218 173.15H247C305 173.15 311 235.20 366 235.20H379" class="thread"/>
+<path d="M26 206H99C153 206 159 174.30 218 174.30H247C305 174.30 311 237.40 366 237.40H379" class="thread"/>
+<path d="M26 212H99C153 212 159 175.45 218 175.45H247C305 175.45 311 239.60 366 239.60H379" class="thread"/>
+<path d="M26 218H99C153 218 159 176.60 218 176.60H247C305 176.60 311 241.80 366 241.80H379" class="thread"/>
+<path d="M26 224H99C153 224 159 177.75 218 177.75H247C305 177.75 311 244.00 366 244.00H379" class="thread"/>
+<path d="M26 230H99C153 230 159 178.90 218 178.90H247C305 178.90 311 246.20 366 246.20H379" class="thread"/>
+<path d="M26 236H99C153 236 159 180.05 218 180.05H247C305 180.05 311 248.40 366 248.40H379" class="thread"/>
+<path d="M26 242H99C153 242 159 181.20 218 181.20H247C305 181.20 311 250.60 366 250.60H379" class="thread"/>
+<path d="M26 248H99C153 248 159 182.35 218 182.35H247C305 182.35 311 252.80 366 252.80H379" class="thread"/>
+<path d="M26 254H99C153 254 159 183.50 218 183.50H247C305 183.50 311 255.00 366 255.00H379" class="boundary"/>
+<path d="M232 121v24m0 48v24" class="fine"/>
+<path d="M224 145h16m-16 48h16" class="thread"/>
+<path d="M388 100h173" class="fine"/>
+<rect x="397" y="95" width="10" height="10" class="key"/>
+<rect x="419" y="96" width="39" height="8" class="cell"/>
+<rect x="467" y="96" width="22" height="8" class="cell"/>
+<rect x="498" y="96" width="32" height="8" class="cell"/>
+<path d="M388 215h173" class="fine"/>
+<rect x="397" y="210" width="10" height="10" class="key"/>
+<rect x="419" y="211" width="24" height="8" class="cell"/>
+<rect x="452" y="211" width="38" height="8" class="cell"/>
+<rect x="499" y="211" width="22" height="8" class="cell"/>
+<path d="M388 231h173" class="fine"/>
+<rect x="397" y="226" width="10" height="10" class="key"/>
+<rect x="419" y="227" width="41" height="8" class="cell"/>
+<rect x="469" y="227" width="13" height="8" class="cell"/>
+<rect x="491" y="227" width="33" height="8" class="cell"/>
+<path d="M388 247h173" class="fine"/>
+<rect x="397" y="242" width="10" height="10" class="key"/>
+<rect x="419" y="243" width="18" height="8" class="cell"/>
+<rect x="446" y="243" width="32" height="8" class="cell"/>
+<rect x="487" y="243" width="36" height="8" class="cell"/>
+<path d="M388 263h173" class="fine"/>
+<rect x="397" y="258" width="10" height="10" class="key"/>
+<rect x="419" y="259" width="31" height="8" class="cell"/>
+<rect x="459" y="259" width="25" height="8" class="cell"/>
+<rect x="493" y="259" width="19" height="8" class="cell"/>
+<path d="M26 318H574" class="rule"/>
+<text x="26" y="351" class="caption">Flattening repeat groups</text>
+<text x="574" y="350" text-anchor="end" class="note">Linked by submission key</text>
+</svg>

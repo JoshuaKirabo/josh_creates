@@ -145,8 +145,8 @@
                 item.textContent = tag;
                 return item;
               }));
-            dataIn.textContent = names(edges.filter((edge) => edge.to === node.id).map((edge) => edge.from));
-            dataOut.textContent = names(edges.filter((edge) => edge.from === node.id).map((edge) => edge.to));
+            dataIn.textContent = node.input ?? names(edges.filter((edge) => edge.to === node.id).map((edge) => edge.from));
+            dataOut.textContent = node.output ?? names(edges.filter((edge) => edge.from === node.id).map((edge) => edge.to));
             // On a narrow screen the drawing scrolls sideways; bring the stage in.
             const viewport = figure.querySelector(".case-arch-viewport");
             if(viewport.scrollWidth > viewport.clientWidth)

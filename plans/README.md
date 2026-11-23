@@ -65,3 +65,14 @@ Recommended order: **001 → 002 → 003 → 004 → 005**.
 019 retimes 016's close into three beats: the exit alone (with Back lifting out) for 0–370 ms, the sheet fading from 360 ms over 280 ms, and Projects returning from 400 ms.
 
 024 is for phones only: swiping up from Experience's first job held the page, then cut to a Meet Josh that has no entrance there. It makes that swipe an ordinary scroll, as the swipe down already is. Desktop keeps its hold and cut.
+
+### Survey ETL architecture
+
+| Plan | Severity | Status | Depends on |
+| --- | --- | --- | --- |
+| [025 · Time the survey batch](025-time-the-survey-batch.md) | Medium | TODO | — |
+| [026 · Give the batch a directional trail](026-trail-the-survey-batch.md) | Medium | TODO | 025 |
+| [027 · Show PySpark flattening repeated answers](027-animate-flattening-in-databricks.md) | Low | TODO | 025 |
+| [028 · Sequence the Databricks handoffs](028-sequence-databricks-handoffs.md) | High | DONE | Current 17-second diagram |
+
+Apply 025 first to set the playback clock. Then add the trail and the processing cue in order. Verify the one-screen fit from the article’s architecture link after each change.

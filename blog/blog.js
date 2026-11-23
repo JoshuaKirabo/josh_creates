@@ -182,7 +182,9 @@
       };
     function turnCardFor(url)
       {
-        const path = url.pathname.replace(/\/$/, "") || "/";
+        const path = url.pathname.replace(/\/$/, "").replace(/\/index\.html$/, "") || "/";
+        // The case studies hand back to the Experience section they open from.
+        if(path === "/" && url.hash === "#experience") return { kicker: "Experience", lines: [], name: "Experience" };
         const t = PAGE_TITLES[path];
         if(t) return { ...t, name: t.name || t.lines.join(" ").replace(/[.,]+$/, "") };
         const card = [...document.querySelectorAll("a[href]")].find((a) => a.href === url.href && a.querySelector("h2"));
