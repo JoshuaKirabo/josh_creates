@@ -10,7 +10,7 @@ const controller = [
   part('function holdBrowserToolbar()', '// Every section is in the page')
 ].join('\n');
 
-function setup({ phone = true, markerOffsets = [], flows = [] } = {})
+function setup({ phone = true, markerOffsets = [], flows = [], collection, reduce = false } = {})
   {
     const listeners = new Map(), frames = new Map();
     let now = 0, frame = 0;
@@ -38,11 +38,12 @@ function setup({ phone = true, markerOffsets = [], flows = [] } = {})
     }));
     const document = { documentElement: root, body, querySelectorAll(selector)
       {
+        if(selector === '.projects-snap' || selector === '.craft-snap') return selector === collection ? markers : [];
         if(selector.startsWith('.page-snap,')) return markers;
         if(selector.startsWith('.about-hero,')) return flowAreas;
         throw new Error('Unexpected snap search: ' + selector);
       } };
-    const context = vm.createContext({ window, document, Element, performance: { now: () => now }, mobileMenu: null,
+    const context = vm.createContext({ window, document, Element, performance: { now: () => now }, mobileMenu: null, reducedMotion: { matches: reduce },
       getComputedStyle(node) { assert.ok(!markers.includes(node), 'markers already have measured offsets'); return node; },
       introSettled: { then() {} }, location: { hash: '' }, glide: null, reaimGlide() {},
       flick: {}, requestAnimationFrame(fn) { frames.set(++frame, fn); return frame; }, cancelAnimationFrame(id) { frames.delete(id); } });
@@ -85,6 +86,47 @@ test('phone page follows the first vertical movement, and a quick lift lands at 
     s.send('touchend');
     s.settle();
     assert.equal(s.window.scrollY, 200);
+    assert.equal(s.root.style.scrollSnapType, '');
+  });
+
+for(const collection of ['.projects-snap', '.craft-snap'])
+  {
+    test(collection + ' advances on a slow paused drag and lets a second contact reverse the landing', () =>
+      {
+        const s = setup({ markerOffsets: [100, 500, 900], collection });
+        s.toolbar();
+        s.send('touchstart', 80, 500);
+        s.send('touchmove', 80, 464);
+        s.send('touchmove', 80, 467); // Lift-off jitter after a forward drag.
+        s.send('touchend', 80, 467, { delay: 200 });
+        s.nextFrame();
+        assert.ok(s.window.scrollY > 133);
+        s.settle();
+        assert.equal(s.window.scrollY, 500);
+        s.send('touchstart', 80, 500);
+        s.send('touchmove', 80, 470);
+        s.send('touchend');
+        for(let i = 0; i < 5; i++) s.nextFrame();
+        const caught = s.window.scrollY;
+        assert.ok(caught > 530 && caught < 900);
+        s.send('touchstart', 80, 500);
+        s.send('touchmove', 80, 520);
+        assert.equal(s.window.scrollY, caught - 20);
+        s.send('touchend', 80, 520, { delay: 150 });
+        s.settle();
+        assert.equal(s.window.scrollY, 500);
+      });
+  }
+
+test('a reversal before lifting selects the previous stop immediately with reduced motion', () =>
+  {
+    const s = setup({ markerOffsets: [100, 500, 900], collection: '.craft-snap', reduce: true });
+    s.toolbar();
+    s.send('touchstart', 80, 500);
+    s.send('touchmove', 80, 415);
+    s.send('touchmove', 80, 445);
+    s.send('touchend', 80, 445, { delay: 150 });
+    assert.equal(s.window.scrollY, 100);
     assert.equal(s.root.style.scrollSnapType, '');
   });
 

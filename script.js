@@ -5122,14 +5122,12 @@ function startSite()
             aboutStop = Math.round(aboutTop);
             let coreTop = aboutTop;
             for(let node = core; node && node !== about; node = node.offsetParent) coreTop += node.offsetTop;
-            // The page's end is measured without the snap markers, which sit in the
-            // page too. A first measure taken before the stylesheet lands puts the
-            // end marker 45,000px down, and counted, it held the page that tall
-            // for good: every later measure found the end where it had left it.
-            const snaps = document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap');
-            snaps.forEach(snap => (snap.style.display = 'none'));
+            // The end marker can extend a shorter layout. Exclude only that marker:
+            // hiding the active section's snap point sends the browser back to About.
+            const endMarker = markers.find(marker => marker.dataset.stop === 'end');
+            if(endMarker) endMarker.hidden = true;
             const end = root.scrollHeight - window.innerHeight;
-            snaps.forEach(snap => (snap.style.display = ''));
+            if(endMarker) endMarker.hidden = false;
             // A pinned Core stops once per card; its runway splits evenly between them.
             const step = pinned ? (core.offsetHeight - window.innerHeight) / (jobs - 1) : 0;
             coreJobStops = pinned ? Array.from({ length: jobs }, (_, i) => Math.round(coreTop + i * step)) : [];
@@ -7264,15 +7262,32 @@ function startSite()
             if(/proximity/.test(snapType) && Math.abs(rest - thrown) > window.innerHeight * .3) return thrown;
             return rest;
           }
+        // A deliberate drag through a paged collection still turns a card if the
+        // finger pauses before lifting. Use the live stops, including after a resize.
+        function pagedLanding(drag, y)
+          {
+            if(!drag?.direction) return;
+            for(const selector of ['.projects-snap', '.craft-snap'])
+              {
+                const stops = [...document.querySelectorAll(selector)]
+                  .filter(marker => !marker.hidden)
+                  .map(marker => Math.round(clampY(parseFloat(marker.style.top))));
+                if(!stops.length || drag.from < stops[0] - 2 || drag.from > stops.at(-1) + 2 ||
+                  y < stops[0] - 2 || y > stops.at(-1) + 2) continue;
+                return drag.direction > 0 ? stops.find(top => top >= y - 2) : stops.findLast(top => top <= y + 2);
+              }
+          }
+
         // Runs the page on to where it rests, as a flick that slows to a stop. It
         // stands down if anything else moves the page while it runs.
-        function settle(speed)
+        function settle(speed, drag)
           {
             stopGlide();
             const from = window.scrollY;
-            const to = restFor(from, speed);
+            const page = pagedLanding(drag, from);
+            const to = page ?? restFor(from, speed);
             const distance = to - from;
-            if(Math.abs(distance) < .5)
+            if(Math.abs(distance) < .5 || (page !== undefined && reducedMotion.matches))
               {
                 window.scrollTo({ top: to, behavior: 'instant' });
                 releaseSnap();
@@ -7286,6 +7301,10 @@ function startSite()
             // eases to its stop quickly.
             const towards = Math.sign(speed) === Math.sign(distance) ? Math.abs(speed) : 0;
             const pace = towards ? Math.min(COAST_MS, Math.max(90, Math.abs(distance) / towards)) : 120;
+            // The paged settle uses a critically damped 0.4s response. Carry
+            // release velocity up to the fastest approach that cannot overshoot.
+            const omega = 2 * Math.PI / 400;
+            const velocity = Math.sign(distance) * Math.min(towards, omega * Math.abs(distance));
             const start = performance.now();
             let placed = from;
             const step = (now) =>
@@ -7297,9 +7316,20 @@ function startSite()
                     releaseSnap();
                     return;
                   }
-                const left = distance * Math.exp(-(now - start) / pace);
+                const elapsed = Math.max(0, now - start);
+                let left;
+                if(page !== undefined)
+                  {
+                    const decay = Math.exp(-omega * elapsed);
+                    left = (distance + (omega * distance - velocity) * elapsed) * decay;
+                    glideSpeed = omega * left - (omega * distance - velocity) * decay;
+                  }
+                else
+                  {
+                    left = distance * Math.exp(-elapsed / pace);
+                    glideSpeed = left / pace;
+                  }
                 placed = Math.abs(left) < .5 ? to : Math.round(to - left);
-                glideSpeed = left / pace;
                 window.scrollTo({ top: placed, behavior: 'instant' });
                 if(placed === to)
                   {
@@ -7358,6 +7388,8 @@ function startSite()
                 if(Math.max(dx, dy) < 6) return;
                 gesture.axis = dy >= dx ? 'y' : 'x';
                 gesture.from = window.scrollY;
+                gesture.extreme = gesture.from;
+                gesture.direction = 0;
                 gesture.samples.push({ time: gesture.began, y: gesture.from });
               }
             // The window has nothing to move sideways.
@@ -7368,6 +7400,11 @@ function startSite()
                 holdSnap();
               }
             const y = clampY(gesture.from + gesture.y - point.clientY);
+            // Remember a turn even after a pause. Small lift-off jitter cannot
+            // reverse it, but 12px back from the furthest point can.
+            const delta = y - gesture.extreme;
+            if(Math.abs(delta) >= 12) gesture.direction = Math.sign(delta);
+            if(delta * gesture.direction > 0) gesture.extreme = y;
             window.scrollTo({ top: y, behavior: 'instant' });
             const now = performance.now();
             gesture.samples.push({ time: now, y });
@@ -7395,7 +7432,8 @@ function startSite()
             // A quick flick on a glide still running, the same way, adds to it.
             if(Math.sign(speed) === Math.sign(ended.carried) && Math.abs(speed) > .2 && now - ended.began < 300) speed += ended.carried;
             speed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, speed));
-            settle(event.type === 'touchcancel' ? 0 : speed);
+            if(event.type === 'touchcancel') settle(0);
+            else settle(speed, ended);
           };
         window.addEventListener('touchend', lifted, { passive: true });
         window.addEventListener('touchcancel', lifted, { passive: true });
