@@ -5,7 +5,7 @@
 
     const root = document.documentElement;
     const phone = matchMedia('(max-width: 700px)');
-    const homepage = new URL('../index.html', document.currentScript.src);
+    const homepage = new URL('../', document.currentScript.src);
     const onIndex = Boolean(document.querySelector('.hero .navigation-panel'));
     const indexURL = onIndex ? new URL(location.href) : homepage;
     const icon = '<span class="menu-icon" aria-hidden="true"><span></span><span></span><span></span></span>';
@@ -38,7 +38,7 @@
     const groups = menu.querySelectorAll('.nav-group');
     const destinations = [
       ['Home', '#home'], ['About me', '#about'], ['Projects', '#projects'], ['Skills', '#skills'],
-      ['Let’s connect', '#connect'], ['Insights', 'blog.html'], ['Ask Josh', null]
+      ['Let’s connect', '#connect'], ['Insights', 'blog'], ['Ask Josh', null]
     ];
     destinations.forEach(([label, href], i) =>
       {

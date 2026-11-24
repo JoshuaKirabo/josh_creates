@@ -164,7 +164,7 @@
     const PAGE_TITLES =
       {
         "/": { kicker: "Home", lines: [], name: "Home" },
-        "/blog.html": { kicker: "Insights", lines: ["Josh’s", "Thoughts."], name: "Insights" },
+        "/blog": { kicker: "Insights", lines: ["Josh’s", "Thoughts."], name: "Insights" },
         "/case-studies": { kicker: "Company · Outcomes", lines: [], name: "Outcomes" },
         "/data-engineering": { kicker: "Service 01 / 05", eyebrow: "Core Infrastructure", lines: ["Data", "Engineering."] },
         "/ai-engineering": { kicker: "Service 02 / 05", eyebrow: "Autonomous Architecture", lines: ["AI", "Engineering."] },
@@ -182,7 +182,7 @@
       };
     function turnCardFor(url)
       {
-        const path = url.pathname.replace(/\/$/, "").replace(/\/index\.html$/, "") || "/";
+        const path = url.pathname.replace(/\/$/, "").replace(/\.html$/, "").replace(/\/index$/, "") || "/";
         // The case studies hand back to the Experience section they open from.
         if(path === "/" && url.hash === "#experience") return { kicker: "Experience", lines: [], name: "Experience" };
         const t = PAGE_TITLES[path];
@@ -266,7 +266,7 @@
               {
                 t.dim.set(0);
                 // Only a page that runs this script can finish the turn on arrival.
-                if(url.origin === location.origin && /(\/blog\.html|\/articles\/[^/]+\.html)$/.test(url.pathname))
+                if(url.origin === location.origin && /(\/blog|\/articles\/[^/]+)(\.html)?$/.test(url.pathname))
                   try
                     {
                       sessionStorage.setItem(TURN_KEY, JSON.stringify(card));

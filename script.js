@@ -5760,7 +5760,7 @@ function startSite()
           {
             if(event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || reducedMotion.matches) return;
             const link = event.target.closest?.('a[href]');
-            if(!link || link.closest('.mobile-menu') || !/\/blog\.html$/.test(new URL(link.href, location.href).pathname)) return;
+            if(!link || link.closest('.mobile-menu') || !/\/blog(\.html)?$/.test(new URL(link.href, location.href).pathname)) return;
             event.preventDefault();
             if(leaving) return;
             const fromBar = Boolean(link.closest('.about-topbar'));
@@ -6352,7 +6352,7 @@ function startSite()
         function projectLink(target)
           {
             const link = target.closest?.('.project-link');
-            return link && /\/projects\/[^/]+\.html$/.test(new URL(hrefOf(link)).pathname) ? link : null;
+            return link && /\/projects\/[^/]+(\.html)?$/.test(new URL(hrefOf(link)).pathname) ? link : null;
           }
 
         // Each page is fetched once, as soon as a reader shows interest in it.

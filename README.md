@@ -2,7 +2,7 @@
 
 Joshua Kirabo’s homepage. Plain HTML, CSS and JavaScript, with no frameworks or runtime dependencies.
 
-Open `index.html` directly, or serve this directory with any static web server.
+Run `npx serve` in this directory. `serve.json` turns on clean URLs, so pages answer at `/blog`, `/resume` and `/projects/sleekboard`, and `.html` addresses redirect to them. Links leave off `.html`, so opening `index.html` straight from disk no longer follows them.
 
 - `index.html` — the whole site in one document: Home, then About (Meet Josh, The Core, Education), Projects and Skills as sections, plus the mobile navigation
 - `projects/` — one page per project, opened in a sheet over the site
