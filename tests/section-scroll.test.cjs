@@ -775,6 +775,20 @@ test('section hashes open past the fold and Home hashes open Home', () =>
     assert.equal(setup(false, '#intro').window.scrollY, 0);
   });
 
+test('a menu selection lands on its requested section even if the address changed while closing', () =>
+  {
+    const s = setup(false, '#about');
+    vm.runInContext("sectionLandings['#skills'] = () => window.scrollTo({ top: 6000 });", s.context);
+    s.context.syncProjectsNav = () => {};
+    s.dispatch('document', 'menu-section', { detail: '#skills' });
+    assert.equal(s.context.location.hash, '#skills');
+    assert.equal(s.context.document.title, 'Skills · JOSH');
+    s.dispatch('window', 'pageshow');
+    assert.equal(s.window.scrollY, 6000, 'a late measurement keeps the selected section');
+    s.dispatch('document', 'menu-section', { detail: '#home' });
+    assert.equal(s.window.scrollY, 0);
+  });
+
 test('enhanced links update the HTML URL and browser history restores the section', () =>
   {
     const s = setup();

@@ -244,118 +244,7 @@ function startSite()
     // Pages without the hero (Projects) keep the backdrop and top bar effects below;
     // everything hero-specific guards itself.
 
-    // Keep both controls anchored. Only the hidden links move into the native dialog;
-    // reparenting the live hamburger used to interrupt its press/morph on mobile.
-    // Home's header and About's top bar each carry a hamburger for the one menu.
-    const menuToggles = [...document.querySelectorAll('.hero .menu-toggle, .about-topbar .menu-toggle')];
-    const menuToggle = menuToggles[0];
-    const menuClose = document.querySelector('.menu-close');
-    const navigationPanel = document.querySelector('.navigation-panel');
     const mobileMenu = document.querySelector('.mobile-menu');
-    if(menuToggle && menuClose && navigationPanel && typeof mobileMenu?.showModal === 'function')
-      {
-        const dialogHeader = mobileMenu.querySelector('.site-header');
-        const homePosition = document.createComment('Navigation returns here on close.');
-        navigationPanel.before(homePosition);
-        let menuOpen = false;
-        let revision = 0;
-        let returnFocus = menuToggle;
-        document.documentElement.classList.add('menu-ready');
-
-        function positionMenuReveal(event)
-          {
-            if(!mobileMenu.open) return;
-            const bounds = mobileMenu.getBoundingClientRect();
-            const button = menuClose.getBoundingClientRect();
-            const x = button.left + button.width / 2 - bounds.left;
-            const y = button.top + button.height / 2 - bounds.top;
-            // Reach the farthest corner from the actual trigger, including safe areas.
-            const radius = Math.hypot(Math.max(x, bounds.width - x), Math.max(y, bounds.height - y));
-            mobileMenu.style.setProperty('--menu-reveal-x', `${x}px`);
-            mobileMenu.style.setProperty('--menu-reveal-y', `${y}px`);
-            mobileMenu.style.setProperty('--menu-reveal-radius', `${Math.ceil(radius) + 1}px`);
-            if(event?.type === 'resize')
-              {
-                // Browser chrome/rotation must never expose a newly enlarged corner while
-                // the circle catches up. Settle only the reveal, leaving icon motion alone.
-                mobileMenu.getAnimations().filter(animation => animation.transitionProperty === 'clip-path')
-                  .forEach(animation => animation.finish());
-              }
-          }
-
-        function restoreNavigation()
-          {
-            homePosition.after(navigationPanel);
-            mobileMenu.close();
-            document.documentElement.classList.remove('menu-open');
-            if(phoneLayout.matches) returnFocus.focus({ preventScroll: true });
-            returnFocus = menuToggle;
-          }
-
-        async function setMenuOpen(open, instant = false)
-          {
-            if(open && !phoneLayout.matches) return;
-            const currentRevision = ++revision;
-            menuOpen = open;
-            menuToggles.forEach(toggle => toggle.setAttribute('aria-expanded', String(open)));
-
-            if(open && !mobileMenu.open)
-              {
-                dialogHeader.append(navigationPanel);
-                document.documentElement.classList.add('menu-open');
-                mobileMenu.showModal();
-                positionMenuReveal();
-                menuClose.focus({ preventScroll: true });
-                if(!instant && !document.documentElement.classList.contains('menu-keyboard'))
-                  {
-                    // Paint the closed pose in the top layer before changing it. Reading
-                    // styles in the same task as showModal can still skip the first transition.
-                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                    if(currentRevision !== revision) return;
-                  }
-              }
-            mobileMenu.classList.toggle('is-open', open);
-            if(open || !mobileMenu.open) return;
-            if(!instant)
-              {
-                // Keep the toggle available throughout exit; reopening cancels this completion.
-                await Promise.allSettled(mobileMenu.getAnimations({ subtree: true }).map(animation => animation.finished));
-              }
-            if(currentRevision === revision && !menuOpen) restoreNavigation();
-          }
-
-        function toggleMenu(event)
-          {
-            // A touch-generated click can have detail=0. Only real keyboard input should
-            // disable motion; pointerdown/keydown below track that independently.
-            if(!menuOpen && menuToggles.includes(event?.currentTarget)) returnFocus = event.currentTarget;
-            setMenuOpen(!menuOpen);
-          }
-        menuToggles.forEach(toggle => toggle.addEventListener('click', toggleMenu));
-        menuClose.addEventListener('click', toggleMenu);
-        mobileMenu.addEventListener('cancel', (event) =>
-          {
-            event.preventDefault();
-            setMenuOpen(false);
-          });
-        navigationPanel.addEventListener('click', (event) =>
-          {
-            const link = event.target.closest('a');
-            if(link && mobileMenu.open)
-              {
-                if(link.matches('[data-section-link]') && link.hash === '#about') returnFocus = document.querySelector('#about') || menuToggle;
-                setMenuOpen(false);
-              }
-          });
-        document.addEventListener('keydown', () => document.documentElement.classList.add('menu-keyboard'), true);
-        document.addEventListener('pointerdown', () => document.documentElement.classList.remove('menu-keyboard'), true);
-        document.addEventListener('touchstart', () => document.documentElement.classList.remove('menu-keyboard'), { capture: true, passive: true });
-        phoneLayout.addEventListener('change', () =>
-          {
-            if(!phoneLayout.matches) setMenuOpen(false, true);
-          });
-        window.addEventListener('resize', positionMenuReveal, { passive: true });
-      }
 
     // Critically damped 2D spring. Response is Apple's settle window in seconds, not a duration.
     function createSpring2D(response, paint, { restDistance = .1, restSpeed = .1 } = {})
@@ -1516,7 +1405,7 @@ function startSite()
             // paint keeps the clearing, reading, and reapplying in a single frame.
             foldStale = true;
             if(wasRunning) navigate(wasForward ? boundary : 0);
-            else if(wasAtAbout) window.scrollTo({ top: boundary, behavior: 'instant' });
+            else if(wasAtAbout && nextBoundary !== previousBoundary) window.scrollTo({ top: boundary, behavior: 'instant' });
             schedulePaint();
           }
 
@@ -1527,22 +1416,27 @@ function startSite()
         // Everything but Home's own anchors lives past the fold.
         const pastFold = () => !['#home', '#intro'].includes(sectionHash());
 
-        function restoreSection()
+        function restoreSection(hash)
           {
             stop();
-            document.title = sectionTitle();
-            // Projects and Skills land themselves, further on than About's top. They
-            // measure against About's layout past the fold, which the fold has to
-            // paint first, or the browser snaps to where their stops were on Home.
-            if(sectionLandings[location.hash])
+            document.title = sectionTitle(hash);
+            if(sectionLandings[hash])
               {
                 if(window.scrollY < boundary) window.scrollTo({ top: boundary, behavior: 'instant' });
                 paintImmediately();
+                landOnSection(hash);
               }
-
-            if(landOnSection(location.hash)) return;
-            navigate(pastFold() ? boundary : 0, true);
+            else navigate(['', '#home', '#intro'].includes(hash) ? 0 : boundary, true);
           }
+
+        document.addEventListener('menu-section', event =>
+          {
+            const hash = event.detail;
+            event.preventDefault();
+            if(sectionHash() !== hash) history.pushState(sectionEntry, '', hash);
+            restoreSection(hash);
+            document.querySelector(hash === '#home' ? '#intro' : hash)?.focus({ preventScroll: true });
+          });
         let traversedHash = null;
 
         // The fold is built from About's first screen. Deeper in, the section on
@@ -1693,8 +1587,8 @@ function startSite()
             history.replaceState(history.state ?? sectionEntry, '', hash);
             // The open navigation dialog holds the page still, so the landing waits
             // until it has closed.
-            if(mobileMenu?.open) mobileMenu.addEventListener('close', restoreSection, { once: true });
-            else restoreSection();
+            if(mobileMenu?.open) mobileMenu.addEventListener('close', () => restoreSection(hash), { once: true });
+            else restoreSection(hash);
           });
 
         reducedMotion.addEventListener('change', () =>
@@ -5868,7 +5762,7 @@ function startSite()
           {
             if(event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || reducedMotion.matches) return;
             const link = event.target.closest?.('a[href]');
-            if(!link || !/\/blog\.html$/.test(new URL(link.href, location.href).pathname)) return;
+            if(!link || link.closest('.mobile-menu') || !/\/blog\.html$/.test(new URL(link.href, location.href).pathname)) return;
             event.preventDefault();
             if(leaving) return;
             const fromBar = Boolean(link.closest('.about-topbar'));
@@ -6142,7 +6036,11 @@ function startSite()
             // A section resets once it has been left, or jumped away from while in
             // view (a key, the scrollbar). One the page has just turned to is still
             // a pixel short of the window as the glide begins, and stays.
-            if(now === 0) if(!entered || leaving || was > 0) reset();
+            // A shorter top bar can leave a sliver of the next section on the hero.
+            if(now <= .05)
+              {
+                if(!entered || leaving || was > 0) reset();
+              }
             else if(!entered && now >= .35) enter();
             else if(entered && !leaving && !rising && now < .5) leave();
             else if(leaving && rising && now >= .35) enter();
@@ -6402,6 +6300,8 @@ function startSite()
       <button class="project-sheet-back" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg>Back to projects</button>
     </div>
     <div class="project-sheet-content"></div>`;
+        const menuButton = document.querySelector('.hero .menu-toggle')?.cloneNode(true);
+        if(menuButton) sheet.querySelector('.project-sheet-bar').append(menuButton);
         document.body.append(sheet);
         initProjectPaging(sheet);
         const heroes = new Map();

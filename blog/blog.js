@@ -336,7 +336,7 @@
           const a = e.target.closest && e.target.closest("a[href]");
           if(!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
           // Josh's top bar navigates like the rest of the site, without DAQ's page turn.
-          if(a.getAttribute("href").startsWith("#") || a.closest(".blog-topbar")) return;
+          if(a.getAttribute("href").startsWith("#") || a.closest(".blog-topbar, .mobile-menu")) return;
           let url;
           try
             {
