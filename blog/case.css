@@ -48,7 +48,7 @@
 .tellistic-overview .case-heading { margin-bottom: 16px; font-size: clamp(28px, 5vw, 56px); }
 .tellistic-overview .case-arch-viewport {
   position: relative;
-  aspect-ratio: 1504 / 540;
+  aspect-ratio: 1168 / 704;
   min-height: 0;
   overflow: hidden;
   background: #030303;

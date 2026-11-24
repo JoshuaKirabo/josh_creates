@@ -74,8 +74,11 @@ Recommended order: **001 → 002 → 003 → 004 → 005**.
 | [026 · Give the batch a directional trail](026-trail-the-survey-batch.md) | Medium | TODO | 025 |
 | [027 · Show PySpark flattening repeated answers](027-animate-flattening-in-databricks.md) | Low | TODO | 025 |
 | [028 · Sequence the Databricks handoffs](028-sequence-databricks-handoffs.md) | High | DONE | Current 17-second diagram |
+| [033 · Restore the file entering each receiver](033-restore-file-entry.md) | High | DONE | 53-second diagram |
 
 Apply 025 first to set the playback clock. Then add the trail and the processing cue in order. Verify the one-screen fit from the article’s architecture link after each change.
+
+033 restores file entry in the 53-second walkthrough.
 
 ### Mobile portfolio scrolling
 

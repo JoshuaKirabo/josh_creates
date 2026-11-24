@@ -1,3 +1,5 @@
+@import url("assets/project-diagram-entrance.css");
+
 @font-face
    {
       font-family: 'Geist Mono';
@@ -10601,82 +10603,6 @@ html.home-return .about-topbar .section-nav-link::before
    {
       transform: scaleX(0);
       transition: transform .25s var(--ease-out);
-   }
-
-/* The first arrival draws the figure, as ChainGPT's mark draws itself: each
-   box's outline in the order data flows (--flow, 70ms apart), then its fill,
-   labels and routes, and last the selected stage's logos in colour. Every
-   box is 176 by 88, so each outline is 528 long; script sets each route's
-   --len. */
-.how-motion.is-drawing .arch-region
-   {
-      animation: arch-fade .5s var(--ease-out) .45s both;
-   }
-
-.how-motion.is-drawing .arch-node-body
-   {
-      stroke-dasharray: 528;
-      animation: arch-outline .6s var(--ease-out-quart) calc(.5s + var(--flow, 0) * 70ms) both, arch-fill .3s var(--ease-out) calc(.8s + var(--flow, 0) * 70ms) both;
-   }
-
-.how-motion.is-drawing .arch-node > :not(.arch-node-body)
-   {
-      animation: arch-fade .3s var(--ease-out) calc(.85s + var(--flow, 0) * 70ms) both;
-   }
-
-.how-motion.is-drawing .arch-edge:not([data-kind="control"]) .arch-route
-   {
-      stroke-dasharray: var(--len);
-      animation: arch-route .45s cubic-bezier(.22, 1, .36, 1) calc(.75s + var(--flow, 0) * 70ms) both;
-   }
-
-/* A route's arrowhead draws even while its line is hidden, so each route
-   stays out of sight until its line starts. */
-.how-motion.is-drawing .arch-edge:not([data-kind="control"])
-   {
-      animation: arch-fade .12s linear calc(.75s + var(--flow, 0) * 70ms) both;
-   }
-
-.how-motion.is-drawing .arch-edge[data-kind="control"], .how-motion.is-drawing .arch-ports rect
-   {
-      animation: arch-fade .3s var(--ease-out) calc(.85s + var(--flow, 0) * 70ms) both;
-   }
-
-.how-motion.is-drawing .arch-node[data-selected="true"] .arch-icon-color
-   {
-      animation: arch-fade .25s var(--ease-out) 1.95s both;
-   }
-
-@keyframes arch-outline
-   {
-      from
-         {
-            stroke-dashoffset: 528;
-         }
-   }
-
-@keyframes arch-fill
-   {
-      from
-         {
-            fill-opacity: 0;
-         }
-   }
-
-@keyframes arch-route
-   {
-      from
-         {
-            stroke-dashoffset: var(--len);
-         }
-   }
-
-@keyframes arch-fade
-   {
-      from
-         {
-            opacity: 0;
-         }
    }
 
 /* The inspector rises through its own top edge once the figure is in:

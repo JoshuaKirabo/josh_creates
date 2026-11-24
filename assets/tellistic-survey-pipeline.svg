@@ -1,6 +1,7 @@
+<?xml-stylesheet type="text/css" href="project-diagram-entrance.css"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" role="img" aria-labelledby="title desc">
 <title id="title">Survey ETL architecture</title>
-<desc id="desc">SurveyCTO structures field submissions into a CSV. The clipboard beside SurveyCTO represents its Monitor tab for submission quality checks and review. AzCopy uploads the CSV to /container9/folder9/data.csv in Azure Data Lake Storage Gen2. The Blob Created event starts the ADF pipeline. Inside Azure Data Factory, the separate Run monitor tracks the triggered pipeline and its activities. Data Factory uses its Databricks linked service to connect to the workspace and a personal access token (PAT) to authenticate the notebook run request. The Databricks notebook retrieves its storage credential through a Key Vault-backed secret scope, reads the raw CSV, and writes one cleaned CSV part file to updated_data3/. On notebook success, Copy Data reads updated_data3/p* through Azure Integration Runtime, clears dbo.data3, and inserts the rows into that Azure SQL Database table.</desc>
+<desc id="desc">Clients upload their files to the client portal. The portal connects to SurveyCTO, where the collected records are exported as CSV. AzCopy uploads the CSV to /container9/folder9/data.csv in Azure Data Lake Storage Gen2. The Blob Created event starts the ADF pipeline. Inside Azure Data Factory, the Run monitor tracks the triggered pipeline and its activities. Data Factory uses its Databricks linked service to connect to the workspace and a personal access token (PAT) to authenticate the notebook run request. The Databricks notebook retrieves its storage credential through a Key Vault-backed secret scope, reads the raw CSV, and writes one cleaned CSV part file to updated_data3/. On notebook success, Copy Data reads updated_data3/p* through Azure Integration Runtime, clears dbo.data3, and inserts the rows into that Azure SQL Database table.</desc>
 <metadata>ADLS Gen2 connector icon from Microsoft Learn’s Azure Data Factory documentation: https://learn.microsoft.com/en-us/azure/data-factory/connector-azure-data-lake-storage. Service icons from the Microsoft Azure Architecture Center and Microsoft Fabric icon collections. SurveyCTO mark from surveycto.com. Python mark from the portfolio’s original-colour Devicon assets. Apache Spark wordmark from spark.apache.org/images/spark-logo-rev.svg.</metadata>
 <defs>
 <symbol id="brand-azure" viewBox="0 0 36 36"><title>Microsoft Azure</title><image width="36" height="36" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNNS4zMzQ5MiAxLjM3NDkxQzUuNDQ3MTcgMS4wNDIyOSA1Ljc1OTA5IDAuODE4MzU5IDYuMTEwMTQgMC44MTgzNTlIMTEuMjVMNS45MTUxMyAxNi42MjU1QzUuODAyODcgMTYuOTU4MSA1LjQ5MDk1IDE3LjE4MiA1LjEzOTkxIDE3LjE4MkgxLjEzOTY4QzAuNTc5OTM2IDE3LjE4MiAwLjE4NTQ2NiAxNi42MzI1IDAuMzY0NDYxIDE2LjEwMjJMNS4zMzQ5MiAxLjM3NDkxWiIgZmlsbD0idXJsKCNwYWludDBfbGluZWFyXzYxMDJfMTM0NDY5KSIgLz48cGF0aCBkPSJNMTMuNTUxNyAxMS40NTQ2SDUuNDUxMjZDNS4xMTA5IDExLjQ1NDYgNC45NDY1NyAxMS44NzE1IDUuMTk1MzkgMTIuMTAzN0wxMC40MDA1IDE2Ljk2MThDMTAuNTUyIDE3LjEwMzIgMTAuNzUxNSAxNy4xODE5IDEwLjk1ODcgMTcuMTgxOUgxNS41NDUzTDEzLjU1MTcgMTEuNDU0NloiIGZpbGw9IiMwMDc4RDQiIC8+PHBhdGggZD0iTTYuMTEwMTQgMC44MTgzNTlDNS43NTkwOSAwLjgxODM1OSA1LjQ0NzE3IDEuMDQyMjkgNS4zMzQ5MiAxLjM3NDkxTDAuMzY0NDYxIDE2LjEwMjJDMC4xODU0NjYgMTYuNjMyNSAwLjU3OTkzNiAxNy4xODIgMS4xMzk2OCAxNy4xODJINS4xMzk5MUM1LjQ5MDk1IDE3LjE4MiA1LjgwMjg3IDE2Ljk1ODEgNS45MTUxMyAxNi42MjU1TDYuOTAzMjcgMTMuNjk3NkwxMC40MDA1IDE2Ljk2MTdDMTAuNTUyIDE3LjEwMzIgMTAuNzUxNSAxNy4xODE4IDEwLjk1ODggMTcuMTgxOEgxNS41NDU0TDEzLjU1MTcgMTEuNDU0NUg3LjY2MDMyTDExLjI1IDAuODE4MzU5SDYuMTEwMTRaIiBmaWxsPSJ1cmwoI3BhaW50MV9saW5lYXJfNjEwMl8xMzQ0NjkpIiAvPjxwYXRoIGQ9Ik0xMi42NjUgMS4zNzQ3OEMxMi41NTI4IDEuMDQyMTcgMTIuMjQwOSAwLjgxODIzNyAxMS44ODk4IDAuODE4MjM3SDYuMTM2MjlINi4xNjI1NEM2LjUxMzU4IDAuODE4MjM3IDYuODI1NTEgMS4wNDIxNyA2LjkzNzc2IDEuMzc0NzhMMTEuOTA4MiAxNi4xMDIxQzEyLjA4NzIgMTYuNjMyNCAxMS42OTI3IDE3LjE4MTkgMTEuMTMzIDE3LjE4MTlIMTEuMDQ1NEgxNi44NjAzQzE3LjQyIDE3LjE4MTkgMTcuODE0NSAxNi42MzI0IDE3LjYzNTUgMTYuMTAyMUwxMi42NjUgMS4zNzQ3OFoiIGZpbGw9InVybCgjcGFpbnQyX2xpbmVhcl82MTAyXzEzNDQ2OSkiIC8+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJwYWludDBfbGluZWFyXzYxMDJfMTM0NDY5IiB4MT0iNi4wNzUxMiIgeTE9IjEuMzg0NzYiIHgyPSIwLjczODE3OCIgeTI9IjE3LjE1MTQiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjMTE0QThCIiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzA2NjlCQyIgLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQxX2xpbmVhcl82MTAyXzEzNDQ2OSIgeDE9IjEwLjM0MDIiIHkxPSIxMS40NTY0IiB4Mj0iOS4xMDciIHkyPSIxMS44NzM0IiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHN0b3Agc3RvcC1vcGFjaXR5PSIwLjMiIC8+PHN0b3Agb2Zmc2V0PSIwLjA3MTE3NjgiIHN0b3Atb3BhY2l0eT0iMC4yIiAvPjxzdG9wIG9mZnNldD0iMC4zMjEwMzEiIHN0b3Atb3BhY2l0eT0iMC4xIiAvPjxzdG9wIG9mZnNldD0iMC42MjMwNTMiIHN0b3Atb3BhY2l0eT0iMC4wNSIgLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3Atb3BhY2l0eT0iMCIgLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQyX2xpbmVhcl82MTAyXzEzNDQ2OSIgeDE9IjkuNDU4NTgiIHkxPSIxLjM4NDY3IiB4Mj0iMTUuMzE2OCIgeTI9IjE2Ljk5MjYiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIj48c3RvcCBzdG9wLWNvbG9yPSIjM0NDQkY0IiAvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzI4OTJERiIgLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48L3N2Zz4="/></symbol>
@@ -90,7 +91,19 @@
       .stage-icon { opacity: 1 !important; }
       .run-monitor-route { stroke-dashoffset: 0 !important; }
     }
+    :root { --ease-out: cubic-bezier(.23, 1, .32, 1); --ease-out-quart: cubic-bezier(.25, 1, .5, 1); }
+    /* The batch and moving dots start once the architecture is in place. */
+    .is-drawing :is(.flow, .stream) { visibility: hidden; }
+    :root[data-paused] :is(.stream, .control-route, .run-monitor-route) { animation-play-state: paused; }
   </style>
+  <radialGradient id="receiver-light">
+    <stop stop-color="#d3efff" stop-opacity=".16"/>
+    <stop offset=".48" stop-color="#a4d8ff" stop-opacity=".34"/>
+    <stop offset="1" stop-color="#83caff" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="receiver-bloom" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur stdDeviation="3"/>
+  </filter>
   <filter id="icon-light" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
     <feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/>
     <feComponentTransfer><feFuncA type="linear" slope=".55"/></feComponentTransfer>
@@ -106,43 +119,47 @@
     <text class="terminal-code" x="12" y="44"><tspan fill="#ff8467">› </tspan>cfg[sp_key] = dbutils.secrets.get(scope, key)</text>
     <g opacity="0">
       <text class="terminal-code" x="12" y="57"><tspan fill="#ff8467">› </tspan>dbutils.fs.mount(uri, path, extra_configs=cfg)</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.46705;0.46875;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4056603773;0.4308176101;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="70.0"><tspan fill="#ff8467">› </tspan>df = spark.read.csv(raw, header=True)</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.4696;0.473;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4433962264;0.4451650944;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="83.0"><tspan fill="#ff8467">› </tspan>n = regexp_replace("amount", "[$,]", "")</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.5375065;0.5417055;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.5188679245;0.525208574;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="96.0"><tspan fill="#ff8467">› </tspan>df = df.withColumn("amount", n.cast("int"))</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.5624965;0.566704;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.5566037736;0.5661275221;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="109.0"><tspan fill="#ff8467">› </tspan>df = df.withColumn("date", to_date("date"))</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.575;0.579199;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.5849056604;0.5944166346;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="122.0"><tspan fill="#ff8467">› </tspan>key = "employee_id"</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.587495;0.591694;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.6132075472;0.6282410225;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="135.0"><tspan fill="#ff8467">› </tspan>df = df.replace(id_map, subset=[key])</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.5954;0.599599;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.641509434;0.6507745977;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="148.0"><tspan fill="#ff8467">› </tspan>df = df.filter(col(key) != key)</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.612502;0.616701;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.679245283;0.6855837766;1" values="0;0;1;1"/>
     </g>
     <g opacity="0">
       <text class="terminal-code" x="12" y="161.0"><tspan fill="#ff8467">› </tspan>df.coalesce(1).write.csv(processed)</text>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.6375005;0.6416995;1" values="0;0;1;1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.716981132;0.7241841883;1" values="0;0;1;1"/>
     </g>
   </g>
   <!-- The page outline persists through cleaning. It becomes rows when Copy Activity loads SQL. -->
   <path id="payload-page" d="M-12-15H4l8 8v22h-24z M4-15v8h8" stroke-width="1.6" stroke-linejoin="round"/>
+  <g id="payload-record">
+    <use href="#payload-page" fill="#151715" stroke="#eeeae2"/>
+    <path d="M-7-4H3M-7 1H7M-7 6H4" fill="none" stroke="#eeeae2" stroke-width="1.4"/>
+  </g>
   <g id="payload-csv">
     <use href="#payload-page" fill="#151715" stroke="#eeeae2"/>
     <text x="0" y="6" text-anchor="middle" style="font: 600 10px 'Geist Mono', monospace; fill:#fffaf0">CSV</text>
@@ -159,70 +176,59 @@
   </g>
   <text id="csv-payload-label" text-anchor="middle" class="intake-caption" y="-20">CSV file</text>
   <g id="notebook-payload" class="flow" opacity="0">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.524;0.528199;0.6605015;0.664998;1" values="0;0;1;1;0;0"/>
-    <use href="#payload-csv"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.6325025;0.642303;1" values="1;1;0;0"/></use>
-    <use href="#payload-clean" opacity="0"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.6325025;0.642303;1" values="0;0;1;1"/></use>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4716981132;0.7641509434;1" values="0;1;0;0"/>
+    <use href="#payload-csv"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7094365285;0.7252194453;1" values="1;1;0;0"/></use>
+    <use href="#payload-clean" opacity="0"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7094365285;0.7252194453;1" values="0;0;1;1"/></use>
   </g>
   <g id="azcopy-terminal" data-stage="upload" class="stage-icon stage-mark">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0780045;0.0850042;0.086003;0.0912526;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0633962264;0.0660377358;0.1037735849;0.1103773585;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     <rect x="-28" y="-22" width="56" height="44" rx="5"/>
     <path d="M-27-10h54m-44 8 7 6-7 6m13 0h9"/>
   </g>
   <g data-stage="intake" class="stage-icon" id="survey-art">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0150025;0.0220022;0.023001;0.0282506;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0283018868;0.0613255316;0.0660377358;0.0683959718;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     <use href="#brand-surveycto" x="-26" y="-31" width="50" height="50"/>
     <path class="stage-mark" d="M-22 24h44m-44 9H6"/>
-  </g>
-  <g id="survey-monitor-icon" class="stage-icon" data-stage="survey-monitor" fill="none" stroke="#bad9a0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0150025;0.0220022;0.023001;0.0282506;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
-    <path d="M-4-10h-4a2 2 0 0 0-2 2v18a2 2 0 0 0 2 2H8a2 2 0 0 0 2-2V-8a2 2 0 0 0-2-2H4"/>
-    <rect x="-4" y="-12" width="8" height="5" rx="1.5"/>
-    <path d="m-5 2 3.5 3.5L5-2"/>
   </g>
   <g id="survey">
     <use href="#survey-art"/>
     <text class="name" y="67">SurveyCTO</text>
-    <text class="intake-caption" y="86">Intake &amp;</text>
-    <text class="intake-caption" y="102">standardization</text>
-    <path class="monitor-link" d="M0 111v16"/>
-    <use href="#survey-monitor-icon" transform="translate(0 144)"/>
-    <text class="control-name" x="21" y="150" text-anchor="start">SurveyCTO Monitor</text>
   </g>
   <g id="lake-folder" fill="none" stroke="#b8d8eb" stroke-width="2" stroke-linejoin="round">
     <path d="M-20-10q0-2 2-2h11l5 5h20q2 0 2 2v17q0 2-2 2h-36q-2 0-2-2z"/>
   </g>
   <g data-stage="notebook" class="stage-icon" id="notebook-art">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3302;0.3371998;0.33955;0.3447996;0.45855;0.4655497;0.469498;0.4747476;0.524;0.5309997;0.664998;0.6702476;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3123726251;0.319275327;0.3213443396;0.3249858491;0.4003454691;0.4047222647;0.4418867924;0.4460742925;0.4716981132;0.4961437156;0.7641509434;0.7658297031;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     <use href="#brand-databricks" x="-30" y="-39" width="60" height="60"/>
     <path class="stage-mark" d="M-23 30h11m7 0H6m7 0h11"/>
     <!-- The notebook at work: a mark lights for each cleaning step, then the three
          merge into one line as coalesce(1) writes a single part file. -->
     <g class="clean-motion" fill="none" stroke="#ff5a3c" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-      <path d="M-23 30h11" opacity="0"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.5375065;0.5415015;0.6375005;0.641504;1" values="0;0;1;1;0;0"/></path>
-      <path d="M-5 30H6" opacity="0"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.5624965;0.5665;0.6375005;0.641504;1" values="0;0;1;1;0;0"/></path>
-      <path d="M13 30h11" opacity="0"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.587495;0.5914985;0.6375005;0.641504;1" values="0;0;1;1;0;0"/></path>
-      <path d="M-23 30h47" opacity="0"><animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.6375005;0.641504;0.664998;0.6690015;1" values="0;0;1;1;0;0"/></path>
+      <path d="M-23 30h11" opacity="0"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.5188679245;0.5249005263;0.716981132;0.7238488232;1" values="0;0;1;1;0;0"/></path>
+      <path d="M-5 30H6" opacity="0"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.5566037736;0.5656657646;0.716981132;0.7238488232;1" values="0;0;1;1;0;0"/></path>
+      <path d="M13 30h11" opacity="0"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.6132075472;0.6275410834;0.716981132;0.7238488232;1" values="0;0;1;1;0;0"/></path>
+      <path d="M-23 30h47" opacity="0"><animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.716981132;0.7238488232;0.7641509434;0.7654312151;1" values="0;0;1;1;0;0"/></path>
     </g>
   </g>
   <g id="notebook">
     <use href="#notebook-art"/>
     <text class="name" y="54">Databricks Notebook</text>
     <use data-stage="pyspark" class="stage-icon" href="#brand-python" x="-38" y="62" width="21" height="21">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.524;0.5309997;0.664998;0.6702476;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.4716981132;0.4961437156;0.7641509434;0.7658297031;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
     <use data-stage="pyspark" class="stage-icon" href="#brand-spark" x="-9" y="61" width="47" height="24">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.524;0.5309997;0.664998;0.6702476;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.4716981132;0.4961437156;0.7641509434;0.7658297031;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
   </g>
   <g data-stage="copy" class="stage-icon" id="copy-icon">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.776501;0.7835008;0.882496;0.8877456;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.820754717;0.8277790601;0.9433962264;0.9487977237;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     <path class="stage-mark" d="M-34-15h48m-10-9 10 9-10 9M-20 11h54m-10-9 10 9-10 9"/>
   </g>
   <g id="copy-label">
     <text class="name" y="37">Copy Data activity</text>
   </g>
   <g data-stage="sql" class="stage-icon" id="sql-art">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.83;0.8369998;0.877498;0.8827476;0.908506;0.9155058;0.9874965;0.9927461;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.895174234;0.9090574114;0.9396239246;0.9436551064;0.9701588264;0.9734289064;0.9960679944;0.9977188487;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     <use href="#brand-sql" x="-30" y="-29" width="60" height="60"/>
   </g>
   <g id="sql">
@@ -236,16 +242,16 @@
   </g>
   <g id="vault">
     <use data-stage="vault" class="stage-icon" href="#brand-vault" x="-14" y="-14" width="28" height="28">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3914;0.3983997;0.4067;0.4119496;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3573113207;0.3621668285;0.3679245283;0.3712070157;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
     <text class="name" y="48">Key Vault</text><text class="minor" y="68">Secrets</text>
   </g>
   <text id="blob-notice" class="activity-id">BLOB CREATED</text>
   <g id="blob-created-toast">
-    <!-- Begin when the upload packet reaches raw storage on the 20-second clock. -->
+    <!-- Begin when the upload packet reaches raw storage. -->
     <g class="flow" opacity="0">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1510025;0.3995005;0.4094965;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1" values="0;0;1;1;0;0"/>
-      <animateTransform attributeName="transform" type="translate" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1510025;0.3995005;0.4094965;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1" values="0 4;0 4;0 0;0 0;0 4;0 4"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1766956021;0.3629304246;0.3696731332;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1" values="0;0;1;1;0;0"/>
+      <animateTransform attributeName="transform" type="translate" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1766956021;0.3629304246;0.3696731332;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1" values="0 4;0 4;0 0;0 0;0 4;0 4"/>
       <use href="#blob-notice"/>
     </g>
     <use class="run-still" href="#blob-notice"/>
@@ -260,17 +266,17 @@
   </g>
   <g id="launch-captions">
     <g opacity="0">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;.1513;.2325;1" values="0;1;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.179245283;0.2547169812;1" values="0;1;0;0"/>
       <text y="0" style="font-size:16px;fill:#b2defc">Linked service</text>
       <text y="18" style="font-size:13px;fill:#d0dbe3">Connecting to workspace</text>
     </g>
     <g opacity="0">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;.2325;.31;1" values="0;1;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2547169812;0.2924528302;1" values="0;1;0;0"/>
       <text y="0" style="font-size:16px;fill:#ffb699">Personal access token</text>
       <text y="18" style="font-size:13px;fill:#d0dbe3">Authenticating run request</text>
     </g>
     <g opacity="0">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;.31;.385;1" values="0;1;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2924528302;0.3528718091;1" values="0;1;0;0"/>
       <text y="0" style="font-size:16px;fill:#a5ddb1">Request authenticated</text>
       <text y="18" style="font-size:13px;fill:#d0dbe3">Starting notebook</text>
     </g>
@@ -281,12 +287,12 @@
   </g>
   <g id="storage-trigger">
     <path data-stage="trigger" class="stage-icon" d="M2-11-7 2h6l-2 9L8-3H2z" fill="#a3d5ef">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.1513;0.1837967;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.179245283;0.2156604388;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </path>
     <text class="name" y="48">Storage event trigger</text>
   </g>
   <g id="run-monitor-icon" class="stage-icon" data-stage="run-monitor" fill="none" stroke="#c9c8c5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.1513;0.1933941;0.9874965;0.9932;1" values=".45;.45;1;1;.45;.45"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.179245283;0.2264150943;0.9960679944;0.9978615877;1" values=".45;.45;1;1;.45;.45"/>
     <rect x="-12" y="-10" width="24" height="19" rx="3"/>
     <path d="M-9 1h5l3-5 3 9 3-6h4M-5 13H5M0 9v4"/>
   </g>
@@ -294,235 +300,261 @@
     <use href="#run-monitor-icon"/>
     <text class="control-name" y="30">Run monitor</text>
   </g>
-  <!-- Data routes shared by the arrows and their moving dots. -->
-  <g id="field-data-sources">
-    <rect class="boundary" x="-5" y="-20" width="307" height="81" rx="10"/>
-    <text class="name" x="148.5" y="2" text-anchor="middle">Field data sources</text>
-    <g data-stage="sources" class="stage-icon" fill="none" stroke="#deddd9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.005015;0.0102646;0.99065;0.9976498;1" values="1;1;.54;.54;1;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
-      <g transform="translate(22 24)">
-        <path d="M-8-11H3l5 5v17H-8zM3-11v5h5M-5-2h3m3 0h3M-5 2h3m3 0h3M-5 6h3m3 0h3"/>
-      </g>
-      <g transform="translate(76 24)">
-        <rect x="-10" y="-9" width="20" height="18" rx="2"/>
-        <path d="M-10-3h20M-10 3h20M-3-3V9M4-3V9"/>
-      </g>
-      <g transform="translate(130 24)">
-        <path d="M-8-11H3l5 5v17H-8zM3-11v5h5M-5-2h5M-5 2h10M-5 6h7"/>
-      </g>
-      <g transform="translate(184 24)">
-        <rect x="-11" y="-9" width="22" height="18" rx="2"/>
-        <circle cx="-5" cy="-4" r="1.5"/>
-        <path d="m-10 6 6-6 4 4 5-7 6 8"/>
-      </g>
-      <g transform="translate(255 24)">
-        <path d="M1-10H-9v20H7V4M-6-5h5M-6-1h3M-6 6h4"/>
-        <path d="m0 1 8-9 3 3-8 9-4 1zM6-6l3 3"/>
-      </g>
+  <g id="field-icons" data-stage="sources" class="stage-icon" fill="none" stroke="#deddd9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.0094606874;0.0193639425;0.9970596831;0.999260927;1" values="1;1;.54;.54;1;1" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <g transform="translate(22 24)">
+      <path d="M-8-11H3l5 5v17H-8zM3-11v5h5M-5-2h3m3 0h3M-5 2h3m3 0h3M-5 6h3m3 0h3"/>
     </g>
+    <g transform="translate(76 24)">
+      <rect x="-10" y="-9" width="20" height="18" rx="2"/>
+      <path d="M-10-3h20M-10 3h20M-3-3V9M4-3V9"/>
+    </g>
+    <g transform="translate(130 24)">
+      <path d="M-8-11H3l5 5v17H-8zM3-11v5h5M-5-2h5M-5 2h10M-5 6h7"/>
+    </g>
+    <g transform="translate(184 24)">
+      <rect x="-11" y="-9" width="22" height="18" rx="2"/>
+      <circle cx="-5" cy="-4" r="1.5"/>
+      <path d="m-10 6 6-6 4 4 5-7 6 8"/>
+    </g>
+    <g transform="translate(255 24)">
+      <path d="M1-10H-9v20H7V4M-6-5h5M-6-1h3M-6 6h4"/>
+      <path d="m0 1 8-9 3 3-8 9-4 1zM6-6l3 3"/>
+    </g>
+  </g>
+  <g id="field-labels">
+    <text class="name" x="148.5" y="2" text-anchor="middle">Field data sources</text>
     <g class="source-label" text-anchor="middle">
       <text x="22" y="52">.csv</text><text x="76" y="52">.xlsx</text>
       <text x="130" y="52">.pdf</text><text x="184" y="52">.jpg</text>
       <text x="255" y="52">Paper records</text>
     </g>
   </g>
-  <path id="w-launch" d="M674 153H582V295H652"/>
-  <path id="p-launch" d="M271 155V183H195"/>
-  <path id="w-field-intake" d="M56 203V283"/>
-  <path id="p-field-intake" d="M273 -23V0"/>
-  <path id="w-export" d="M88 322H335"/>
-  <path id="w-to-lake" d="M114 322H331"/>
-  <path id="w-read" d="M384 322H655"/>
-  <path id="w-write" d="M655 340H440V480H385"/>
-  <path id="w-match" d="M384 490H651"/>
-  <path id="w-load" d="M729 490H1030"/>
-  <path id="p-export" d="M253 22H89"/>
-  <path id="p-to-lake" d="M47 22H4V181H16"/>
-  <path id="p-read" d="M109 181H142V191H153"/>
-  <path id="p-write" d="M155 200H149V231H132"/>
-  <path id="p-match" d="M108 260V313H152"/>
-  <path id="p-load" d="M170 335V355"/>
-<symbol id="layout-wide" viewBox="0 70 1504 540">
+  <g id="client-portal">
+    <rect class="boundary" x="-76" y="-20" width="152" height="40" rx="8"/>
+    <g data-stage="portal" fill="none" stroke="#deddd9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-64" y="-11" width="27" height="22" rx="3"/>
+      <path d="M-64-5h27m-13 12v-9m-4 4 4-4 4 4"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.01;0.01415094;0.02830189;0.032;1" values=".65;.65;1;1;.65;.65"/>
+    </g>
+    <text class="stage-name" x="-28" y="6">Client portal</text>
+  </g>
+  <!-- Data routes shared by the arrows and their moving dots. -->
+  <path id="w-launch" d="M729 153H637V295H707"/>
+  <path id="p-launch" d="M321 155V183H245"/>
+  <path id="w-files-portal" d="M80 186V225"/>
+  <path id="w-portal-survey" d="M80 265V301"/>
+  <path id="p-files-portal" d="M185 -93V-77"/>
+  <path id="p-portal-survey" d="M185 -37V-15"/>
+  <path id="w-export" d="M80 376V458"/>
+  <path id="w-to-lake" d="M34 458H188V322H331"/>
+  <path id="w-read" d="M384 322H710"/>
+  <path id="w-write" d="M710 340H440V480H385"/>
+  <path id="w-match" d="M384 490H706"/>
+  <path id="w-load" d="M784 490H1082"/>
+  <path id="p-export" d="M185 29V62"/>
+  <path id="p-to-lake" d="M164 80H4V181H16"/>
+  <path id="p-read" d="M109 181H164V191H203"/>
+  <path id="p-write" d="M205 200H165V231H132"/>
+  <path id="p-match" d="M108 260V313H202"/>
+  <path id="p-load" d="M220 335V355"/>
+<symbol id="layout-wide" viewBox="-90 90 1448 550">
   <!-- Key in the empty corner under the local steps, its last row on the Azure frame's bottom edge. -->
-  <g transform="translate(27 543)">
+  <g class="entry-region" transform="translate(-68 569)">
     <path class="wire" d="M0 0h23"/><text class="minor" x="34" y="4">Data</text>
     <path class="ops" d="M0 21h23"/><text class="minor" x="34" y="25">Control</text>
     <path class="monitor-link" d="M0 42h23"/><text class="minor" x="34" y="46">Monitoring</text></g>
-  <use href="#field-data-sources" transform="translate(27 142)"/>
-  <use href="#w-field-intake" class="wire"/>
-  <circle class="flow" r="3.2" fill="#fffaf0" opacity="0" aria-hidden="true">
-    <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.005015;0.0150025;1" keyPoints="0;0;1;1"><mpath href="#w-field-intake"/></animateMotion>
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.005015;0.0150025;1" values="0;1;0;0"/>
-  </circle>
-  <use href="#w-field-intake" class="stream" aria-hidden="true"/>
-  <use href="#survey" transform="translate(56 322)" text-anchor="middle"/>
-  <use href="#w-export" class="wire"/>
+  <g transform="translate(-68 125)">
+    <rect class="boundary entry-outline" pathLength="528" x="-5" y="-20" width="307" height="81" rx="10"/>
+    <use class="entry-content" href="#field-labels"/>
+    <use class="entry-color" href="#field-icons"/>
+  </g>
+  <g class="arch-edge" style="--flow:1"><use href="#w-files-portal" class="wire entry-route"/></g>
+  <use href="#w-files-portal" class="stream" aria-hidden="true"/>
+  <g class="flow" aria-hidden="true">
+    <use href="#payload-record" transform="scale(1)"/>
+    <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.01415094;1" keyPoints="0;1;1"><mpath href="#w-files-portal"/></animateMotion>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.012;0.01415094;1" values="1;1;0;0"/>
+  </g>
+  <use class="entry-content" href="#client-portal" transform="translate(80 245)"/>
+  <g class="arch-edge" style="--flow:1"><use href="#w-portal-survey" class="wire entry-route"/></g>
+  <use href="#w-portal-survey" class="stream" aria-hidden="true"/>
+  <g class="flow" aria-hidden="true">
+    <use href="#payload-record" transform="scale(1)"/>
+    <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.01886792;0.02830189;1" keyPoints="0;0;1;1"><mpath href="#w-portal-survey"/></animateMotion>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.01886792;0.02;0.0268;0.02830189;1" values="0;0;1;1;0;0"/>
+  </g>
+  <use style="--flow:1" class="entry-content" href="#survey-art" transform="translate(80 337)"/>
+  <text class="name entry-content" style="--flow:1" x="119" y="343">SurveyCTO</text>
+  <g class="arch-edge" style="--flow:2"><use href="#w-export" class="wire entry-route"/></g>
   <use href="#w-export" class="stream" aria-hidden="true"/>
-  <use class="run-still" href="#payload-csv" transform="translate(211.5 322) scale(1)"/>
-  <use class="run-still" href="#csv-payload-label" transform="translate(211.5 322)"/>
-  <g transform="translate(368 322)" text-anchor="middle">
-    <use href="#azcopy-terminal"/>
-    <text class="name" y="67">AzCopy CLI</text>
-    <text class="minor" y="88">Upload to lake</text>
+  <use class="run-still" href="#payload-csv" transform="translate(80 416)"/>
+  <use class="run-still" href="#csv-payload-label" transform="translate(132 440)"/>
+  <g transform="translate(80 486)" text-anchor="middle">
+    <use style="--flow:2" class="entry-content" href="#azcopy-terminal"/>
+    <text style="--flow:2" class="name entry-content" y="47">AzCopy CLI</text>
+    <text style="--flow:2" class="minor entry-content" y="67">Upload to lake</text>
   </g>
   <g class="flow" aria-hidden="true">
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.029002;0.083997;1" keyPoints="0;0;1;1"><mpath href="#w-export"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.029002;0.0309995;0.0819995;0.083997;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.072685653;0.0934384832;1" keyPoints="0;0;1;1"><mpath href="#w-export"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.072685653;0.0734394266;0.0926847096;0.0934384832;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.0260015;0.0809965;1" keyPoints="0;0;1;1"><mpath href="#w-export"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.0260015;0.027999;0.078999;0.0809965;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.0713377627;0.0920905925;1" keyPoints="0;0;1;1"><mpath href="#w-export"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.0713377627;0.0720915359;0.0913368193;0.0920905925;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-csv" transform="scale(1)"/>
-      <use href="#csv-payload-label"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.023001;0.0780045;1" keyPoints="0;0;1;1"><mpath href="#w-export"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.023001;0.0249985;0.0759985;0.0780045;1" values="0;0;1;1;0;0"/>
+      <use href="#csv-payload-label" transform="translate(-47 24)"/>
+      <!-- The CSV stays visible inside AzCopy from 3.5s to 5.5s.
+           The upload starts at this same position when the hold ends. -->
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.0471698113;0.0660377358;1" keyPoints="0;0;1;1" path="M80 376V486"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0471698113;0.1037735849;1" values="0;1;0;0"/>
     </g>
   </g>
   <!-- Place the cloud services together, leaving room for the local upload steps. -->
-  <g transform="translate(288 0)">
-  <rect class="boundary" x="225" y="85" width="965" height="510" rx="16"/>
-  <use data-stage="cloud" class="stage-icon" href="#brand-azure" x="243" y="94" width="21" height="21">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.9874965;0.9927461;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+  <g transform="translate(80 28)">
+  <rect class="boundary entry-region" x="225" y="85" width="1034" height="510" rx="16"/>
+  <use style="--flow:3" data-stage="cloud" class="stage-icon entry-content" href="#brand-azure" x="243" y="94" width="21" height="21">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.9960679944;0.9977188487;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
   </use>
-  <text x="272" y="110" class="micro">MICROSOFT AZURE</text>
+  <text style="--flow:3" x="272" y="110" class="micro entry-content">MICROSOFT AZURE</text>
   <g id="w-data-lake">
-    <rect class="lake-account" x="238" y="238" width="242" height="343" rx="12"/>
-    <use data-stage="storage" class="stage-icon" href="#brand-lake" x="252" y="247" width="38" height="33">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.469498;0.4747476;0.745;0.7519997;0.776501;0.7817506;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <rect pathLength="528" style="--flow:3" class="lake-account entry-outline" x="238" y="238" width="242" height="343" rx="12"/>
+    <use style="--flow:3" data-stage="storage" class="stage-icon entry-content" href="#brand-lake" x="252" y="247" width="38" height="33">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.4418867924;0.4460742925;0.7897346313;0.7919730521;0.820754717;0.8260227233;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
-    <text class="lake-title" x="301" y="258" style="font-size:20px">Azure Data Lake <tspan x="301" dy="22">Storage Gen2</tspan></text>
+    <text class="lake-title entry-content" x="301" y="258" style="--flow:3;font-size:20px">Azure Data Lake <tspan x="301" dy="22">Storage Gen2</tspan></text>
     <g id="w-container">
-      <rect class="lake-container" x="249" y="289" width="219" height="281" rx="7"/>
-      <text class="lake-path" x="261" y="308">CONTAINER</text>
+      <rect pathLength="528" style="--flow:3" class="lake-container entry-outline" x="249" y="289" width="219" height="281" rx="7"/>
+      <text style="--flow:3" class="lake-path entry-content" x="261" y="308">CONTAINER</text>
       <g text-anchor="middle" transform="translate(358 331)">
-        <use data-stage="raw" class="stage-icon" href="#lake-folder">
-          <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.469498;0.4747476;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+        <use style="--flow:3" data-stage="raw" class="stage-icon entry-content" href="#lake-folder">
+          <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.4418867924;0.4460742925;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
         </use>
-        <text class="name" y="43">Raw landing</text>
+        <text style="--flow:3" class="name entry-content" y="43">Raw landing</text>
       </g>
       <g text-anchor="middle" transform="translate(358 490)">
-        <use data-stage="output" class="stage-icon" href="#lake-folder">
-          <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.745;0.7519997;0.776501;0.7817506;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+        <use style="--flow:7" data-stage="output" class="stage-icon entry-content" href="#lake-folder">
+          <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.7897346313;0.7919730521;0.820754717;0.8260227233;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
         </use>
-        <text class="name" y="43">updated_data3/</text>
-        <text class="activity-id" y="62">1 × part-*.csv</text>
+        <text style="--flow:7" class="name entry-content" y="43">updated_data3/</text>
+        <text style="--flow:7" class="activity-id entry-content" y="62">1 × part-*.csv</text>
       </g>
     </g>
   </g>
   <g id="w-data-factory">
-    <rect class="factory-shell" x="526" y="94" width="315" height="491" rx="12"/>
-    <use data-stage="factory" class="stage-icon" href="#brand-factory" x="540" y="101" width="25" height="25">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.1513;0.1837967;0.776501;0.7835008;0.882496;0.8877456;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <rect pathLength="528" style="--flow:4" class="factory-shell entry-outline" x="581" y="94" width="315" height="491" rx="12"/>
+    <use style="--flow:4" data-stage="factory" class="stage-icon entry-content" href="#brand-factory" x="595" y="101" width="25" height="25">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.179245283;0.2156604388;0.820754717;0.8277790601;0.9433962264;0.9487977237;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
-    <text class="lake-title" x="574" y="121" style="font-size:20px">Azure Data Factory</text>
-    <rect class="factory-pipeline" x="537" y="274" width="293" height="303" rx="7"/>
-    <text class="lake-path" x="735" y="293">PIPELINE</text>
+    <text class="lake-title entry-content" x="629" y="121" style="--flow:4;font-size:20px">Azure Data Factory</text>
+    <rect pathLength="528" style="--flow:4" class="factory-pipeline entry-outline" x="592" y="274" width="293" height="303" rx="7"/>
+    <text style="--flow:4" class="lake-path entry-content" x="653" y="289">PIPELINE</text>
   </g>
-  <text x="727" y="457" class="micro" style="letter-spacing:.05em;fill:#90c99d">On success</text>
+  <text x="782" y="457" class="micro entry-content" style="--flow:8;letter-spacing:.05em;fill:#90c99d">On success</text>
   <!-- Key Vault backs the Databricks secret scope: Databricks reads the service principal's secrets from it to reach the lake. -->
-  <path id="w-secret-route" class="ops secret-route" opacity=".12" d="M372 153H500V305H654">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.3387;0.3421;0.46705;0.473;1" values=".12;.12;1;1;.12;.12"/>
+  <path style="--flow:5" id="w-secret-route" class="ops secret-route entry-content" opacity=".12" d="M372 153H500V305H709">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.320754717;0.3231132075;0.4056603773;0.4451650944;1" values=".12;.12;1;1;.12;.12"/>
   </path>
   <use class="run-still" href="#delivered-key" transform="translate(451 153)"/>
-  <text x="381" y="144" class="micro">Secret scope</text>
-  <path class="monitor-link run-monitor-route" d="M706 153H774"/>
-  <use href="#w-launch" class="ops"/>
-  <use class="run-still" href="#launch-still-caption" transform="translate(602 238)"/>
-  <path id="w-success" class="ops control-route success" d="M727 335H804V467H703"/>
+  <text style="--flow:5" x="381" y="144" class="micro entry-content">Secret scope</text>
+  <path style="--flow:4" class="monitor-link run-monitor-route entry-content" d="M761 153H829"/>
+  <use style="--flow:4" href="#w-launch" class="ops entry-content"/>
+  <use class="run-still" href="#launch-still-caption" transform="translate(657 238)"/>
+  <path style="--flow:8" id="w-success" class="ops control-route success entry-content" d="M782 335H859V467H758"/>
 
   <use href="#blob-created-toast" text-anchor="middle" transform="translate(358 394)"/>
-  <use href="#w-to-lake" class="wire"/>
+  <g class="arch-edge" style="--flow:3"><use href="#w-to-lake" class="wire entry-route"/></g>
   <use href="#w-to-lake" class="stream" aria-hidden="true"/>
-  <use href="#w-read" class="wire"/>
+  <g class="arch-edge" style="--flow:6"><use href="#w-read" class="wire entry-route"/></g>
   <use href="#w-read" class="stream" aria-hidden="true"/>
-  <use href="#w-write" class="wire"/>
+  <g class="arch-edge" style="--flow:7"><use href="#w-write" class="wire entry-route"/></g>
   <use href="#w-write" class="stream" aria-hidden="true"/>
-  <use href="#w-match" class="wire"/>
+  <g class="arch-edge" style="--flow:8"><use href="#w-match" class="wire entry-route"/></g>
   <use href="#w-match" class="stream" aria-hidden="true"/>
-  <use href="#w-load" class="wire"/>
+  <g class="arch-edge" style="--flow:9"><use href="#w-load" class="wire entry-route"/></g>
   <use href="#w-load" class="stream" aria-hidden="true"/>
-  <use href="#vault" transform="translate(341 153) scale(0.93)" text-anchor="middle"/>
-  <use href="#storage-trigger" transform="translate(690 153) scale(1)" text-anchor="middle"/>
-  <use href="#monitor" transform="translate(790 153) scale(0.93)" text-anchor="middle"/>
-  <use href="#notebook" transform="translate(690 322) scale(1)" text-anchor="middle"/>
-  <g transform="translate(690 490)" text-anchor="middle"><use href="#copy-icon"/><use href="#copy-label"/></g>
-  <use href="#sql" transform="translate(1064 490) scale(1)" text-anchor="middle"/>
+  <use style="--flow:5" class="entry-content" href="#vault" transform="translate(341 153) scale(0.93)" text-anchor="middle"/>
+  <use style="--flow:4" class="entry-content" href="#storage-trigger" transform="translate(745 153) scale(1)" text-anchor="middle"/>
+  <use style="--flow:4" class="entry-content" href="#monitor" transform="translate(845 153) scale(0.93)" text-anchor="middle"/>
+  <use style="--flow:6" class="entry-content" href="#notebook" transform="translate(745 322) scale(1)" text-anchor="middle"/>
+  <g transform="translate(745 490)" text-anchor="middle"><use style="--flow:8" class="entry-content" href="#copy-icon"/><use style="--flow:8" class="entry-content" href="#copy-label"/></g>
+  <use style="--flow:9" class="entry-content" href="#sql" transform="translate(1116 490) scale(1)" text-anchor="middle"/>
   <g class="flow" aria-hidden="true">
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.092004;0.146999;1" keyPoints="0;0;1;1"><mpath href="#w-to-lake"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.092004;0.0940015;0.1450015;0.146999;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.1261525223;0.1469053525;1" keyPoints="0;0;1;1"><mpath href="#w-to-lake"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.1261525223;0.1269062959;0.1461515789;0.1469053525;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.088995;0.1439985;1" keyPoints="0;0;1;1"><mpath href="#w-to-lake"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.088995;0.091001;0.142001;0.1439985;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.1140173935;0.1347734309;1" keyPoints="0;0;1;1"><mpath href="#w-to-lake"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.1140173935;0.1147743743;0.1340196577;0.1347734309;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-csv" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.086003;0.140998;1" keyPoints="0;0;1;1"><mpath href="#w-to-lake"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.086003;0.0880005;0.1390005;0.140998;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.1037735849;0.1226415094;1" keyPoints="0;0;1;1" path="M0 458H188V322H331L358 331"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.1037735849;0.1037735849;0.1203773585;0.1226415094;1" values="0;0;1;1;0;0"/>
     </g>
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.475499;0.530001;1" keyPoints="0;0;1;1"><mpath href="#w-read"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.475499;0.4774965;0.527995;0.530001;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4720890847;0.4926558771;1" keyPoints="0;0;1;1"><mpath href="#w-read"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4720890847;0.4728428583;0.4918988957;0.4926558771;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4724985;0.5270005;1" keyPoints="0;0;1;1"><mpath href="#w-read"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.4724985;0.4745045;0.525003;0.5270005;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4616102025;0.4821769951;1" keyPoints="0;0;1;1"><mpath href="#w-read"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4616102025;0.4623671839;0.4814232215;0.4821769951;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-csv" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.469498;0.524;1" keyPoints="0;0;1;1"><mpath href="#w-read"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.469498;0.471504;0.521994;0.524;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4433962264;0.4716981132;1" keyPoints="0;0;1;1" path="M384 322H745"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4433962264;0.4441509434;0.4694339623;0.4716981132;1" values="0;0;1;1;0;0"/>
     </g>
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.670999;0.7509925;1" keyPoints="0;0;1;1"><mpath href="#w-write"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.670999;0.673005;0.748995;0.7509925;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.761464735;0.7916509616;1" keyPoints="0;0;1;1"><mpath href="#w-write"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.761464735;0.762221716;0.7908971878;0.7916509616;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.6679985;0.747992;1" keyPoints="0;0;1;1"><mpath href="#w-write"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.6679985;0.669996;0.7459945;0.747992;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7605052109;0.7906914373;1" keyPoints="0;0;1;1"><mpath href="#w-write"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7605052109;0.7612589845;0.7899376637;0.7906914373;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-clean" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.664998;0.745;1" keyPoints="0;0;1;1"><mpath href="#w-write"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.664998;0.667004;0.742994;0.745;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7641509434;0.7897346313;1" keyPoints="0;0;1;1" path="M710 340H440V480H385L358 490"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7641509434;0.7649056604;0.7874704804;0.7897346313;1" values="0;0;1;1;0;0"/>
     </g>
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.782502;0.8294985;1" keyPoints="0;0;1;1"><mpath href="#w-match"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.782502;0.7844995;0.827501;0.8294985;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.8753353437;0.8930698719;1" keyPoints="0;0;1;1"><mpath href="#w-match"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.8753353437;0.8760891173;0.8923160987;0.8930698719;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7795015;0.826498;1" keyPoints="0;0;1;1"><mpath href="#w-match"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.7795015;0.781499;0.8245005;0.826498;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.8627448383;0.8804793665;1" keyPoints="0;0;1;1"><mpath href="#w-match"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.8627448383;0.8634986119;0.8797255929;0.8804793665;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-clean" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.776501;0.823506;1" keyPoints="0;0;1;1"><mpath href="#w-match"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.776501;0.7784985;0.8215;0.823506;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.820754717;0.8679245283;1" keyPoints="0;0;1;1" path="M384 490H745"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.820754717;0.821509434;0.8656603774;0.8679245283;1" values="0;0;1;1;0;0"/>
     </g>
     <circle r="2.5" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.888497;0.9144985;1" keyPoints="0;0;1;1"><mpath href="#w-load"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.888497;0.890503;0.912501;0.9144985;1" values="0;0;0.38;0.38;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.9633002517;0.9731121383;1" keyPoints="0;0;1;1"><mpath href="#w-load"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9633002517;0.9640572327;0.9723583647;0.9731121383;1" values="0;0;0.38;0.38;0;0"/>
     </circle>
     <circle r="3.3" fill="#fffaf0" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.885505;0.911498;1" keyPoints="0;0;1;1"><mpath href="#w-load"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.885505;0.8875025;0.9095005;0.911498;1" values="0;0;0.68;0.68;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.9623598845;0.9721685639;1" keyPoints="0;0;1;1"><mpath href="#w-load"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9623598845;0.9631136583;0.9714147903;0.9721685639;1" values="0;0;0.68;0.68;0;0"/>
     </circle>
     <g opacity="0">
       <use href="#payload-rows" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.882496;0.908506;1" keyPoints="0;0;1;1"><mpath href="#w-load"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.882496;0.884502;0.9065;0.908506;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.9433962264;0.9701588264;1" keyPoints="0;0;1;1" path="M784 490H1116"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9433962264;0.9441509434;0.9678946755;0.9701588264;1" values="0;0;1;1;0;0"/>
     </g>
   </g>
   <use class="run-still" href="#payload-clean" transform="translate(520 490) scale(1)"/>
-  <use class="run-still" href="#payload-rows" transform="translate(880 490) scale(1)"/>
-  <use href="#notebook-payload" transform="translate(733 280)"/>
+  <use class="run-still" href="#payload-rows" transform="translate(871 490) scale(1)"/>
+  <use href="#notebook-payload" transform="translate(788 280)"/>
   </g>
   <!-- Same shift as the cloud services above, so the run's steps sit on their stages. -->
-  <g transform="translate(288 0)">
+  <g transform="translate(80 28)">
   <!-- The run, step by step, from Josh's project notes. The upload lands and raises a
        storage event; Data Factory starts the notebook while Key Vault's secret scope lets
        Databricks into the lake; the notebook cleans the batch and coalesces it to one part
@@ -531,237 +563,399 @@
   <g class="flow run-steps" aria-hidden="true">
     <!-- Draw the workspace connection, send the authenticated request, then acknowledge it at Databricks. -->
     <use href="#w-launch" fill="none" stroke="#99d2f5" stroke-width="2.6" stroke-dasharray="304" stroke-dashoffset="304" opacity="0">
-      <animate attributeName="stroke-dashoffset" dur="20s" repeatCount="indefinite" keyTimes="0;.1513;.2325;1" values="304;304;0;0"/>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;.1513;.155;.31;.34;1" values="0;0;1;1;0;0"/>
+      <animate attributeName="stroke-dashoffset" dur="53s" repeatCount="indefinite" keyTimes="0;0.179245283;0.2547169812;1" values="304;304;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.179245283;0.1833914294;0.2924528302;0.3216564928;1" values="0;0;1;1;0;0"/>
     </use>
     <g opacity="0">
       <use href="#launch-pat" transform="scale(1)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;.2325;.245;.303;.31;1" keyPoints="0;0;0;1;1;1"><mpath href="#w-launch"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;.2325;.31;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.2547169812;0.2608034084;0.2890444309;0.2924528302;1" keyPoints="0;0;0;1;1;1"><mpath href="#w-launch"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2547169812;0.2924528302;1" values="0;1;0;0"/>
     </g>
-    <g transform="translate(652 295) scale(1)" opacity="0">
+    <g transform="translate(707 295) scale(1)" opacity="0">
       <use href="#launch-accepted"/>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;.31;.316;.37;.385;1" values="0;0;1;1;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.2924528302;0.298369601;0.3424667037;0.3528718091;1" values="0;0;1;1;0;0"/>
     </g>
-    <use href="#launch-captions" transform="translate(602 238)"/>
+    <use href="#launch-captions" transform="translate(657 238)"/>
     <circle class="success-signal" r="4.3" fill="#a5ddb1" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7535;0.776501;1" keyPoints="0;0;1;1"><mpath href="#w-success"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7535;0.776501;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.8120750944;0.820754717;1" keyPoints="0;0;1;1"><mpath href="#w-success"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.8120750944;0.820754717;1" values="0;1;0;0"/>
     </circle>
     <g opacity="0">
       <circle r="4" fill="#101014" stroke="#e9c46a" stroke-width="1.8"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.33955;0.3914;1" keyPoints="1;1;0;0"><mpath href="#w-secret-route"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.33955;0.3914;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.3377452833;0.3573113207;1" keyPoints="1;1;0;0"><mpath href="#w-secret-route"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3377452833;0.3573113207;1" values="0;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#delivered-key"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4067;0.45855;1" keyPoints="0;0;1;1"><mpath href="#w-secret-route"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4067;0.45855;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.3679245283;0.4003454691;1" keyPoints="0;0;1;1"><mpath href="#w-secret-route"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3679245283;0.4003454691;1" values="0;1;0;0"/>
     </g>
-    <text class="code-note" x="1167" y="434" text-anchor="end" opacity="0">DELETE FROM data3<animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.832499;0.8375055;0.8725;0.877498;1" values="0;0;1;1;0;0"/></text>
-    <text class="code-note" x="1105" y="462" text-anchor="start" opacity="0">Rows loaded<animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.905004;0.910002;0.9874965;0.992503;1" values="0;0;1;1;0;0"/></text>
+    <text class="code-note" x="1219" y="434" text-anchor="end" opacity="0">DELETE FROM data3<animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9056603773;0.9094390946;0.9358516228;0.9396239246;1" values="0;0;1;1;0;0"/></text>
+    <text class="code-note" x="1157" y="462" text-anchor="start" opacity="0">Rows loaded<animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9665554959;0.9716981132;0.9960679944;0.9976424005;1" values="0;0;1;1;0;0"/></text>
     <g class="table-rows">
-    <clipPath id="target-row-0" clipPathUnits="userSpaceOnUse"><rect x="1105" y="477" width="62" height="6"><animate attributeName="width" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.8425035;0.8574975;0.910002;0.9275035;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
-    <g clip-path="url(#target-row-0)"><rect x="1105" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
-    <clipPath id="target-row-1" clipPathUnits="userSpaceOnUse"><rect x="1105" y="486" width="62" height="6"><animate attributeName="width" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.8450025;0.8599965;0.915;0.9325015;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
-    <g clip-path="url(#target-row-1)"><rect x="1105" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
-    <clipPath id="target-row-2" clipPathUnits="userSpaceOnUse"><rect x="1105" y="495" width="62" height="6"><animate attributeName="width" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.8475015;0.8624955;0.919998;0.9374995;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
-    <g clip-path="url(#target-row-2)"><rect x="1105" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
+    <clipPath id="target-row-0" clipPathUnits="userSpaceOnUse"><rect x="1157" y="477" width="62" height="6"><animate attributeName="width" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.9132113964;0.9245283018;0.9716981132;0.9772018519;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
+    <g clip-path="url(#target-row-0)"><rect x="1157" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
+    <clipPath id="target-row-1" clipPathUnits="userSpaceOnUse"><rect x="1157" y="486" width="62" height="6"><animate attributeName="width" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.9150975474;0.9264144528;0.9732698463;0.9787735849;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
+    <g clip-path="url(#target-row-1)"><rect x="1157" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
+    <clipPath id="target-row-2" clipPathUnits="userSpaceOnUse"><rect x="1157" y="495" width="62" height="6"><animate attributeName="width" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.9169836983;0.9283006037;0.9748415793;0.9803453179;1" values="62;62;0;0;62;62" keySplines="0 0 1 1;.77 0 .175 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/></rect></clipPath>
+    <g clip-path="url(#target-row-2)"><rect x="1157" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
     </g>
   </g>
-  <g class="table-head" aria-hidden="true"><rect x="1105" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1121" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1137" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1153" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/></g>
-  <g class="run-still" aria-hidden="true"><rect x="1105" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1105" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1105" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1121" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1137" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1153" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
+  <g style="--flow:9" class="table-head entry-content" aria-hidden="true"><rect x="1157" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1173" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1189" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/><rect x="1205" y="468" width="14" height="5" rx="1" fill="#f0eeeb"/></g>
+  <g class="run-still" aria-hidden="true"><rect x="1157" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="478" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1157" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="487" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1157" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1173" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1189" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/><rect x="1205" y="496" width="14" height="4" rx="1" fill="#f0eeeb" opacity=".55"/></g>
   </g>
   <!-- Finish fading the callout as the lead packet starts the write route. -->
   <g class="flow" opacity="0" aria-hidden="true">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.3387;0.33955;0.6605015;0.664998;1" values="0;0;1;1;0;0"/>
-    <path class="terminal-leader" d="M1007 312H1084V265H1102"/>
-    <circle cx="1007" cy="312" r="2.5" fill="#ff8467"/>
-    <use href="#notebook-terminal" transform="translate(1102 250) scale(.97)"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.320754717;0.3213443396;0.7564375492;0.7641509434;1" values="0;0;1;1;0;0"/>
+    <path class="terminal-leader" d="M854 340H1158V274"/>
+    <circle cx="854" cy="340" r="2.5" fill="#ff8467"/>
+    <use href="#notebook-terminal" transform="translate(997 130) scale(.86)"/>
+  </g>
+  <!-- Each receiver lights as the file crosses its edge. -->
+  <g class="flow" data-receipt="survey" transform="translate(24 173)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.0256603774;0.0283018868;0.0316981132;0.0418867925;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="56" cy="164" rx="45" ry="46" fill="url(#receiver-light)"/>
+    <rect x="24.05" y="128.58" width="63.9" height="70.84" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="24.05" y="128.58" width="63.9" height="70.84" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="azcopy" transform="translate(-158 136)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.0633962264;0.0660377358;0.1037735849;0.1103773585;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="238" cy="350" rx="51" ry="44" fill="url(#receiver-light)"/>
+    <rect x="201.79" y="316.12" width="72.42" height="67.76" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="201.79" y="316.12" width="72.42" height="67.76" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="raw" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.12;0.1226415094;0.1260377358;0.1362264151;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="438" cy="359" rx="47" ry="33" fill="url(#receiver-light)"/>
+    <rect x="318" y="266" width="242" height="343" rx="12" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="318" y="266" width="242" height="343" rx="12" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="notebook" transform="translate(55 0)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4690566038;0.4716981132;0.4750943396;0.4852830189;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="770" cy="350" rx="53" ry="49" fill="url(#receiver-light)"/>
+    <rect x="606" y="122" width="315" height="491" rx="12" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="606" y="122" width="315" height="491" rx="12" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="output" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7870931219;0.7897346313;0.7931308577;0.803319537;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="438" cy="518" rx="47" ry="33" fill="url(#receiver-light)"/>
+    <rect x="318" y="266" width="242" height="343" rx="12" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="318" y="266" width="242" height="343" rx="12" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="copy" transform="translate(55 0)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.8652830189;0.8679245283;0.8713207547;0.881509434;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="770" cy="518" rx="52" ry="42" fill="url(#receiver-light)"/>
+    <rect x="606" y="122" width="315" height="491" rx="12" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="606" y="122" width="315" height="491" rx="12" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="sql" transform="translate(180 0)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.967517317;0.9701588264;0.9735550528;0.9837437321;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="1016" cy="518" rx="54" ry="50" fill="url(#receiver-light)"/>
+    <rect x="977.66" y="479.5" width="76.68" height="77" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="977.66" y="479.5" width="76.68" height="77" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
   </g>
 </symbol>
-<symbol id="layout-portrait" viewBox="0 -130 340 712">
-  <g class="legend-label" transform="translate(0 -130)">
+<symbol id="layout-portrait" viewBox="0 -200 390 628">
+  <g class="legend-label entry-region" transform="translate(25 -130)">
     <path class="wire" d="M10 16h18"/><text x="36" y="21">Data</text>
     <path class="ops" d="M100 16h18"/><text x="126" y="21">Control</text>
     <path class="monitor-link" d="M206 16h18"/><text x="232" y="21">Monitoring</text>
   </g>
-  <rect class="platform" x="2" y="101" width="336" height="300" rx="16"/>
+  <rect class="platform entry-region" x="2" y="101" width="386" height="300" rx="16"/>
   <g id="p-data-factory">
-    <rect class="factory-shell" x="141" y="107" width="191" height="240" rx="8"/>
-    <use data-stage="factory" class="stage-icon" href="#brand-factory" x="148" y="113" width="21" height="21">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.1513;0.1837967;0.776501;0.7835008;0.882496;0.8877456;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <rect pathLength="528" style="--flow:4" class="factory-shell entry-outline" x="191" y="107" width="191" height="240" rx="8"/>
+    <use style="--flow:4" data-stage="factory" class="stage-icon entry-content" href="#brand-factory" x="198" y="113" width="21" height="21">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.179245283;0.2156604388;0.820754717;0.8277790601;0.9433962264;0.9487977237;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
-    <text class="lake-title" x="174" y="129" style="font-size:16px">Azure Data Factory</text>
-    <text class="stage-name" x="153" y="150" style="font-size:12px">Storage event trigger</text>
-    <rect class="factory-pipeline" x="147" y="159" width="179" height="165" rx="6"/>
-    <text class="lake-path" x="196" y="172" style="font-size:10px">PIPELINE</text>
+    <text class="lake-title entry-content" x="224" y="129" style="--flow:4;font-size:16px">Azure Data Factory</text>
+    <text class="stage-name entry-content" x="203" y="150" style="--flow:4;font-size:12px">Storage event trigger</text>
+    <rect pathLength="528" style="--flow:4" class="factory-pipeline entry-outline" x="197" y="159" width="179" height="165" rx="6"/>
+    <text class="lake-path entry-content" x="246" y="172" style="--flow:4;font-size:10px">PIPELINE</text>
   </g>
-  <path id="p-secret-route" class="ops secret-route" opacity=".12" d="M138 291H160V211">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.3387;0.3421;0.46705;0.473;1" values=".12;.12;1;1;.12;.12"/>
+  <path style="--flow:5" id="p-secret-route" class="ops secret-route entry-content" opacity=".12" d="M138 291H210V211">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.320754717;0.3231132075;0.4056603773;0.4451650944;1" values=".12;.12;1;1;.12;.12"/>
   </path>
-  <use class="run-still" href="#delivered-key" transform="translate(160 257) scale(.85)"/>
-  <use href="#p-launch" class="ops"/>
-  <use class="run-still" href="#launch-still-caption" transform="translate(187 223) scale(.75)"/>
-  <path id="p-success" class="ops control-route success" d="M175 209v81"/>
-  <text class="micro" x="181" y="259" style="font-size:8px;letter-spacing:.03em;fill:#90c99d">On success</text>
+  <use class="run-still" href="#delivered-key" transform="translate(210 257) scale(.85)"/>
+  <use style="--flow:4" href="#p-launch" class="ops entry-content"/>
+  <use class="run-still" href="#launch-still-caption" transform="translate(237 223) scale(.75)"/>
+  <path style="--flow:8" id="p-success" class="ops control-route success entry-content" d="M225 209v81"/>
+  <text class="micro entry-content" x="231" y="259" style="--flow:8;font-size:8px;letter-spacing:.03em;fill:#90c99d">On success</text>
   <g text-anchor="middle">
-    <use data-stage="vault" class="stage-icon" href="#brand-vault" x="112" y="279" width="24" height="24">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3914;0.3983997;0.4067;0.4119496;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <use style="--flow:5" data-stage="vault" class="stage-icon entry-content" href="#brand-vault" x="112" y="279" width="24" height="24">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.3573113207;0.3621668285;0.3679245283;0.3712070157;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
-    <text class="control-name" x="65" y="290">Key Vault</text>
-    <text class="intake-caption" x="65" y="305" style="font-size:10px">Secret scope</text>
-    <path data-stage="trigger" class="stage-icon" d="m273 135-9 13h6l-2 9 11-14h-6z" fill="#a3d5ef">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.1513;0.1837967;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <text style="--flow:5" class="control-name entry-content" x="65" y="290">Key Vault</text>
+    <text class="intake-caption entry-content" x="65" y="305" style="--flow:5;font-size:10px">Secret scope</text>
+    <path style="--flow:4" data-stage="trigger" class="stage-icon entry-content" d="m323 135-9 13h6l-2 9 11-14h-6z" fill="#a3d5ef">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.179245283;0.2156604388;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </path>
-    <path class="monitor-link run-monitor-route" d="M282 146H329V336H310"/>
-    <use href="#run-monitor-icon" transform="translate(298 336) scale(.67)"/>
-    <text class="control-name" x="282" y="340" text-anchor="end" style="font-size:12px">Run monitor</text>
+    <path style="--flow:4" class="monitor-link run-monitor-route entry-content" d="M332 146H379V336H360"/>
+    <use style="--flow:4" class="entry-content" href="#run-monitor-icon" transform="translate(348 336) scale(.67)"/>
+    <text class="control-name entry-content" x="332" y="340" text-anchor="end" style="--flow:4;font-size:12px">Run monitor</text>
   </g>
-  <use href="#field-data-sources" transform="translate(12 -84)"/>
-  <use href="#p-field-intake" class="wire"/>
-  <circle class="flow" r="3.2" fill="#fffaf0" opacity="0" aria-hidden="true">
-    <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.005015;0.0150025;1" keyPoints="0;0;1;1"><mpath href="#p-field-intake"/></animateMotion>
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.005015;0.0150025;1" values="0;1;0;0"/>
-  </circle>
-  <use href="#p-field-intake" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#survey-art" transform="translate(273 22) scale(.56)"/>
+  <g transform="translate(37 -154)">
+    <rect class="boundary entry-outline" pathLength="528" x="-5" y="-20" width="307" height="81" rx="10"/>
+    <use class="entry-content" href="#field-labels"/>
+    <use class="entry-color" href="#field-icons"/>
+  </g>
+  <g class="arch-edge" style="--flow:1"><use href="#p-files-portal" class="wire entry-route"/></g>
+  <use href="#p-files-portal" class="stream phone-stream" aria-hidden="true"/>
+  <g class="flow" aria-hidden="true">
+    <use href="#payload-record" transform="scale(.68)"/>
+    <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.01415094;1" keyPoints="0;1;1"><mpath href="#p-files-portal"/></animateMotion>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.012;0.01415094;1" values="1;1;0;0"/>
+  </g>
+  <use class="entry-content" href="#client-portal" transform="translate(185 -57)"/>
+  <g class="arch-edge" style="--flow:1"><use href="#p-portal-survey" class="wire entry-route"/></g>
+  <use href="#p-portal-survey" class="stream phone-stream" aria-hidden="true"/>
+  <g class="flow" aria-hidden="true">
+    <use href="#payload-record" transform="scale(.68)"/>
+    <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.01886792;0.02830189;1" keyPoints="0;0;1;1"><mpath href="#p-portal-survey"/></animateMotion>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.01886792;0.02;0.0268;0.02830189;1" values="0;0;1;1;0;0"/>
+  </g>
+  <use style="--flow:1" class="entry-content" href="#survey-art" transform="translate(185 7) scale(.56)"/>
   <g text-anchor="middle">
-    <text class="stage-name" x="273" y="68" style="font-size:17px">SurveyCTO</text>
-    <text class="intake-caption" x="273" y="81" style="font-size: 9px">Intake &amp;</text>
-    <text class="intake-caption" x="273" y="93" style="font-size: 9px">standardization</text>
-    <path class="monitor-link" d="M182 63h44"/>
-    <use href="#survey-monitor-icon" transform="translate(168 63) scale(.8)"/>
-    <text class="control-name" x="168" y="85" style="font-size:12px">SurveyCTO Monitor</text>
+    <text class="stage-name entry-content" x="214" y="13" text-anchor="start" style="--flow:1;font-size:17px">SurveyCTO</text>
   </g>
-  <use href="#p-export" class="wire"/>
+  <g class="arch-edge" style="--flow:2"><use href="#p-export" class="wire entry-route"/></g>
   <use href="#p-export" class="stream phone-stream" aria-hidden="true"/>
-  <use class="run-still" href="#payload-csv" transform="translate(158.5 22) scale(.68)"/>
-  <use class="run-still" href="#csv-payload-label" transform="translate(158.5 22)"/>
-  <use href="#azcopy-terminal" transform="translate(68 22) scale(.6)"/>
+  <use class="run-still" href="#payload-csv" transform="translate(185 46) scale(.68)"/>
+  <use class="run-still" href="#csv-payload-label" transform="translate(231 70)"/>
+  <use style="--flow:2" class="entry-content" href="#azcopy-terminal" transform="translate(185 80) scale(.6)"/>
   <g text-anchor="middle">
-    <text class="stage-name" x="68" y="68">AzCopy CLI</text>
-    <text class="stage-caption" x="68" y="86">Upload</text>
+    <text style="--flow:2" class="stage-name entry-content" x="214" y="79" text-anchor="start">AzCopy CLI</text>
+    <text style="--flow:2" class="stage-caption entry-content" x="214" y="95" text-anchor="start">Upload</text>
   </g>
   <g id="p-data-lake">
-    <rect class="lake-account" x="8" y="107" width="130" height="164" rx="8"/>
-    <use data-stage="storage" class="stage-icon" href="#brand-lake" x="14" y="114" width="24" height="21">
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.469498;0.4747476;0.745;0.7519997;0.776501;0.7817506;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+    <rect pathLength="528" style="--flow:3" class="lake-account entry-outline" x="8" y="107" width="130" height="164" rx="8"/>
+    <use style="--flow:3" data-stage="storage" class="stage-icon entry-content" href="#brand-lake" x="14" y="114" width="24" height="21">
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.4418867924;0.4460742925;0.7897346313;0.7919730521;0.820754717;0.8260227233;1" values=".54;.54;1;1;.54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
     </use>
-    <text class="lake-title" x="43" y="122" style="font-size:12.5px">Azure Data Lake <tspan x="43" dy="15">Storage Gen2</tspan></text>
+    <text class="lake-title entry-content" x="43" y="122" style="--flow:3;font-size:12.5px">Azure Data Lake <tspan x="43" dy="15">Storage Gen2</tspan></text>
     <g id="p-container">
-      <rect class="lake-container" x="13" y="145" width="120" height="121" rx="5"/>
-      <text class="lake-path" x="20" y="160" style="font-size:10px">CONTAINER</text>
-      <use data-stage="raw" class="stage-icon" href="#lake-folder" transform="translate(26 181) scale(.4)">
-        <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.140998;0.1479977;0.469498;0.4747476;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <rect pathLength="528" style="--flow:3" class="lake-container entry-outline" x="13" y="145" width="120" height="121" rx="5"/>
+      <text class="lake-path entry-content" x="20" y="160" style="--flow:3;font-size:10px">CONTAINER</text>
+      <use style="--flow:3" data-stage="raw" class="stage-icon entry-content" href="#lake-folder" transform="translate(26 181) scale(.4)">
+        <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.1226415094;0.1509433962;0.4418867924;0.4460742925;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
       </use>
-      <text class="stage-name" x="39" y="185" style="font-size:13px">Raw landing</text>
-      <use data-stage="output" class="stage-icon" href="#lake-folder" transform="translate(26 231) scale(.4)">
-        <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.745;0.7519997;0.776501;0.7817506;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
+      <text class="stage-name entry-content" x="39" y="185" style="--flow:3;font-size:13px">Raw landing</text>
+      <use style="--flow:7" data-stage="output" class="stage-icon entry-content" href="#lake-folder" transform="translate(26 231) scale(.4)">
+        <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="spline" keyTimes="0;0.7897346313;0.7919730521;0.820754717;0.8260227233;1" values=".54;.54;1;1;.54;.54" keySplines="0 0 1 1;.23 1 .32 1;0 0 1 1;.23 1 .32 1;0 0 1 1"/>
       </use>
-      <text class="stage-name" x="39" y="235" style="font-size:11.5px">updated_data3/</text>
-      <text class="activity-id" x="39" y="250" style="font-size:9px">1 × part-*.csv</text>
+      <text class="stage-name entry-content" x="39" y="235" style="--flow:7;font-size:11.5px">updated_data3/</text>
+      <text class="activity-id entry-content" x="39" y="250" style="--flow:7;font-size:9px">1 × part-*.csv</text>
     </g>
   </g>
   <use href="#blob-created-toast" transform="translate(39 202) scale(.9)"/>
-  <use href="#p-to-lake" class="wire"/>
+  <g class="arch-edge" style="--flow:3"><use href="#p-to-lake" class="wire entry-route"/></g>
   <use href="#p-to-lake" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#p-read" class="wire"/>
+  <g class="arch-edge" style="--flow:6"><use href="#p-read" class="wire entry-route"/></g>
   <use href="#p-read" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#p-write" class="wire"/>
+  <g class="arch-edge" style="--flow:7"><use href="#p-write" class="wire entry-route"/></g>
   <use href="#p-write" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#p-match" class="wire"/>
+  <g class="arch-edge" style="--flow:8"><use href="#p-match" class="wire entry-route"/></g>
   <use href="#p-match" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#p-load" class="wire"/>
+  <g class="arch-edge" style="--flow:9"><use href="#p-load" class="wire entry-route"/></g>
   <use href="#p-load" class="stream phone-stream" aria-hidden="true"/>
-  <use href="#notebook-art" transform="translate(170 191) scale(0.45)"/>
-  <text class="stage-name" x="207" y="201" style="font-size:12px">Databricks Notebook</text>
-  <use href="#copy-icon" transform="translate(170 313) rotate(90) scale(.55)"/>
-  <text class="stage-name" x="194" y="316" style="font-size:14px">Copy Data activity</text>
-  <use href="#sql-art" transform="translate(170 374) scale(0.52)"/>
-  <text class="stage-name" x="12" y="372">Azure SQL</text>
-  <text class="activity-id" x="12" y="393">dbo.data3</text>
+  <use style="--flow:6" class="entry-content" href="#notebook-art" transform="translate(220 191) scale(0.45)"/>
+  <text class="stage-name entry-content" x="257" y="201" style="--flow:6;font-size:12px">Databricks Notebook</text>
+  <use style="--flow:8" class="entry-content" href="#copy-icon" transform="translate(220 313) rotate(90) scale(.55)"/>
+  <text class="stage-name entry-content" x="244" y="316" style="--flow:8;font-size:14px">Copy Data activity</text>
+  <use style="--flow:9" class="entry-content" href="#sql-art" transform="translate(220 374) scale(0.52)"/>
+  <text style="--flow:9" class="stage-name entry-content" x="12" y="372">Azure SQL</text>
+  <text style="--flow:9" class="activity-id entry-content" x="12" y="393">dbo.data3</text>
   <g class="flow" aria-hidden="true">
     <g opacity="0">
       <use href="#payload-csv" transform="scale(.68)"/>
-      <use href="#csv-payload-label"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.023001;0.0780045;1" keyPoints="0;0;1;1"><mpath href="#p-export"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.023001;0.0249985;0.0759985;0.0780045;1" values="0;0;1;1;0;0"/>
+      <use href="#csv-payload-label" transform="translate(-47 24)"/>
+      <!-- The CSV stays visible inside AzCopy from 3.5s to 5.5s.
+           The upload starts at this same position when the hold ends. -->
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.0471698113;0.0660377358;1" keyPoints="0;0;1;1" path="M185 29V80"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0471698113;0.1037735849;1" values="0;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#payload-csv" transform="scale(.68)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.086003;0.140998;1" keyPoints="0;0;1;1"><mpath href="#p-to-lake"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.086003;0.0880005;0.1390005;0.140998;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.1037735849;0.1226415094;1" keyPoints="0;0;1;1" path="M185 80H4V181H26"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.1037735849;0.1037735849;0.1203773585;0.1226415094;1" values="0;0;1;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#payload-csv" transform="scale(.68)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.469498;0.524;1" keyPoints="0;0;1;1"><mpath href="#p-read"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.469498;0.471504;0.521994;0.524;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4433962264;0.4716981132;1" keyPoints="0;0;1;1" path="M109 181H164V191H220"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4433962264;0.4441509434;0.4694339623;0.4716981132;1" values="0;0;1;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#payload-clean" transform="scale(.68)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.664998;0.745;1" keyPoints="0;0;1;1"><mpath href="#p-write"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.664998;0.667004;0.742994;0.745;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7641509434;0.7897346313;1" keyPoints="0;0;1;1" path="M205 200H165V217H26V231"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7641509434;0.7649056604;0.7874704804;0.7897346313;1" values="0;0;1;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#payload-clean" transform="scale(.68)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.776501;0.823506;1" keyPoints="0;0;1;1"><mpath href="#p-match"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.776501;0.7784985;0.8215;0.823506;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.820754717;0.8679245283;1" keyPoints="0;0;1;1" path="M108 260V313H220"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.820754717;0.821509434;0.8656603774;0.8679245283;1" values="0;0;1;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#payload-rows" transform="scale(.68)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.882496;0.908506;1" keyPoints="0;0;1;1"><mpath href="#p-load"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.882496;0.884502;0.9065;0.908506;1" values="0;0;1;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.9433962264;0.9701588264;1" keyPoints="0;0;1;1" path="M220 335V374"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9433962264;0.9441509434;0.9678946755;0.9701588264;1" values="0;0;1;1;0;0"/>
     </g>
   </g>
   <use class="run-still" href="#payload-clean" transform="translate(108 271) scale(.68)"/>
-  <use class="run-still" href="#payload-rows" transform="translate(170 345) scale(.68)"/>
-  <use href="#notebook-payload" transform="translate(165 165) scale(.64)"/>
+  <use class="run-still" href="#payload-rows" transform="translate(220 345) scale(.68)"/>
+  <use href="#notebook-payload" transform="translate(215 165) scale(.64)"/>
   <!-- The run, step by step: storage event, secret scope, the notebook's cleaning,
        the copy's pre-copy delete and target table. -->
   <g class="flow run-steps" aria-hidden="true">
     <!-- Draw the workspace connection, send the authenticated request, then acknowledge it at Databricks. -->
     <use href="#p-launch" fill="none" stroke="#99d2f5" stroke-width="2.6" stroke-dasharray="104" stroke-dashoffset="104" opacity="0">
-      <animate attributeName="stroke-dashoffset" dur="20s" repeatCount="indefinite" keyTimes="0;.1513;.2325;1" values="104;104;0;0"/>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;.1513;.155;.31;.34;1" values="0;0;1;1;0;0"/>
+      <animate attributeName="stroke-dashoffset" dur="53s" repeatCount="indefinite" keyTimes="0;0.179245283;0.2547169812;1" values="104;104;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.179245283;0.1833914294;0.2924528302;0.3216564928;1" values="0;0;1;1;0;0"/>
     </use>
     <g opacity="0">
       <use href="#launch-pat" transform="scale(.74)"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;.2325;.245;.303;.31;1" keyPoints="0;0;0;1;1;1"><mpath href="#p-launch"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;.2325;.31;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.2547169812;0.2608034084;0.2890444309;0.2924528302;1" keyPoints="0;0;0;1;1;1"><mpath href="#p-launch"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2547169812;0.2924528302;1" values="0;1;0;0"/>
     </g>
-    <g transform="translate(195 183) scale(.74)" opacity="0">
+    <g transform="translate(245 183) scale(.74)" opacity="0">
       <use href="#launch-accepted"/>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;.31;.316;.37;.385;1" values="0;0;1;1;0;0"/>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.2924528302;0.298369601;0.3424667037;0.3528718091;1" values="0;0;1;1;0;0"/>
     </g>
-    <use href="#launch-captions" transform="translate(187 223) scale(.75)"/>
+    <use href="#launch-captions" transform="translate(237 223) scale(.75)"/>
     <circle class="success-signal" r="3.3" fill="#a5ddb1" opacity="0">
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.7535;0.776501;1" keyPoints="0;0;1;1"><mpath href="#p-success"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7535;0.776501;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.8120750944;0.820754717;1" keyPoints="0;0;1;1"><mpath href="#p-success"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.8120750944;0.820754717;1" values="0;1;0;0"/>
     </circle>
     <g opacity="0">
       <circle r="4" fill="#101014" stroke="#e9c46a" stroke-width="1.8"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.33955;0.3914;1" keyPoints="1;1;0;0"><mpath href="#p-secret-route"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.33955;0.3914;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.3377452833;0.3573113207;1" keyPoints="1;1;0;0"><mpath href="#p-secret-route"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3377452833;0.3573113207;1" values="0;1;0;0"/>
     </g>
     <g opacity="0">
       <use href="#delivered-key"/>
-      <animateMotion dur="20s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.4067;0.45855;1" keyPoints="0;0;1;1"><mpath href="#p-secret-route"/></animateMotion>
-      <animate attributeName="opacity" dur="20s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4067;0.45855;1" values="0;1;0;0"/>
+      <animateMotion dur="53s" repeatCount="indefinite" calcMode="linear" keyTimes="0;0.3679245283;0.4003454691;1" keyPoints="0;0;1;1"><mpath href="#p-secret-route"/></animateMotion>
+      <animate attributeName="opacity" dur="53s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3679245283;0.4003454691;1" values="0;1;0;0"/>
     </g>
-    <text class="stage-name lit" x="153" y="150" style="font-size:12px" opacity="0">Storage event trigger<animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.1400035;0.1450015;0.236067;0.4724985;1" values="0;0;1;1;0;0"/></text>
-    <text class="code-note" x="12" y="418" text-anchor="start" opacity="0">DELETE FROM data3<animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.832499;0.8375055;0.8725;0.877498;1" values="0;0;1;1;0;0"/></text>
-    <text class="code-note" x="12" y="418" text-anchor="start" opacity="0">Rows loaded<animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.905004;0.910002;0.9874965;0.992503;1" values="0;0;1;1;0;0"/></text>
+    <text class="stage-name lit" x="203" y="150" style="font-size:12px" opacity="0">Storage event trigger<animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.1221297133;0.1388288609;0.256453804;0.4449041864;1" values="0;0;1;1;0;0"/></text>
+    <text class="code-note" x="12" y="418" text-anchor="start" opacity="0">DELETE FROM data3<animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9056603773;0.9094390946;0.9358516228;0.9396239246;1" values="0;0;1;1;0;0"/></text>
+    <text class="code-note" x="12" y="418" text-anchor="start" opacity="0">Rows loaded<animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.9665554959;0.9716981132;0.9960679944;0.9976424005;1" values="0;0;1;1;0;0"/></text>
   </g>
   <!-- Finish fading the callout as the lead packet starts the write route. -->
   <g class="flow" opacity="0" aria-hidden="true">
-    <animate attributeName="opacity" dur="20s" repeatCount="indefinite" keyTimes="0;0.3387;0.33955;0.6605015;0.664998;1" values="0;0;1;1;0;0"/>
-    <path class="terminal-leader" d="M18 416v12"/>
-    <circle cx="156" cy="198" r="2.5" fill="#ff8467"/>
-    <use href="#notebook-terminal" transform="translate(4 428) scale(.874)"/>
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.320754717;0.3213443396;0.7564375492;0.7641509434;1" values="0;0;1;1;0;0"/>
+    <path class="terminal-leader" d="M206 198h-13V18"/>
+    <circle cx="206" cy="198" r="2.5" fill="#ff8467"/>
+    <use href="#notebook-terminal" transform="translate(29 -128) scale(.874)"/>
+  </g>
+  <!-- Each receiver lights as the file crosses its edge. -->
+  <g class="flow" data-receipt="survey" transform="translate(-138 -15)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.0256603774;0.0283018868;0.0316981132;0.0418867925;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="323" cy="22" rx="26" ry="26" fill="url(#receiver-light)"/>
+    <rect x="304.54" y="1.98" width="36.92" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="304.54" y="1.98" width="36.92" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="azcopy" transform="translate(117 58)" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.0633962264;0.0660377358;0.1037735849;0.1103773585;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="68" cy="22" rx="32" ry="26" fill="url(#receiver-light)"/>
+    <rect x="45.28" y="1.98" width="45.44" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="45.28" y="1.98" width="45.44" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="raw" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.12;0.1226415094;0.1260377358;0.1362264151;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="26" cy="181" rx="20" ry="15" fill="url(#receiver-light)"/>
+    <rect x="8" y="107" width="130" height="164" rx="8" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="8" y="107" width="130" height="164" rx="8" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="notebook" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.4690566038;0.4716981132;0.4750943396;0.4852830189;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="220" cy="191" rx="27" ry="24" fill="url(#receiver-light)"/>
+    <rect x="191" y="107" width="191" height="240" rx="8" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="191" y="107" width="191" height="240" rx="8" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="output" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.7870931219;0.7897346313;0.7931308577;0.803319537;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="26" cy="231" rx="20" ry="15" fill="url(#receiver-light)"/>
+    <rect x="8" y="107" width="130" height="164" rx="8" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="8" y="107" width="130" height="164" rx="8" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="copy" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.8652830189;0.8679245283;0.8713207547;0.881509434;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="220" cy="313" rx="24" ry="27" fill="url(#receiver-light)"/>
+    <rect x="191" y="107" width="191" height="240" rx="8" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="191" y="107" width="191" height="240" rx="8" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
+  </g>
+  <g class="flow" data-receipt="sql" opacity="0" aria-hidden="true">
+    <animate attributeName="opacity" dur="53s" repeatCount="indefinite" keyTimes="0;0.967517317;0.9701588264;0.9735550528;0.9837437321;1" values="0;0;1;1;0;0"/>
+    <ellipse cx="220" cy="374" rx="27" ry="26" fill="url(#receiver-light)"/>
+    <rect x="200.83" y="353.98" width="38.34" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="4" filter="url(#receiver-bloom)"/>
+    <rect x="200.83" y="353.98" width="38.34" height="40.04" rx="6" fill="none" stroke="#a2d9ff" stroke-width="1.4"/>
   </g>
 </symbol>
 </defs>
 <use class="wide" href="#layout-wide" width="100%" height="100%"/>
 <use class="portrait" href="#layout-portrait" width="100%" height="100%"/>
+<script><![CDATA[
+  // A framed diagram reports chapter changes from its own animation clock.
+  if (window.parent !== window) {
+    const svg = document.documentElement;
+    // Image embeds use the two symbols without script. In the interactive
+    // frame, render their geometry directly so entrance styles reach each
+    // component and both layouts keep the root SVG's single payload clock.
+    const viewBoxes = {};
+    for (const instance of svg.querySelectorAll(':scope > use')) {
+      const layout = instance.getAttribute('class');
+      const symbol = svg.querySelector(instance.getAttribute('href'));
+      viewBoxes[layout] = symbol.getAttribute('viewBox');
+      const group = document.createElementNS(svg.namespaceURI, 'g');
+      group.id = symbol.id;
+      group.setAttribute('class', layout);
+      group.append(...symbol.childNodes);
+      symbol.remove();
+      instance.replaceWith(group);
+    }
+    const portrait = matchMedia('(max-aspect-ratio: 1/1)');
+    const fitLayout = () => svg.setAttribute('viewBox', portrait.matches ? viewBoxes.portrait : viewBoxes.wide);
+    portrait.addEventListener('change', fitLayout);
+    fitLayout();
+    const cycle = svg.querySelector('animate[dur]').getSimpleDuration();
+    svg.classList.add('how-motion');
+    for (const route of svg.querySelectorAll('.entry-route')) {
+      const path = svg.querySelector(route.getAttribute('href'));
+      route.style.setProperty('--len', Math.ceil(path.getTotalLength()));
+    }
+    let timer;
+    let lastStage = -1;
+    svg.pauseAnimations();
+    svg.setAttribute('data-paused', '');
+
+    window.addEventListener('message', event => {
+      const command = event.data;
+      if (event.source !== parent || command?.type !== 'tellistic-playback') return;
+      clearTimeout(timer);
+      const {playing, drawing, starts, seekTo} = command;
+      svg.classList.toggle('is-drawing', drawing);
+      if (Number.isFinite(seekTo) && starts.includes(seekTo)) {
+        svg.setCurrentTime(seekTo);
+        lastStage = -1;
+      }
+      if (playing) svg.unpauseAnimations();
+      else svg.pauseAnimations();
+      svg.toggleAttribute('data-paused', !playing);
+
+      function report() {
+        const time = svg.getCurrentTime() % cycle;
+        const next = starts.findIndex(start => start > time);
+        const stage = (next === -1 ? starts.length : next) - 1;
+        if (stage !== lastStage) {
+          parent.postMessage({type: 'tellistic-stage', stage}, '*');
+          lastStage = stage;
+        }
+        if (playing) {
+          const boundary = next === -1 ? cycle : starts[next];
+          timer = setTimeout(report, Math.max(30, (boundary - time) * 1000 + 16));
+        }
+      }
+      report();
+    });
+    parent.postMessage({type: 'tellistic-ready'}, '*');
+  }
+]]></script>
 </svg>

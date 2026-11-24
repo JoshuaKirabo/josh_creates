@@ -2,7 +2,7 @@
 
 ## When the run monitor comes in
 
-The ADF run monitor becomes relevant when the storage event trigger starts a pipeline run. In the diagram, the dotted line branches from the trigger to the monitor while the other branch launches the notebook. The monitor stays active through the notebook, Copy Data, and the final SQL load. The 20-second loop illustrates the sequence. Actual execution time is recorded for each run.
+The ADF run monitor becomes relevant when the storage event trigger starts a pipeline run. In the diagram, the dotted line branches from the trigger to the monitor while the other branch launches the notebook. The monitor stays active through the notebook, Copy Data, and the final SQL load. The 53-second loop illustrates the sequence. Actual execution time is recorded for each run.
 
 ## Azure Data Factory
 
