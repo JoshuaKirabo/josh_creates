@@ -76,3 +76,14 @@ Recommended order: **001 → 002 → 003 → 004 → 005**.
 | [028 · Sequence the Databricks handoffs](028-sequence-databricks-handoffs.md) | High | DONE | Current 17-second diagram |
 
 Apply 025 first to set the playback clock. Then add the trail and the processing cue in order. Verify the one-screen fit from the article’s architecture link after each change.
+
+### Mobile portfolio scrolling
+
+029–031 handle phone gestures. 032 prepares the Skills illustration during scrolling.
+
+| Plan | Status |
+| --- | --- |
+| [029 · Keep the first phone drag](029-keep-the-first-phone-drag.md) | DONE |
+| [030 · Reuse phone snap stops](030-reuse-phone-snap-stops.md) | DONE |
+| [031 · Recognise new phone swipes](031-recognise-new-phone-swipes.md) | DONE |
+| [032 · Prepare mobile skill shapes](032-prepare-mobile-skill-shapes.md) | DONE |

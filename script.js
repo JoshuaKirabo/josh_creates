@@ -1854,13 +1854,14 @@ function startSite()
     // turn the page but must not scroll it either, so a page that only ever cuts
     // is never seen gliding to its neighbour. With `wheelOnly`, touch keeps native
     // scrolling.
+    // A contact can outlast the cut to the next section. Its first turn keeps it.
+    let heldTurnContact = null;
     function holdPageTurns(target, leave, { fresh: freshOnly = false, still = () => false, wheelOnly = false } = {})
       {
-        const gesture = { flick: -1, time: -Infinity, direction: 0, distance: 0, owned: false, eligible: true };
+        const wheel = { flick: -1, direction: 0, distance: 0, owned: false, eligible: true };
         // Returns true when this movement belongs to the exit and must not scroll.
-        // `fresh` says it opens a new gesture: the wheel's next flick, or a finger
-        // moving again after a pause or the other way.
-        const claim = (direction, distance, fresh) =>
+        // A new wheel flick resets the accumulator. Each finger contact has its own.
+        const claim = (gesture, direction, distance, fresh = false) =>
           {
             if(fresh)
               {
@@ -1906,45 +1907,58 @@ function startSite()
           {
             if(Math.abs(event.deltaX) >= Math.abs(event.deltaY) || !ownable(event)) return;
             const distance = Math.abs(event.deltaY) * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
-            const fresh = flick.id !== gesture.flick;
+            const fresh = flick.id !== wheel.flick;
             // A flick that has turned the page keeps it, even over a box that
             // could scroll. One that scrolled a box ends with that box: it neither
             // turns the page nor runs on into it.
-            if(fresh || !gesture.owned)
+            if(fresh || !wheel.owned)
               {
                 if(yields(event, Math.sign(event.deltaY)))
                   {
                     // Experience hands the rest of a flick to the page at the copy's edge.
-                    if(!event.target.closest?.('#experience .core-copy')) gesture.yielded = flick.id;
+                    if(!event.target.closest?.('#experience .core-copy')) wheel.yielded = flick.id;
                     return;
                   }
-                if(gesture.yielded === flick.id)
+                if(wheel.yielded === flick.id)
                   {
                     event.preventDefault();
                     return;
                   }
               }
-            gesture.flick = flick.id;
-            if(!claim(Math.sign(event.deltaY), distance, fresh)) return;
+            wheel.flick = flick.id;
+            if(!claim(wheel, Math.sign(event.deltaY), distance, fresh)) return;
             event.preventDefault();
             event.pageTurn = true;
           }, { passive: false, capture: true });
         if(wheelOnly) return;
-        let touchY = null;
+        let touch = null;
         window.addEventListener('touchstart', (event) =>
           {
-            touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
+            heldTurnContact = null;
+            const point = event.touches.length === 1 && event.touches[0];
+            touch = point ? { id: point.identifier, x: point.clientX, y: point.clientY, lastY: point.clientY,
+              vertical: false, direction: 0, distance: 0, owned: false, eligible: true } : null;
           }, { passive: true, capture: true });
         window.addEventListener('touchmove', (event) =>
           {
-            if(touchY === null || event.touches.length !== 1 || !ownable(event)) return;
-            const dy = touchY - event.touches[0].clientY;
-            touchY = event.touches[0].clientY;
-            if(!dy || (!gesture.owned && yields(event, Math.sign(dy)))) return;
-            const now = performance.now();
-            const fresh = now - gesture.time > 180 || (Math.sign(dy) !== gesture.direction && !gesture.owned);
-            gesture.time = now;
-            if(claim(Math.sign(dy), Math.abs(dy), fresh)) event.preventDefault();
+            if(!touch || event.touches.length !== 1 || !ownable(event)) return;
+            if(heldTurnContact && heldTurnContact !== touch) return;
+            const point = event.touches[0];
+            if(point.identifier !== touch.id) return;
+            if(!touch.vertical)
+              {
+                const dx = Math.abs(point.clientX - touch.x), dy = Math.abs(point.clientY - touch.y);
+                if(Math.max(dx, dy) < 6) return;
+                if(dx > dy) { touch = null; return; }
+                touch.vertical = true;
+              }
+            const dy = touch.lastY - point.clientY;
+            touch.lastY = point.clientY;
+            if(touch.owned) { event.preventDefault(); return; }
+            if(!dy || yields(event, Math.sign(dy))) return;
+            if(!claim(touch, Math.sign(dy), Math.abs(dy))) return;
+            if(touch.owned) heldTurnContact = touch;
+            event.preventDefault();
           }, { passive: false, capture: true });
       }
 
@@ -2374,210 +2388,6 @@ function startSite()
         server: [76, 194, 255]
       };
 
-    // A small kit of solids in a -1..1 space, y up and +z toward the viewer.
-    // Each lays points over its skin `gap` apart with the skin's outward normal,
-    // and can tell whether a point lies inside it, so where solids overlap only
-    // the outer skin of the whole is kept.
-    function craftKit(gap)
-      {
-        const points = [];
-        const solids = [];
-        const solid = (inside) =>
-          {
-            solids.push(inside);
-            return solids.length - 1;
-          };
-        // A tag rides with each point for forms that move once built: which gear
-        // it belongs to, or how far round a loop it sits. A function works it
-        // out from the point.
-        const put = (owner, x, y, z, nx, ny, nz) => points.push([x, y, z, nx, ny, nz, owner, typeof kit.tag === 'function' ? kit.tag(x, y, z) : kit.tag]);
-        const along = (length) => Math.max(1, Math.round(length / gap));
-        // A flat patch: a centre, two unit axes and their half-lengths.
-        const patch = (owner, [cx, cy, cz], u, v, hu, hv, n) =>
-          {
-            const cu = along(hu * 2);
-            const cv = along(hv * 2);
-            for(let i = 0; i < cu; i++)
-              {
-                for(let j = 0; j < cv; j++)
-                  {
-                    const a = ((i + .5) / cu * 2 - 1) * hu;
-                    const b = ((j + .5) / cv * 2 - 1) * hv;
-                    put(owner, cx + u[0] * a + v[0] * b, cy + u[1] * a + v[1] * b, cz + u[2] * a + v[2] * b, ...n);
-                  }
-              }
-          };
-        // Points on a sphere by the golden angle, so they sit evenly with no seams.
-        const golden = Math.PI * (3 - Math.sqrt(5));
-        const kit =
-          {
-            tag: -1,
-            box(cx, cy, cz, hx, hy, hz)
-              {
-                const owner = solid((x, y, z, e) => Math.abs(x - cx) < hx - e && Math.abs(y - cy) < hy - e && Math.abs(z - cz) < hz - e);
-                const X = [1, 0, 0], Y = [0, 1, 0], Z = [0, 0, 1];
-                patch(owner, [cx, cy, cz + hz], X, Y, hx, hy, [0, 0, 1]);
-                patch(owner, [cx, cy, cz - hz], X, Y, hx, hy, [0, 0, -1]);
-                patch(owner, [cx, cy + hy, cz], X, Z, hx, hz, [0, 1, 0]);
-                patch(owner, [cx, cy - hy, cz], X, Z, hx, hz, [0, -1, 0]);
-                patch(owner, [cx + hx, cy, cz], Y, Z, hy, hz, [1, 0, 0]);
-                patch(owner, [cx - hx, cy, cz], Y, Z, hy, hz, [-1, 0, 0]);
-              },
-            // A hollow sphere is only a shell of points, `spread` times the usual
-            // spacing apart, and hides nothing inside it.
-            sphere(cx, cy, cz, r, hollow = false, spread = 1)
-              {
-                const owner = solid((x, y, z, e) => !hollow && Math.hypot(x - cx, y - cy, z - cz) < r - e);
-                const count = Math.max(6, Math.round(4 * Math.PI * r * r / (gap * spread) ** 2));
-                for(let i = 0; i < count; i++)
-                  {
-                    const ny = 1 - (i + .5) / count * 2;
-                    const ring = Math.sqrt(1 - ny * ny);
-                    const nx = Math.cos(i * golden) * ring;
-                    const nz = Math.sin(i * golden) * ring;
-                    put(owner, cx + nx * r, cy + ny * r, cz + nz * r, nx, ny, nz);
-                  }
-              },
-            // A disc standing on the y axis, with both lids.
-            cylinder(cx, cy, cz, r, h)
-              {
-                const owner = solid((x, y, z, e) => Math.hypot(x - cx, z - cz) < r - e && Math.abs(y - cy) < h / 2 - e);
-                const rows = along(h);
-                const round = Math.max(8, Math.round(2 * Math.PI * r / gap));
-                for(let j = 0; j < rows; j++)
-                  {
-                    for(let i = 0; i < round; i++)
-                      {
-                        const a = (i + (j % 2) * .5) / round * Math.PI * 2;
-                        put(owner, cx + Math.cos(a) * r, cy - h / 2 + (j + .5) / rows * h, cz + Math.sin(a) * r, Math.cos(a), 0, Math.sin(a));
-                      }
-                  }
-                const lid = Math.max(4, Math.round(Math.PI * r * r / (gap * gap)));
-                [1, -1].forEach((side) =>
-                  {
-                    for(let i = 0; i < lid; i++)
-                      {
-                        const d = Math.sqrt((i + .5) / lid) * r;
-                        put(owner, cx + Math.cos(i * golden) * d, cy + side * h / 2, cz + Math.sin(i * golden) * d, 0, side, 0);
-                      }
-                  });
-              },
-            // A tube of radius r along a path of [x, y, z] points, rounded at its
-            // ends and corners. A closed path loops back to its start.
-            tube(path, r, closed = false)
-              {
-                const nodes = closed ? [...path, path[0]] : path;
-                const lines = nodes.slice(1).map((end, i) => [nodes[i], end]);
-                const near = (x, y, z) => Math.min(...lines.map(([a, b]) =>
-                  {
-                    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-                    const t = Math.max(0, Math.min(1, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / (d[0] ** 2 + d[1] ** 2 + d[2] ** 2 || 1)));
-                    return Math.hypot(x - a[0] - d[0] * t, y - a[1] - d[1] * t, z - a[2] - d[2] * t);
-                  }));
-                const owner = solid((x, y, z, e) => near(x, y, z) < r - e);
-                const round = Math.max(6, Math.round(2 * Math.PI * r / gap));
-                let ring = 0;
-                lines.forEach(([a, b]) =>
-                  {
-                    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-                    const length = Math.hypot(...d);
-                    const t = d.map(c => c / length);
-                    // Two axes across the tube, square to its direction.
-                    const up = Math.abs(t[2]) > .9 ? [0, 1, 0] : [0, 0, 1];
-                    let u = [t[1] * up[2] - t[2] * up[1], t[2] * up[0] - t[0] * up[2], t[0] * up[1] - t[1] * up[0]];
-                    const lu = Math.hypot(...u);
-                    u = u.map(c => c / lu);
-                    const v = [t[1] * u[2] - t[2] * u[1], t[2] * u[0] - t[0] * u[2], t[0] * u[1] - t[1] * u[0]];
-                    const steps = Math.max(1, Math.round(length / gap));
-                    for(let s = 0; s < steps; s++, ring++)
-                      {
-                        const f = (s + .5) / steps;
-                        for(let i = 0; i < round; i++)
-                          {
-                            const turn = (i + (ring % 2) * .5) / round * Math.PI * 2;
-                            const n = [0, 1, 2].map(k => u[k] * Math.cos(turn) + v[k] * Math.sin(turn));
-                            put(owner, a[0] + d[0] * f + n[0] * r, a[1] + d[1] * f + n[1] * r, a[2] + d[2] * f + n[2] * r, ...n);
-                          }
-                      }
-                  });
-                // Corners are rounded off; only a few long, straight tubes need them.
-                if(nodes.length < 12) (closed ? path : nodes).forEach(([x, y, z]) => kit.sphere(x, y, z, r));
-              },
-            // A flat outline pushed out to a depth: `loops` are its edges as closed
-            // [x, y] lists, `inside` says whether a point of the face is solid.
-            slab(cx, cy, cz, depth, loops, inside)
-              {
-                const owner = solid((x, y, z, e) => Math.abs(z - cz) < depth / 2 - e && inside(x - cx, y - cy));
-                const xs = loops.flat().map(p => p[0]);
-                const ys = loops.flat().map(p => p[1]);
-
-                for(let x = Math.min(...xs) + gap / 2; x < Math.max(...xs); x += gap)
-                  {
-                    for(let y = Math.min(...ys) + gap / 2; y < Math.max(...ys); y += gap)
-                      {
-                        if(!inside(x, y)) continue;
-                        put(owner, cx + x, cy + y, cz + depth / 2, 0, 0, 1);
-                        put(owner, cx + x, cy + y, cz - depth / 2, 0, 0, -1);
-                      }
-                  }
-
-                const rows = along(depth);
-                loops.forEach((loop) =>
-                  {
-                    loop.forEach(([ax, ay], i) =>
-                      {
-                        const [bx, by] = loop[(i + 1) % loop.length];
-                        const length = Math.hypot(bx - ax, by - ay);
-                        let nx = (by - ay) / length, ny = -(bx - ax) / length;
-                        const mx = (ax + bx) / 2, my = (ay + by) / 2;
-                        // The normal points out of the solid, whichever way the loop runs.
-                        if(inside(mx + nx * gap * .3, my + ny * gap * .3))
-                          {
-                            nx = -nx;
-                            ny = -ny;
-                          }
-                        const steps = Math.max(1, Math.round(length / gap));
-                        for(let s = 0; s < steps; s++)
-                          {
-                            for(let j = 0; j < rows; j++)
-                              {
-                                const f = (s + .5) / steps;
-                                put(owner, cx + ax + (bx - ax) * f, cy + ay + (by - ay) * f, cz - depth / 2 + (j + .5) / rows * depth, nx, ny, 0);
-                              }
-                          }
-                      });
-                  });
-              },
-            // Only the outer skin: points buried inside another solid are dropped.
-            skin()
-              {
-                const e = gap * .3;
-                return points.filter(([x, y, z, , , , owner]) => !solids.some((inside, k) => k !== owner && inside(x, y, z, e)));
-              }
-          };
-        return kit;
-      }
-
-    // A rounded rectangle as a closed path, flat at depth z, for kit.tube.
-    function craftRoundRect(cx, cy, z, hw, hh, r, steps = 6)
-      {
-        const path = [];
-        [[hw - r, hh - r, 0], [-hw + r, hh - r, Math.PI / 2], [-hw + r, -hh + r, Math.PI], [hw - r, -hh + r, Math.PI * 1.5]].forEach(([ox, oy, from]) =>
-          {
-            for(let i = 0; i <= steps; i++)
-              {
-                const a = from + i / steps * Math.PI / 2;
-                path.push([cx + ox + Math.cos(a) * r, cy + oy + Math.sin(a) * r, z]);
-              }
-          });
-        return path;
-      }
-
-    // Automation's gears as centre x, centre y and how fast each turns. The
-    // small one has seven teeth to the large one's ten, so it runs 10/7 as fast
-    // the other way and the teeth stay meshed.
-    const CRAFT_GEARS = [[-.28, -.18, .5], [.5, .44, -.5 * 10 / 7]];
-
     // Where a tagged point of a built form sits at `time`: Automation's gears
     // turn about their centres and Cloud's globe turns about the upright.
     // Writes the moved point and normal into `out`.
@@ -2643,31 +2453,6 @@ function startSite()
     // Server lights blink like drive activity: each on for 80ms at a time, on
     // a rhythm of its own so no two keep step.
     const CRAFT_BLINKS = [[.47, 0], [.83, .21], [.61, .37], [.95, .09], [.53, .44], [.71, .28]];
-
-    // A tag for points along an open path: `base` plus how far along it, 0 to
-    // just under 1, the nearest point of the path sits.
-    function craftAlong(path, base)
-      {
-        const parts = path.slice(1).map((end, i) => [path[i], end, Math.hypot(end[0] - path[i][0], end[1] - path[i][1], end[2] - path[i][2])]);
-        const total = parts.reduce((sum, part) => sum + part[2], 0);
-        return (x, y, z) =>
-          {
-            let best = Infinity, at = 0, before = 0;
-            parts.forEach(([a, b, length]) =>
-              {
-                const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-                const t = Math.max(0, Math.min(1, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / (length * length)));
-                const gap = Math.hypot(x - a[0] - d[0] * t, y - a[1] - d[1] * t, z - a[2] - d[2] * t);
-                if(gap < best)
-                  {
-                    best = gap;
-                    at = before + t * length;
-                  }
-                before += length;
-              });
-            return base + .999 * at / total;
-          };
-      }
 
     // Machine Learning's signals: each route runs input node, hidden node,
     // output node. Inputs are 0 to 2, hidden 3 to 6, outputs 7 and 8. The two
@@ -2756,270 +2541,6 @@ function startSite()
             return (age + offset) % period < .08 ? 1 : 0;
           }
         return 0;
-      }
-
-    const CRAFT_FORMS =
-      {
-        // A browser window drawn in tubes: its frame, the bar with its three
-        // lights, a heading and a line of text, then three cards floating forward
-        // and a pointer in front of them all, clicking the last. The window is
-        // wider than the other solids, so the whole of it is drawn at `k`.
-        frontend(kit)
-          {
-            const k = .78;
-            const tube = (path, r, closed) => kit.tube(path.map(p => p.map(c => c * k)), r * k, closed);
-            tube(craftRoundRect(0, .06, 0, .94, .7, .12), .045, true);
-            tube([[-.94, .5, 0], [.94, .5, 0]], .03);
-            [-.78, -.64, -.5].forEach(x => kit.sphere(x * k, .63 * k, 0, .045 * k));
-            tube([[-.66, .3, .16], [.1, .3, .16]], .05);
-            tube([[-.66, .14, .16], [.34, .14, .16]], .028);
-            [-.46, 0, .46].forEach((x) =>
-              {
-                kit.tag = x > 0 ? 2 : -1;
-                tube(craftRoundRect(x, -.3, .28, .17, .2, .05, 3), .03, true);
-              });
-            // The pointer and the card it clicks are tagged for the click; see
-            // craftClick and craftGlow.
-            kit.tag = 1;
-            const pointer = [[0, 0], [0, -.5], [.12, -.38], [.21, -.56], [.29, -.52], [.2, -.35], [.36, -.35], [0, 0]];
-            tube(pointer.map(([x, y]) => [.5 + x, -.2 + y, .52]), .04);
-          },
-        // Code: the APIs behind the page, as a pair of brackets and a slash.
-        backend(kit)
-          {
-            kit.tube([[-.28, .46, 0], [-.72, 0, 0], [-.28, -.46, 0]], .09);
-            kit.tube([[.28, .46, 0], [.72, 0, 0], [.28, -.46, 0]], .09);
-            kit.tube([[.14, .58, 0], [-.14, -.58, 0]], .09);
-          },
-        // A database as a solid stack: three thick discs with a sliver of air
-        // between them, so the lid of each one below catches the light, and a
-        // status light set into the front of each. The discs know how far down
-        // the stack they sit, 0 at the top, for the query that runs down it; the
-        // lights are tagged 2, 3 and 4 from the top.
-        database(kit)
-          {
-            [.5, 0, -.5].forEach((y, i) =>
-              {
-                kit.tag = (x, py) => Math.min(1, Math.max(0, (.68 - py) / 1.36));
-                kit.cylinder(0, y, 0, .7, .36);
-                kit.tag = 2 + i;
-                kit.sphere(.4, y, .57, .06);
-              });
-          },
-
-        // AI as a chip: the package and its pins, the die raised off it, and the
-        // letters AI standing in front. For its beat, input comes in on the left
-        // and top pins, closes in on the die, the letters are written stroke by
-        // stroke and the answer leaves by the right and bottom pins; see
-        // craftGlow. Input pins are tagged 200 plus their number, output pins 210
-        // plus theirs, strokes 400 plus theirs, each plus how far along it a
-        // point sits in the direction the signal runs. The package and die are
-        // tagged 3 to 4 from the outside in.
-        ai(kit)
-          {
-            kit.tag = (x, y) => 3 + .999 * Math.min(1, Math.max(0, (.6 - Math.max(Math.abs(x), Math.abs(y))) / .25));
-            kit.tube(craftRoundRect(0, 0, 0, .56, .56, .1), .045, true);
-            const pin = (base, from, to) =>
-              {
-                kit.tag = craftAlong([from, to], base);
-                kit.tube([from, to], .035);
-              };
-            [-.33, -.11, .11, .33].forEach((p, i) =>
-              {
-                pin(200 + i, [-.8, -p, 0], [-.6, -p, 0]);
-                pin(204 + i, [p, .8, 0], [p, .6, 0]);
-                pin(210 + i, [.6, -p, 0], [.8, -p, 0]);
-                pin(214 + i, [p, -.6, 0], [p, -.8, 0]);
-              });
-            kit.tag = (x, y) => 3 + .999 * Math.min(1, Math.max(0, (.6 - Math.max(Math.abs(x), Math.abs(y))) / .25));
-            kit.tube(craftRoundRect(0, 0, .14, .38, .38, .06), .03, true);
-            const z = .3;
-            [
-              [[[-.25, -.2, z], [-.12, .2, z], [.01, -.2, z]], .05],
-              [[[-.2, -.06, z], [-.04, -.06, z]], .045],
-              [[[.08, .2, z], [.26, .2, z]], .045],
-              [[[.17, .2, z], [.17, -.2, z]], .05],
-              [[[.08, -.2, z], [.26, -.2, z]], .045]
-            ].forEach(([path, r], stroke) =>
-              {
-                kit.tag = craftAlong(path, 400 + stroke);
-                kit.tube(path, r);
-              });
-            kit.tag = -1;
-          },
-        // A small neural network: three layers of nodes set round in depth, every
-        // node wired to each one in the next layer.
-        ml(kit)
-          {
-            const layers = [[-.74, 3, .46], [0, 4, .6], [.74, 2, .32]].map(([x, count, spread]) =>
-              Array.from({ length: count }, (_, i) =>
-                {
-                  const a = i / count * Math.PI * 2 + (count === 4 ? Math.PI / 4 : Math.PI / 2);
-                  return [x, Math.sin(a) * spread, Math.cos(a) * spread];
-                }));
-            // Signals travel the graph node to node; see CRAFT_ROUTES. Each node is
-            // tagged 10 plus its number, inputs first. Each wire is tagged 100 plus
-            // its number, plus how far along it a point sits from its input end.
-            layers.flat().forEach(([x, y, z], n) =>
-              {
-                kit.tag = 10 + n;
-                kit.sphere(x, y, z, .11);
-              });
-            let wire = 0;
-            layers.slice(0, -1).forEach((layer, l) => layer.forEach(a => layers[l + 1].forEach((b) =>
-              {
-                const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-                const length = d[0] ** 2 + d[1] ** 2 + d[2] ** 2;
-                const base = 100 + wire++;
-                kit.tag = (x, y, z) => base + .999 * Math.min(1, Math.max(0, ((x - a[0]) * d[0] + (y - a[1]) * d[1] + (z - a[2]) * d[2]) / length));
-                kit.tube([a, b], .016);
-              })));
-          },
-        // A cloud as a thick slab with a rounded rim, held in a glass globe of
-        // sparse points that turns slowly round it once built. The globe is kept
-        // smaller than the other solids: its near side swells in perspective, and
-        // it needs air above and below it in the field.
-        cloud(kit)
-          {
-            const k = .64;
-            const puffs = [[-.36, -.14, .24], [.02, .08, .34], [.38, -.1, .25]];
-            const inside = (x, y) => puffs.some(([px, py, r]) => Math.hypot(x - px, y - py) < r) || (x > -.36 && x < .38 && y > -.38 && y < -.14);
-            // The outline, found by walking out from the middle along each bearing.
-            const loop = Array.from({ length: 144 }, (_, i) =>
-              {
-                const a = i / 144 * Math.PI * 2;
-                let lo = 0, hi = 1;
-                for(let n = 0; n < 20; n++)
-                  {
-                    const mid = (lo + hi) / 2;
-                    if(inside(Math.cos(a) * mid, -.08 + Math.sin(a) * mid)) lo = mid; else hi = mid;
-                  }
-                return [Math.cos(a) * lo * k, (-.08 + Math.sin(a) * lo) * k];
-              });
-            kit.slab(0, 0, 0, .18, [loop], (x, y) => inside(x / k, y / k));
-            [.09, -.09].forEach(z => kit.tube(loop.map(([x, y]) => [x, y, z]), .045, true));
-            kit.tag = 0;
-            kit.sphere(0, 0, 0, .72, true, 2.2);
-            kit.tag = -1;
-          },
-        // DevOps' endless loop in two halves, each running into an arrowhead at
-        // the top of its lobe where it hands over to the other. The halves pass
-        // one in front of the other where they cross.
-        devops(kit)
-          {
-            const at = (t) =>
-              {
-                const d = 1 + Math.sin(t) ** 2;
-                return [.95 * Math.cos(t) / d, .95 * Math.sin(t) * Math.cos(t) / d, .16 * Math.sin(t)];
-              };
-            const gap = .22;
-            // Each point knows how far round the loop it sits, 0 to 1, for the
-            // pulse that runs through it.
-            const samples = Array.from({ length: 96 }, (_, i) =>
-              {
-                const half = i < 48 ? .62 : Math.PI + .62;
-                const t = half + gap / 2 + (Math.PI - gap) * (i % 48) / 47;
-                return [...at(t), t];
-              });
-            kit.tag = (x, y, z) =>
-              {
-                let best = samples[0], near = Infinity;
-                samples.forEach((sample) =>
-                  {
-                    const d = (sample[0] - x) ** 2 + (sample[1] - y) ** 2 + (sample[2] - z) ** 2;
-                    if(d < near)
-                      {
-                        near = d;
-                        best = sample;
-                      }
-                  });
-                return ((best[3] - .62 - gap / 2) / (Math.PI * 2) + 1) % 1;
-              };
-            [.62, Math.PI + .62].forEach((start) =>
-              {
-                const from = start + gap / 2;
-                const to = start + Math.PI - gap / 2;
-                kit.tube(Array.from({ length: 49 }, (_, i) => at(from + (to - from) * i / 48)), .05);
-                const [px, py, pz] = at(to);
-                const [qx, qy] = at(to - .02);
-                const length = Math.hypot(px - qx, py - qy);
-                const tx = (px - qx) / length, ty = (py - qy) / length;
-                const wing = side => [px - tx * .22 + ty * side * .19, py - ty * .22 - tx * side * .19, pz];
-                kit.tube([wing(1), [px + tx * .06, py + ty * .06, pz], wing(-1)], .05);
-              });
-          },
-        // Two meshed gears with depth, the small one set a little behind. They
-        // turn once built; see CRAFT_GEARS.
-        automation(kit)
-          {
-            const gear = (cx, cy, cz, outer, inner, teeth, turn, hole) =>
-              {
-                const rim = Array.from({ length: teeth * 4 }, (_, i) =>
-                  {
-                    const a = turn + i / (teeth * 4) * Math.PI * 2;
-                    const r = i % 4 < 2 ? outer : inner;
-                    return [Math.cos(a) * r, Math.sin(a) * r];
-                  });
-                const bore = Array.from({ length: 28 }, (_, i) => [Math.cos(i / 28 * Math.PI * 2) * hole, Math.sin(i / 28 * Math.PI * 2) * hole]);
-                const inside = (x, y) =>
-                  {
-                    if(Math.hypot(x, y) < hole) return false;
-                    let within = false;
-                    rim.forEach(([ax, ay], i) =>
-                      {
-                        const [bx, by] = rim[(i + 1) % rim.length];
-                        if((ay > y) !== (by > y) && x < ax + (y - ay) / (by - ay) * (bx - ax)) within = !within;
-                      });
-                    return within;
-                  };
-                kit.slab(cx, cy, cz, .2, [rim, bore], inside);
-              };
-            kit.tag = 0;
-            gear(...CRAFT_GEARS[0].slice(0, 2), 0, .62, .5, 10, 0, .24);
-            kit.tag = 1;
-            gear(...CRAFT_GEARS[1].slice(0, 2), -.12, .38, .3, 7, .22, .13);
-          },
-        // A server rack: three units, each with two lights and a vent. The six
-        // lights are tagged 0 to 5 so each can blink on its own.
-        server(kit)
-          {
-            [.46, 0, -.46].forEach((y, i) =>
-              {
-                kit.box(0, y, 0, .7, .16, .44);
-                [-.5, -.34].forEach((x, j) =>
-                  {
-                    kit.tag = i * 2 + j;
-                    kit.sphere(x, y, .45, .06);
-                    kit.tag = -1;
-                  });
-                kit.tube([[-.1, y, .46], [.5, y, .46]], .03);
-              });
-          }
-      };
-
-    // Builds a form as exactly `count` points, each with its normal and tag, as
-    // a flat run of x, y, z, nx, ny, nz, tag. The spacing is tuned until the skin holds
-    // about that many; the last few are then dropped or doubled evenly.
-    function buildCraftForm(name, count)
-      {
-        let gap = .05;
-        let found = [];
-        for(let pass = 0; pass < 5; pass++)
-          {
-            const kit = craftKit(gap);
-            CRAFT_FORMS[name](kit);
-            found = kit.skin();
-            if(Math.abs(found.length - count) < count * .01) break;
-            gap *= Math.sqrt(found.length / count);
-          }
-        const form = new Float32Array(count * 7);
-        for(let i = 0; i < count; i++)
-          {
-            const point = found[Math.floor(i * found.length / count)];
-            for(let a = 0; a < 6; a++) form[i * 7 + a] = point[a];
-            form[i * 7 + 6] = point[7];
-          }
-        return form;
       }
 
     // Each cell's mark: its discipline's solid drawn flat and small, the way it
@@ -3271,35 +2792,34 @@ function startSite()
         const nowLine = field.querySelector('.craft-now');
         const toolSets = [...field.querySelectorAll('.craft-tools-set')];
         let toolTimer = 0;
-        // Fewer points on a phone. Each solid is built the first time it is shown.
-        const COUNT = window.innerWidth < 640 ? 3000 : 7000;
+        const phoneField = window.matchMedia('(hover: none) and (pointer: coarse) and (max-width: 700px), (hover: none) and (pointer: coarse) and (max-height: 500px)').matches;
+        const COUNT = phoneField || window.innerWidth < 640 ? 3000 : 7000;
         const forms = {};
-        const form = name => forms[name] || (forms[name] = buildCraftForm(name, COUNT));
-        // The first solid takes about 90ms to build. Built here, before the page
-        // first paints, it costs a beat of the blank screen the turn cuts to;
-        // built on the entrance's first frame, it froze the heading mid-draw.
-        form(CRAFT_ORDER[0]);
-        // The others were built the first time each was shown, so the first round
-        // froze for 90ms or more (200ms in Safari) every three seconds. They are
-        // built ahead instead: one at a time once the entrance is over, and never
-        // within a second of a scroll, so a build cannot land in a page turn.
-        const ahead = CRAFT_ORDER.slice(1);
-        let lastMoved = -Infinity;
-        const moved = () => (lastMoved = performance.now());
-        const buildAhead = () =>
+        // Phones only read completed arrays. The desktop field retains its
+        // synchronous first solid and quiet-period preparation for later solids.
+        const buildOnPage = !phoneField && typeof buildCraftForm === 'function';
+        const form = name => forms[name] || (buildOnPage && (forms[name] = buildCraftForm(name, COUNT)));
+        if(buildOnPage)
           {
-            if(!ahead.length)
+            form(CRAFT_ORDER[0]);
+            const ahead = CRAFT_ORDER.slice(1);
+            let lastMoved = -Infinity;
+            const moved = () => (lastMoved = performance.now());
+            const buildAhead = () =>
               {
-                window.removeEventListener('scroll', moved);
-                window.removeEventListener('wheel', moved);
-                return;
-              }
-            if(performance.now() - lastMoved > 1000 && !document.hidden) form(ahead.shift());
-            setTimeout(buildAhead, 700);
-          };
-        window.addEventListener('scroll', moved, { passive: true });
-        window.addEventListener('wheel', moved, { passive: true });
-        introSettled.then(() => setTimeout(buildAhead, 1500));
+                if(!ahead.length)
+                  {
+                    window.removeEventListener('scroll', moved);
+                    window.removeEventListener('wheel', moved);
+                    return;
+                  }
+                if(performance.now() - lastMoved > 1000 && !document.hidden) form(ahead.shift());
+                setTimeout(buildAhead, 700);
+              };
+            window.addEventListener('scroll', moved, { passive: true });
+            window.addEventListener('wheel', moved, { passive: true });
+            introSettled.then(() => setTimeout(buildAhead, 1500));
+          }
         const now = new Float32Array(COUNT * 3);
         // Which way each point's patch of skin faces. It turns toward the new
         // solid's as the point flies, so a point in flight is lit half way.
@@ -3363,16 +2883,34 @@ function startSite()
             // window being dragged showed an empty field. It is drawn again here.
             if(still) draw(0, 0);
             else if(running) draw(clock, .0001);
+            else if(!buildOnPage && !forms[shape]) drawGlyph();
             else view = null;
+          }
+
+        // A cold or unavailable worker still leaves a matching illustration.
+        // Use the same 400-unit glyph as the rail until this surface is ready.
+        function drawGlyph()
+          {
+            context.save();
+            context.setTransform(ratio, 0, 0, ratio, 0, 0);
+            context.clearRect(0, 0, width, height);
+            const side = Math.min(width * .64, height * .6);
+            context.translate((width - side) / 2, (height - side) / 2);
+            context.scale(side / 400, side / 400);
+            context.fillStyle = context.strokeStyle = `rgb(${CRAFT_COLORS[shape]})`;
+            context.lineCap = context.lineJoin = 'round';
+            CRAFT_GLYPHS[shape](context);
+            context.restore();
           }
 
         function draw(time, step)
           {
+            const goal = form(shape);
+            if(!goal) return drawGlyph();
+            const before = form(previous);
             context.setTransform(ratio, 0, 0, ratio, 0, 0);
             context.clearRect(0, 0, width, height);
             if(!width || !height) return;
-            const goal = form(shape);
-            const before = form(previous);
             // A phone's field is narrow and tall, so there the solid takes more of
             // the width; at the laptop's share it would float in empty height.
             const fit = Math.min(width * (width < 500 ? .42 : .34), height * .36);
@@ -3413,7 +2951,7 @@ function startSite()
                 // A point the sweep has not reached yet carries on to the shape it was
                 // already bound for, so switching shapes mid-flight never stops it dead.
                 if(set) craftMove(shape, goal, g, still ? 0 : time, spot, beat);
-                else if(!gathering) craftMove(previous, before, g, time, spot, -1);
+                else if(!gathering && before) craftMove(previous, before, g, time, spot, -1);
                 if(step === 0)
                   {
                     for(let a = 0; a < 3; a++)
@@ -3423,7 +2961,7 @@ function startSite()
                         facing[k + a] = spot[3 + a];
                       }
                   }
-                else if(set || !gathering)
+                else if(set || (!gathering && before))
                   {
                     for(let n = 0; n < slices; n++)
                       {
@@ -3498,7 +3036,9 @@ function startSite()
           }
         function play()
           {
-            const should = visible && section.classList.contains('is-entered') && !document.hidden && !still;
+            const ready = buildOnPage || !!forms[shape];
+            if(!ready && visible && entered) drawGlyph();
+            const should = ready && visible && section.classList.contains('is-entered') && !document.hidden && !still;
             if(should === running) return;
             running = should;
             last = 0;
@@ -3559,6 +3099,7 @@ function startSite()
             const time = performance.now() / 1000;
             sweepAt = time;
             for(let i = 0; i < COUNT; i++) setOff[i] = time + Math.max(0, screenY[i] / (height || 1)) * .75 + lag[i] * .08;
+            if(!buildOnPage) play();
           }
 
         // The cell on show is the only one standing. Those before it have lifted
@@ -3638,6 +3179,27 @@ function startSite()
           });
         field.addEventListener('pointerleave', () => (pointer = 0));
 
+        if(phoneField && typeof Worker === 'function')
+          {
+            try
+              {
+                const worker = new Worker('assets/craft-geometry.js?v=1');
+                worker.onmessage = ({ data: { name, points } }) =>
+                  {
+                    forms[name] = points;
+                    if(name !== shape) return;
+                    if(still) draw(0, 0);
+                    else play();
+                  };
+                worker.onerror = () => worker.terminate();
+                worker.postMessage(COUNT);
+              }
+            catch
+              {
+                // Local-file previews and restricted browsers can block workers.
+                // The selected discipline keeps its flat glyph in that case.
+              }
+          }
         new ResizeObserver(measure).observe(field);
         new IntersectionObserver((entries) =>
           {
@@ -3941,15 +3503,20 @@ function startSite()
           });
       }
 
+    // Absolute document markers hold the measured offsets for page, project and
+    // discipline stops. Their owners update them when the layout changes.
+    const pageSnapMarkers = () => [...document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap')].filter(marker => !marker.hidden && marker.style.top);
+
     // A resize reflows everything above the reader, and the browser keeps the
     // scroll's number, not the reader's place: a taller window slid Education,
     // Skills and Let's connect off the screen. Every place the page rests has a
     // snap marker, so the marker under the reader is noted at each scroll, and
     // the page is put back on it as the new layout settles.
+    let setPhoneScrolling = () => {};
     function keepPlaceOnResize()
       {
-        const markers = () => [...document.querySelectorAll('.page-snap, .projects-snap, .craft-snap, .section-snap')].filter(marker => !marker.hidden && marker.style.top);
         let held = null;
+        let phoneScrolling = false;
         let quietUntil = 0;
         let frames = 0;
         const sized = () => `${window.innerWidth} ${window.innerHeight}`;
@@ -4003,6 +3570,7 @@ function startSite()
         ['touchstart', 'touchend', 'touchcancel'].forEach(type => window.addEventListener(type, touched, { passive: true, capture: true }));
         const note = () =>
           {
+            if(phoneScrolling) return;
             // WebKit can clamp the scroll to a new layout before it sends the
             // resize; that scroll is the resize's, not the reader's.
             if(sized() !== size) return resized();
@@ -4015,7 +3583,7 @@ function startSite()
               }
             if(flight && Math.abs(y - flight.to) <= 1) flight = null;
             if(performance.now() < quietUntil) return;
-            const all = markers();
+            const all = pageSnapMarkers();
             snapshot();
             const at = all.filter(marker => Math.abs(parseFloat(marker.style.top) - y) <= 2);
             const section = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
@@ -4039,12 +3607,12 @@ function startSite()
         // page the script has only now put where another stop last was has
         // turned to it; that stop is the place to keep. The browser's own
         // scrolls mid-resize never count, so every cut is seen here as it is made.
-        const snapshot = () => (stops = markers().map(marker => ({ stop: marker.dataset.stop || marker, top: parseFloat(marker.style.top) })));
+        const snapshot = () => (stops = pageSnapMarkers().map(marker => ({ stop: marker.dataset.stop || marker, top: parseFloat(marker.style.top) })));
         let turned = null;
         const scrollPage = window.scrollTo.bind(window);
         window.scrollTo = (...to) =>
           {
-            if(Number.isFinite(to[0]?.top)) turned = { top: to[0].top, at: performance.now() };
+            if(!phoneScrolling && Number.isFinite(to[0]?.top)) turned = { top: to[0].top, at: performance.now() };
             return scrollPage(...to);
           };
         const adopt = () =>
@@ -4057,6 +3625,7 @@ function startSite()
           };
         const settle = () =>
           {
+            if(phoneScrolling) { frames = 0; return; }
             restore();
             reaimGlide();
             if(flight) aim();
@@ -4065,6 +3634,7 @@ function startSite()
         function resized()
           {
             size = sized();
+            if(phoneScrolling) return;
             // A page in flight has no place to keep; it is aimed again.
             reaimGlide();
             adopt();
@@ -4089,6 +3659,20 @@ function startSite()
             if(frames <= 0) requestAnimationFrame(settle);
             frames = 4;
           }
+        // A phone drag and its coast own the page until they land. Release the old
+        // resize anchor as soon as the drag starts, even if a resize settle is queued.
+        setPhoneScrolling = active =>
+          {
+            phoneScrolling = active;
+            held = null;
+            flight = null;
+            turned = null;
+            heading = 0;
+            quietUntil = 0;
+            lastY = window.scrollY;
+            size = sized();
+            if(!active) note();
+          };
         window.addEventListener('scroll', note, { passive: true });
         window.addEventListener('resize', resized, { passive: true });
         introSettled.then(() => requestAnimationFrame(note));
@@ -7679,6 +7263,7 @@ function startSite()
         function holdSnap()
           {
             if(snapHeld) return;
+            setPhoneScrolling(true);
             snapType = getComputedStyle(root).scrollSnapType;
             root.style.scrollSnapType = 'none';
             snapHeld = true;
@@ -7688,6 +7273,7 @@ function startSite()
             if(!snapHeld) return;
             root.style.scrollSnapType = '';
             snapHeld = false;
+            setPhoneScrolling(false);
           }
         function stopGlide()
           {
@@ -7709,15 +7295,21 @@ function startSite()
         const zoomed = () => (window.visualViewport?.scale || 1) > 1.01;
         // An open keyboard shrinks the visual viewport well below the window.
         const typing = () => window.visualViewport && window.visualViewport.height < window.innerHeight * .8;
-        // Where the page may rest, read fresh when a gesture ends: the snap points
-        // of everything the window itself snaps. A snap area taller than the screen
-        // lets the page rest anywhere inside it.
+        // Most stops already have absolute offsets from layout. Only the in-flow
+        // snap areas need live geometry (including a standalone project's sections).
+        const flowSnapAreas = document.querySelectorAll('.about-hero, .skills-main:not(.has-snap-marker), .connect-main:not(.has-snap-marker), .project-sheet--page .project-sheet-content > *');
         function restingPlaces()
           {
-            const places = [];
+            const limit = maxY();
+            const bounded = value => Math.min(limit, Math.max(0, value));
+            const places = pageSnapMarkers().map(marker =>
+              {
+                const at = bounded(parseFloat(marker.style.top));
+                return { from: at, to: at, stop: true };
+              });
             const view = window.innerHeight;
             const y = window.scrollY;
-            for(const node of document.body.querySelectorAll('*'))
+            for(const node of flowSnapAreas)
               {
                 const style = getComputedStyle(node);
                 const align = style.scrollSnapAlign.split(' ')[0];
@@ -7733,10 +7325,10 @@ function startSite()
                 const top = box.top + y - (parseFloat(style.scrollMarginTop) || 0);
                 const bottom = box.bottom + y + (parseFloat(style.scrollMarginBottom) || 0);
                 const stop = style.scrollSnapStop === 'always';
-                if(bottom - top > view + 1) places.push({ from: clampY(top), to: clampY(bottom - view), stop: false });
+                if(bottom - top > view + 1) places.push({ from: bounded(top), to: bounded(bottom - view), stop: false });
                 else
                   {
-                    const at = clampY(align === 'center' ? (top + bottom - view) / 2 : align === 'end' ? bottom - view : top);
+                    const at = bounded(align === 'center' ? (top + bottom - view) / 2 : align === 'end' ? bottom - view : top);
                     places.push({ from: at, to: at, stop });
                   }
               }
@@ -7836,7 +7428,7 @@ function startSite()
                 return;
               }
             const point = event.touches[0];
-            gesture = { id: point.identifier, x: point.clientX, y: point.clientY, fingerY: 0, from: 0, axis: '', moved: false, yielded: false, samples: [], carried, began: performance.now() };
+            gesture = { id: point.identifier, x: point.clientX, y: point.clientY, from: 0, axis: '', moved: false, yielded: false, samples: [], carried, began: performance.now() };
           }, { passive: true });
 
         // Registered after every other page listener, so a gesture that a section
@@ -7865,8 +7457,8 @@ function startSite()
                 const dy = Math.abs(point.clientY - gesture.y);
                 if(Math.max(dx, dy) < 6) return;
                 gesture.axis = dy >= dx ? 'y' : 'x';
-                gesture.fingerY = point.clientY;
                 gesture.from = window.scrollY;
+                gesture.samples.push({ time: gesture.began, y: gesture.from });
               }
             // The window has nothing to move sideways.
             if(gesture.axis !== 'y') return;
@@ -7875,7 +7467,7 @@ function startSite()
                 gesture.moved = true;
                 holdSnap();
               }
-            const y = clampY(gesture.from + gesture.fingerY - point.clientY);
+            const y = clampY(gesture.from + gesture.y - point.clientY);
             window.scrollTo({ top: y, behavior: 'instant' });
             const now = performance.now();
             gesture.samples.push({ time: now, y });
