@@ -630,7 +630,7 @@ body > .resume-close
             </ul>
           </div>
 
-          <div class="entry">
+          <div class="entry break-before">
             <div class="row"><strong>Tellistic Technology Services</strong><span>Sammamish, Washington</span></div>
             <div class="row sub"><em>Software Engineer <span class="bar">|</span> Internship, Remote</em><em>July 2024 – February 2025</em></div>
             <ul>
@@ -668,7 +668,7 @@ body > .resume-close
 
           <div class="entry">
             <div class="row"><strong>NextStep</strong></div>
-            <div class="row sub"><em>Web App <span class="bar">|</span> Next.js, Spring Boot, PostgreSQL, Together AI</em></div>
+            <div class="row sub"><em><a href="https://joshcreates.studio/projects/next_step" target="_blank" rel="noopener">View Project</a> <span class="bar">|</span> Next.js, Spring Boot, PostgreSQL, Together AI</em></div>
             <ul>
               <li>AI planning assistant for ADHD. Talk through what’s on your plate and it breaks vague tasks into steps, remembers your context, and turns it all into a realistic schedule.</li>
               <li>Brain Dump runs four prompts in turn: an outline, a task breakdown, a game plan and calendar suggestions. Each asks for output that matches a JSON schema, so tasks arrive as data the app can save.</li>
@@ -678,7 +678,7 @@ body > .resume-close
 
           <div class="entry">
             <div class="row"><strong>SleekBoard</strong></div>
-            <div class="row sub"><em>Web App <span class="bar">|</span> MongoDB, Express.js, React.js, Node.js, Together AI</em></div>
+            <div class="row sub"><em><a href="https://joshcreates.studio/projects/sleekboard" target="_blank" rel="noopener">View Project</a> <span class="bar">|</span> MongoDB, Express.js, React.js, Node.js, Together AI</em></div>
             <ul>
               <li>Job application board. Paste a job link and an AI agent reads the posting, fills in the card, and suggests a recruiter, hiring manager, or teammate to contact, each backed by a quote it checks, with a drafted note. Nothing is sent without your approval.</li>
               <li>Connect Gmail with read-only access and recruiter replies move their cards, so an interview invite goes to Interviewing and a rejection to Rejected. Phrase lists sort most emails for free. AI reads the unclear ones and only moves a card when it’s sure and the sender is that company, with Undo on every move.</li>
@@ -775,6 +775,14 @@ body > .resume-close
       let i = 0;
       while(i < pieces.length)
         {
+          // An entry marked "break-before" starts a new sheet, as in pages.js.
+          if(pieces[i].matches('.entry.break-before > .row:first-child') && top(pieces[i]) > sheetTop(sheet) + MARGIN + .5)
+            {
+              sheet++;
+              moveTo(pieces[i], sheetTop(sheet) + MARGIN);
+              i++;
+              continue;
+            }
           if(bottom(pieces[i]) <= sheetTop(sheet) + MARGIN + BODY + .5)
             {
               i++;
