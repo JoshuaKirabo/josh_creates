@@ -292,6 +292,16 @@
       margin-top: var(--sheet-push) !important;
    }
 
+/* The sheet is laid out at its true 816px and scaled down, so iOS Safari
+   takes its lines for wide text and enlarges them, by more or less on each
+   phone. That rewraps the lines and moves the page breaks. The type keeps
+   its set size, so every screen shows the same resume, only smaller or larger. */
+html
+   {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+   }
+
 /* Download is the page's one action, so it sits in thumb reach at the foot.
    On phones it is the white button About's Get In Touch uses. */
 .resume-actions
